@@ -76,7 +76,7 @@ class JUnitUploadCommandModule {
         this.handler = (args) => __awaiter(this, void 0, void 0, function* () {
             const file = (0, fs_1.readFileSync)(args.file).toString();
             const { testcases } = yield (0, junit_1.parseJUnitXml)(file);
-            console.log(JSON.stringify(testcases));
+            console.log(testcases);
         });
     }
 }
