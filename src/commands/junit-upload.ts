@@ -1,4 +1,6 @@
+import { readFileSync } from 'fs'
 import { ArgumentsCamelCase, Argv, CommandModule } from 'yargs'
+import { parseJUnitXml } from '../utils/junit'
 
 export interface JUnitArgs {
 	file: string
@@ -12,42 +14,51 @@ export interface JUnitArgs {
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
 	command = 'junit-upload'
 
-	builder(argv: Argv) {
+	builder = (argv: Argv) => {
 		argv.options({
 			file: {
 				alias: 'f',
+				type: 'string',
 				describe: 'Path to JUnit xml file',
 				demandOption: true,
-				type: 'string',
+				requiresArg: true,
 			},
 			subdomain: {
 				alias: 's',
-				describe: 'URL subdomain',
-				demandOption: true,
 				type: 'string',
+				describe: 'URL subdomain',
+				requiresArg: true,
 			},
 			zone: {
 				alias: 'z',
-				describe: 'URL zone',
-				demandOption: true,
 				type: 'string',
+				describe: 'URL zone',
+				requiresArg: true,
 			},
 			project: {
 				alias: 'p',
+				type: 'string',
 				describe: 'Project code',
 				demandOption: true,
-				type: 'string',
+				requiresArg: true,
 			},
 			run: {
 				alias: 'r',
+				type: 'number',
 				describe: 'Run ID',
 				demandOption: true,
-				type: 'number',
+				requiresArg: true,
 			},
 			token: {
 				alias: 't',
 				describe: 'API token',
 				type: 'string',
+				requiresArg: true,
+			},
+			url: {
+				describe: 'Instance URL',
+				type: 'string',
+				requiresArg: true,
 			},
 			help: {
 				alias: 'h',
@@ -55,15 +66,40 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			},
 		})
 
+		argv.check(async (args) => {
+			return !!parseUrl(args)
+		})
+
 		argv.example(
 			'$0 junit-upload -d qas -z eu1 -p P1 -r 23 -f ./path/to/junit.xml -t API_TOKEN',
+			'Upload JUnit xml file to https://qas.eu1.hpsq.io/project/P1/run/23'
+		)
+
+		argv.example(
+			'$0 junit-upload --url qas.eu1.hpsq.io -p P1 -r 23 -f ./path/to/junit.xml -t API_TOKEN',
 			'Upload JUnit xml file to https://qas.eu1.hpsq.io/project/P1/run/23'
 		)
 
 		return argv as Argv<JUnitArgs>
 	}
 
-	handler(args: ArgumentsCamelCase<JUnitArgs>) {
-		console.log(args)
+	handler = async (args: ArgumentsCamelCase<JUnitArgs>) => {
+		const file = readFileSync(args.file).toString()
+		const { testcases } = await parseJUnitXml(file)
+		console.log(testcases)
 	}
+}
+
+const parseUrl = (args: Record<string, unknown>): string => {
+	if (typeof args.url === 'string') {
+		if (args.url.includes('://')) {
+			return args.url
+		}
+		return `http://${args.url}`
+	}
+	if (typeof args.s === 'string' && typeof args.z === 'string') {
+		return `https://${args.s}.${args.z}.qasphere.com`
+	}
+
+	throw new Error('missing parameters -z and -s or --url')
 }
