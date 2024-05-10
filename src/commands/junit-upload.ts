@@ -18,6 +18,7 @@ export interface JUnitArgs {
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
 	command = 'junit-upload [args..] <file>'
+	describe = 'upload JUnit xml files'
 
 	builder = (argv: Argv) => {
 		argv.options({
