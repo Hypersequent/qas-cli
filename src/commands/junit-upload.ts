@@ -5,6 +5,7 @@ import { createApi } from '../api'
 import chalk from 'chalk'
 import { twirlLoader } from '../utils/misc'
 import { ResultStatus, RunTCase } from '../api/schemas'
+import { TOKEN } from '../config/env'
 
 export interface JUnitArgs {
 	subdomain: string
@@ -63,8 +64,15 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			},
 		})
 
-		argv.check(async (args) => {
+		argv.check((args) => {
 			return !!parseUrl(args)
+		})
+
+		argv.check((args) => {
+			if (!args.token && !TOKEN) {
+				throw new Error('-t <token> or QAS_TOKEN environment variable must be present')
+			}
+			return true
 		})
 
 		argv.example(
@@ -76,8 +84,6 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			'$0 junit-upload --url qas.eu1.hpsq.io -p P1 -r 23 -t API_TOKEN  ./path/to/junit.xml',
 			'Upload JUnit xml file to https://qas.eu1.hpsq.io/project/P1/run/23'
 		)
-
-		argv.showHelpOnFail(false)
 
 		return argv as Argv<JUnitArgs>
 	}
