@@ -5,9 +5,13 @@
 	"main": "index.js",
 	"scripts": {
 		"build": "npm run clean && tsc",
+		"build:prod": "npm run clean && tsc --sourceMap false",
 		"clean": "rm -rf ./build",
-		"check": "tsc --noEmit true",
-		"prepare": "husky"
+		"prepare": "husky",
+		"prepublishOnly": "npm run build",
+		"check": "npm run typecheck && npm run lint",
+		"typecheck": "tsc --noEmit true",
+		"lint": "eslint --quiet --fix ."
 	},
 	"repository": {
 		"type": "git",
@@ -21,12 +25,24 @@
 	"homepage": "https://github.com/Hypersequent/qas-cli#readme",
 	"devDependencies": {
 		"@eslint/js": "^9.2.0",
+		"@types/escape-html": "^1.0.4",
+		"@types/node": "^20.12.10",
+		"@types/xml2js": "^0.4.14",
+		"@types/yargs": "^17.0.32",
 		"eslint": "^8.57.0",
 		"globals": "^15.1.0",
 		"husky": "^9.0.11",
+		"typescript": "^5.4.5",
 		"typescript-eslint": "^7.8.0"
 	},
+	"dependencies": {
+		"chalk": "^4.1.2",
+		"escape-html": "^1.0.3",
+		"xml2js": "^0.6.2",
+		"yargs": "^17.7.2",
+		"zod": "^3.23.7"
+	},
 	"bin": {
-		"qas-cli": "./build/qas-cli.js"
+		"qas-cli": "build/bin/qas-cli.js"
 	}
 }
