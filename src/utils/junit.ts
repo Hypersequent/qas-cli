@@ -47,16 +47,10 @@ const xmlSchema = z.object({
 
 export type JUnitResultType = 'failure' | 'error' | 'skipped' | 'success'
 
-export interface JUnitResult {
-	type: JUnitResultType
-	resultMessage?: string
-}
-
-export interface JUnitTestCase {
+export interface JUnitTestCase extends JUnitResult {
 	name?: string
 	folder?: string
 	logs?: string
-	result: JUnitResult
 }
 
 export interface ParseResult {
@@ -79,7 +73,7 @@ export const parseJUnitXml = async (xmlString: string): Promise<ParseResult> => 
 				if (tcase.error)
 					return {
 						type: 'error',
-						resultMessage: getResultMessage(
+						message: getResultMessage(
 							{ result: tcase.error },
 							{ result: out, type: 'code' },
 							{ result: err, type: 'code' }
@@ -88,7 +82,7 @@ export const parseJUnitXml = async (xmlString: string): Promise<ParseResult> => 
 				if (tcase.failure)
 					return {
 						type: 'failure',
-						resultMessage: getResultMessage(
+						message: getResultMessage(
 							{ result: tcase.failure },
 							{ result: out, type: 'code' },
 							{ result: err, type: 'code' }
@@ -97,7 +91,7 @@ export const parseJUnitXml = async (xmlString: string): Promise<ParseResult> => 
 				if (tcase.skipped)
 					return {
 						type: 'skipped',
-						resultMessage: getResultMessage(
+						message: getResultMessage(
 							{ result: tcase.skipped },
 							{ result: out, type: 'code' },
 							{ result: err, type: 'code' }
@@ -105,22 +99,24 @@ export const parseJUnitXml = async (xmlString: string): Promise<ParseResult> => 
 					}
 				return {
 					type: 'success',
-					resultMessage: getResultMessage(
-						{ result: out, type: 'code' },
-						{ result: err, type: 'code' }
-					),
+					message: getResultMessage({ result: out, type: 'code' }, { result: err, type: 'code' }),
 				}
 			})()
 
 			testcases.push({
 				folder: suite.$.name,
 				name: tcase.$.name,
-				result,
+				...result,
 			})
 		})
 	})
 
 	return { testcases }
+}
+
+interface JUnitResult {
+	type: JUnitResultType
+	message?: string
 }
 
 interface GetResultMessageOption {

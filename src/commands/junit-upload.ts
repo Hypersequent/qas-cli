@@ -112,8 +112,8 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				const { tcase, result } = results[i]
 				loader.setText(`Uploading test case ${i + 1} of ${results.length}`)
 				await api.runs.createResultStatus(args.project, args.run, tcase.id, {
-					status: getResult(result.result.type),
-					comment: result.result.resultMessage,
+					status: getResult(result.type),
+					comment: result.message,
 				})
 			}
 		} catch (e) {
