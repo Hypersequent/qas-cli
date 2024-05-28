@@ -1,11 +1,12 @@
 import { readFileSync } from 'fs'
 import { Arguments, Argv, CommandModule } from 'yargs'
-import { JUnitResultType, JUnitTestCase, parseJUnitXml } from '../utils/junit'
+import { JUnitResultType, JUnitTestCase, parseJUnitXml } from '../utils/junit/junitXmlParser'
 import { createApi } from '../api'
 import chalk from 'chalk'
 import { twirlLoader } from '../utils/misc'
 import { ResultStatus, RunTCase } from '../api/schemas'
-import { TOKEN } from '../config/env'
+import { API_TOKEN } from '../config/env'
+import { dirname } from 'path'
 
 export interface JUnitArgs {
 	subdomain: string
@@ -14,6 +15,8 @@ export interface JUnitArgs {
 	run: number
 	token: string
 	file: string
+	force: boolean
+	detectAttachments: boolean
 }
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
@@ -59,6 +62,15 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				type: 'string',
 				requiresArg: true,
 			},
+			detectAttachments: {
+				describe: 'Try to detect any attachments and upload it with the test result',
+				type: 'boolean',
+				requiresArg: true,
+			},
+			force: {
+				describe: 'Ignore API request errors, invalid test cases or attachments',
+				type: 'boolean',
+			},
 			help: {
 				alias: 'h',
 				help: true,
@@ -70,7 +82,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		})
 
 		argv.check((args) => {
-			if (!args.token && !TOKEN) {
+			if (!args.token && !API_TOKEN) {
 				throw new Error('-t <token> or QAS_TOKEN environment variable must be present')
 			}
 			return true
@@ -90,40 +102,71 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 	}
 
 	handler = async (args: Arguments<JUnitArgs>) => {
-		const api = createApi(parseUrl(args), args.token)
+		const apiToken = args.token || (API_TOKEN as string)
+		const api = createApi(parseUrl(args), apiToken)
 		const file = readFileSync(args.file).toString()
-		const { testcases: junitResults } = await parseJUnitXml(file)
-		const tcases = await api.runs.getRunTCases(args.project, args.run)
+		const { testcases: junitResults } = await parseJUnitXml(file, dirname(args.file))
+		const tcases = await api.runs.getRunTCases(args.project, args.run).catch(printErrorThenExit)
 		const { results, missing } = mapTestCaseResults(junitResults, tcases)
 		const loader = twirlLoader()
 
 		missing.forEach((item) => {
 			const folderMessage = item.folder ? ` "${item.folder}" ->` : ''
-			console.log(
-				`${chalk.yellow('Warning:')}${chalk.blue(
-					`${folderMessage} "${item.name}"`
-				)} does not match any test cases`
+			const header = args.force ? chalk.yellow('Warning:') : chalk.red('Error:')
+			console.error(
+				`${header}${chalk.blue(`${folderMessage} "${item.name}"`)} does not match any test cases`
 			)
 		})
+		if (missing.length && !args.force) {
+			process.exit(1)
+		}
+
+		let hasAttachmentErrors = false
+		results.forEach(({ result }) => {
+			result.attachments.forEach((attachment) => {
+				if (attachment.error) {
+					printError(attachment.error)
+					hasAttachmentErrors = true
+				}
+			})
+		})
+		if (hasAttachmentErrors && !args.force) {
+			process.exit(1)
+		}
 
 		loader.start()
 		try {
 			for (let i = 0; i < results.length; i++) {
 				const { tcase, result } = results[i]
 				loader.setText(`Uploading test case ${i + 1} of ${results.length}`)
+				const attachmentUrls: Array<{ name: string; url: string }> = []
+				for (const attachment of result.attachments) {
+					if (attachment.buffer) {
+						const { url } = await api.file.uploadFile(
+							new File([attachment.buffer], attachment.filename)
+						)
+						attachmentUrls.push({ url, name: attachment.filename })
+					}
+				}
+
 				await api.runs.createResultStatus(args.project, args.run, tcase.id, {
 					status: getResult(result.type),
-					comment: result.message,
+					comment: result.message + `\n<p>Attachments:</p>\n${makeListHtml(attachmentUrls)}`,
 				})
 			}
 		} catch (e) {
-			console.error(e)
-			process.exit(1)
+			printErrorThenExit(e)
 		}
 		loader.stop()
 
 		console.log(`Uploaded ${results.length} test cases`)
 	}
+}
+
+const makeListHtml = (list: { name: string; url: string }[]) => {
+	return `<ul>
+${list.map((item) => `<li><a href="${item.url}">${item.name}</a></li>`).join('\n')}
+</ul>`
 }
 
 const getResult = (result: JUnitResultType): ResultStatus => {
@@ -177,4 +220,17 @@ const parseUrl = (args: Record<string, unknown>): string => {
 	}
 
 	throw new Error('missing parameters -z and -s or --url')
+}
+
+const printErrorThenExit = (e: unknown): never => {
+	printError(e)
+	process.exit(1)
+}
+
+const printError = (e: unknown) => {
+	if (e instanceof Error) {
+		console.error(e.message)
+	} else {
+		console.error(e)
+	}
 }

@@ -1,7 +1,7 @@
 import { jsonResponse } from './utils'
 
 export const createFileApi = (fetcher: typeof fetch) => ({
-	uploadFile: async (file: File) => {
+	uploadFile: async (file: Blob) => {
 		const form = new FormData()
 		form.append('file', file)
 

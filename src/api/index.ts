@@ -1,11 +1,11 @@
+import { createFileApi } from './file'
 import { createRunApi } from './run'
-import { withApiKey, withBaseUrl, withJson } from './utils'
+import { withApiKey, withBaseUrl } from './utils'
 
 const getApi = (fetcher: typeof fetch) => {
-	fetcher = withJson(fetcher)
-
 	return {
 		runs: createRunApi(fetcher),
+		file: createFileApi(fetcher),
 	}
 }
 
