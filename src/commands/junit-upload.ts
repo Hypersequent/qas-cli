@@ -141,20 +141,24 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		try {
 			for (let i = 0; i < results.length; i++) {
 				const { tcase, result } = results[i]
+				let comment = result.message
 				loader.setText(`Uploading test case ${i + 1} of ${results.length}`)
-				const attachmentUrls: Array<{ name: string; url: string }> = []
-				for (const attachment of result.attachments) {
-					if (attachment.buffer) {
-						const { url } = await api.file.uploadFile(
-							new File([attachment.buffer], attachment.filename)
-						)
-						attachmentUrls.push({ url, name: attachment.filename })
+				if (args.detectAttachments) {
+					const attachmentUrls: Array<{ name: string; url: string }> = []
+					for (const attachment of result.attachments) {
+						if (attachment.buffer) {
+							const { url } = await api.file.uploadFile(
+								new File([attachment.buffer], attachment.filename)
+							)
+							attachmentUrls.push({ url, name: attachment.filename })
+						}
 					}
+					comment += `\n<p>Attachments:</p>\n${makeListHtml(attachmentUrls)}`
 				}
 
 				await api.runs.createResultStatus(args.project, args.run, tcase.id, {
 					status: getResult(result.type),
-					comment: result.message + `\n<p>Attachments:</p>\n${makeListHtml(attachmentUrls)}`,
+					comment,
 				})
 			}
 		} catch (e) {
