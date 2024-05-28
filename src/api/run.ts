@@ -5,10 +5,9 @@ export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		getRunTCases: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase?include=folder`)
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
 				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
 				.then((r) => r.tcases),
-
 		createResultStatus: (
 			projectCode: ResourceId,
 			runId: ResourceId,

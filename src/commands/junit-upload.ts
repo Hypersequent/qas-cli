@@ -90,12 +90,12 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
 		argv.example(
 			'$0 junit-upload -d qas -z eu1 -p P1 -r 23 -t API_TOKEN ./path/to/junit.xml ',
-			'Upload JUnit xml file to https://qas.eu1.hpsq.io/project/P1/run/23'
+			'Upload JUnit xml file to https://qas.eu1.qasphere.com/project/P1/run/23'
 		)
 
 		argv.example(
 			'$0 junit-upload --url qas.eu1.hpsq.io -p P1 -r 23 -t API_TOKEN  ./path/to/junit.xml',
-			'Upload JUnit xml file to https://qas.eu1.hpsq.io/project/P1/run/23'
+			'Upload JUnit xml file to https://qas.eu1.qasphere.com/project/P1/run/23'
 		)
 
 		return argv as Argv<JUnitArgs>
@@ -103,7 +103,8 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
 	handler = async (args: Arguments<JUnitArgs>) => {
 		const apiToken = args.token || (API_TOKEN as string)
-		const api = createApi(parseUrl(args), apiToken)
+		const url = parseUrl(args)
+		const api = createApi(url, apiToken)
 		const file = readFileSync(args.file).toString()
 		const { testcases: junitResults } = await parseJUnitXml(file, dirname(args.file))
 		const tcases = await api.runs.getRunTCases(args.project, args.run).catch(printErrorThenExit)
@@ -121,17 +122,19 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			process.exit(1)
 		}
 
-		let hasAttachmentErrors = false
-		results.forEach(({ result }) => {
-			result.attachments.forEach((attachment) => {
-				if (attachment.error) {
-					printError(attachment.error)
-					hasAttachmentErrors = true
-				}
+		if (args.detectAttachments) {
+			let hasAttachmentErrors = false
+			results.forEach(({ result }) => {
+				result.attachments.forEach((attachment) => {
+					if (attachment.error) {
+						printError(attachment.error)
+						hasAttachmentErrors = true
+					}
+				})
 			})
-		})
-		if (hasAttachmentErrors && !args.force) {
-			process.exit(1)
+			if (hasAttachmentErrors && !args.force) {
+				process.exit(1)
+			}
 		}
 
 		loader.start()
@@ -229,7 +232,7 @@ const printErrorThenExit = (e: unknown): never => {
 
 const printError = (e: unknown) => {
 	if (e instanceof Error) {
-		console.error(e.message)
+		console.error(e)
 	} else {
 		console.error(e)
 	}
