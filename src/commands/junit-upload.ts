@@ -16,7 +16,7 @@ export interface JUnitArgs {
 	token: string
 	file: string
 	force: boolean
-	detectAttachments: boolean
+	attachments: boolean
 }
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
@@ -62,10 +62,9 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				type: 'string',
 				requiresArg: true,
 			},
-			detectAttachments: {
+			attachments: {
 				describe: 'Try to detect any attachments and upload it with the test result',
 				type: 'boolean',
-				requiresArg: true,
 			},
 			force: {
 				describe: 'Ignore API request errors, invalid test cases or attachments',
@@ -122,7 +121,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			process.exit(1)
 		}
 
-		if (args.detectAttachments) {
+		if (args.attachments) {
 			let hasAttachmentErrors = false
 			results.forEach(({ result }) => {
 				result.attachments.forEach((attachment) => {
@@ -143,7 +142,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				const { tcase, result } = results[i]
 				let comment = result.message
 				loader.setText(`Uploading test case ${i + 1} of ${results.length}`)
-				if (args.detectAttachments) {
+				if (args.attachments) {
 					const attachmentUrls: Array<{ name: string; url: string }> = []
 					for (const attachment of result.attachments) {
 						if (attachment.buffer) {
