@@ -9,5 +9,7 @@ const getApi = (fetcher: typeof fetch) => {
 	}
 }
 
+export type Api = ReturnType<typeof getApi>
+
 export const createApi = (baseUrl: string, apiKey: string) =>
 	getApi(withApiKey(withBaseUrl(fetch, baseUrl), apiKey))

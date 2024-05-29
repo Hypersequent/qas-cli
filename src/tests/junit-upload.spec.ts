@@ -1,8 +1,7 @@
-import { afterAll, beforeAll, expect, test, describe } from 'vitest'
+import { afterAll, beforeAll, expect, test, describe, afterEach } from 'vitest'
+import { run } from '../commands/main'
 import { setupServer } from 'msw/node'
 import { HttpResponse, http } from 'msw'
-import { run } from './utils'
-import { afterEach } from 'node:test'
 import { runTestCases } from './fixtures/testcases'
 
 const projectCode = 'P1'
@@ -56,7 +55,7 @@ describe('Uploading JUnit xml files', () => {
 			)
 		})
 
-		test('Test cases on xml file with a missing test case on QAS should not throw an error', async () => {
+		test('Test cases on xml file with a missing test case on QAS should throw an error', async () => {
 			await expect(
 				run(
 					`junit-upload --url ${baseURL} -p ${projectCode} -r ${runId} -t API_TOKEN ${xmlBasePath}/missing-tcases.xml`
