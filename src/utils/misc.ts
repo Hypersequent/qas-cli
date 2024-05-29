@@ -56,3 +56,16 @@ export const parseApiToken = (args: Record<string, unknown>): string => {
 
 	throw new Error('missing parameters --token')
 }
+
+export const printErrorThenExit = (e: unknown): never => {
+	printError(e)
+	process.exit(1)
+}
+
+export const printError = (e: unknown) => {
+	if (e instanceof Error) {
+		console.error(e)
+	} else {
+		console.error(e)
+	}
+}
