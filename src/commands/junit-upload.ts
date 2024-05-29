@@ -108,7 +108,6 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		const { testcases: junitResults } = await parseJUnitXml(file, dirname(args.file))
 		const tcases = await api.runs.getRunTCases(args.project, args.run).catch(printErrorThenExit)
 		const { results, missing } = mapTestCaseResults(junitResults, tcases)
-		console.log(missing)
 
 		validateAndPrintMissingTestCases(args, missing)
 		validateAndPrintMissingAttachments(args, results)
