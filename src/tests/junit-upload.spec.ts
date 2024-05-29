@@ -5,7 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { runTestCases } from './fixtures/testcases'
 import { countMockedApiCalls } from './utils'
 
-const projectCode = 'P1'
+const projectCode = 'TEST'
 const runId = '1'
 const domain = 'qas'
 const zone = 'eu1'

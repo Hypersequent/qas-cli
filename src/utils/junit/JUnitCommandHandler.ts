@@ -101,11 +101,10 @@ export class JUnitCommandHandler {
 
 		junitTCases.forEach((result) => {
 			const tcase = testcases.find((tcase) => {
-				// if(!result.name) return false
+				if (!result.name) return false
 
-				// const tcaseCode = this.args.project + tcase.seq.toString().padStart(3, "0")
-				// return result.name.includes(tcaseCode)
-				return tcase.title === result.name && result.folder === tcase.folder.title
+				const tcaseCode = `${this.args.project}-${tcase.seq.toString().padStart(3, '0')}`
+				return result.name.includes(tcaseCode)
 			})
 			if (tcase) {
 				results.push({
