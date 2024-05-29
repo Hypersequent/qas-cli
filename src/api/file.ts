@@ -5,7 +5,7 @@ export const createFileApi = (fetcher: typeof fetch) => ({
 		const form = new FormData()
 		form.append('file', file)
 
-		const res = await fetcher(`/api/public/v0/file`, {
+		const res = await fetcher('/api/public/v0/file', {
 			method: 'POST',
 			body: form,
 		})
