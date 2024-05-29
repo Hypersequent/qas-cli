@@ -100,9 +100,13 @@ export class JUnitCommandHandler {
 		const missing: JUnitTestCase[] = []
 
 		junitTCases.forEach((result) => {
-			const tcase = testcases.find(
-				(tcase) => tcase.title === result.name && result.folder === tcase.folder.title
-			)
+			const tcase = testcases.find((tcase) => {
+				// if(!result.name) return false
+
+				// const tcaseCode = this.args.project + tcase.seq.toString().padStart(3, "0")
+				// return result.name.includes(tcaseCode)
+				return tcase.title === result.name && result.folder === tcase.folder.title
+			})
 			if (tcase) {
 				results.push({
 					result,

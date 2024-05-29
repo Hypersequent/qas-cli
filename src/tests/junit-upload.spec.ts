@@ -3,6 +3,7 @@ import { run } from '../commands/main'
 import { setupServer } from 'msw/node'
 import { HttpResponse, http } from 'msw'
 import { runTestCases } from './fixtures/testcases'
+import { countMockedCalls } from './utils'
 
 const projectCode = 'P1'
 const runId = '1'
@@ -72,16 +73,11 @@ describe('Uploading JUnit xml files', () => {
 
 	describe('Uploading with attachments', () => {
 		test('Attachments should be uploaded', async () => {
-			let uploadCallCount = 0
-			server.events.on('response:mocked', (e) => {
-				if (e.request.url.endsWith('/file')) {
-					uploadCallCount++
-				}
-			})
+			const getCount = countMockedCalls(server, (req) => req.url.endsWith('/file'))
 			await run(
 				`junit-upload --url ${baseURL} -p ${projectCode} -r ${runId} -t API_TOKEN --attachments ${xmlBasePath}/matching-tcases.xml`
 			)
-			expect(uploadCallCount).toBe(5)
+			expect(getCount()).toBe(5)
 		})
 		test('Missing attachments should throw an error', async () => {
 			await expect(
@@ -91,16 +87,11 @@ describe('Uploading JUnit xml files', () => {
 			).rejects.toThrow()
 		})
 		test('Missing attachments should be successful when forced', async () => {
-			let uploadCallCount = 0
-			server.events.on('response:mocked', (e) => {
-				if (e.request.url.endsWith('/file')) {
-					uploadCallCount++
-				}
-			})
+			const getCount = countMockedCalls(server, (req) => req.url.endsWith('/file'))
 			await run(
 				`junit-upload --url ${baseURL} -p ${projectCode} -r ${runId} -t API_TOKEN --attachments --force ${xmlBasePath}/missing-attachments.xml`
 			)
-			expect(uploadCallCount).toBe(4)
+			expect(getCount()).toBe(4)
 		})
 	})
 })
