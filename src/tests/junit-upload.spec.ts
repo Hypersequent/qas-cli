@@ -46,6 +46,7 @@ afterAll(() => {
 })
 afterEach(() => {
 	server.resetHandlers()
+	server.events.removeAllListeners()
 })
 
 const countFileUploadApiCalls = () =>
