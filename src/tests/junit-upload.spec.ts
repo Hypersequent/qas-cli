@@ -82,10 +82,10 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload --url ${baseURL} -p ${projectCode} -r ${runId} -t API_TOKEN --force ${xmlBasePath}/matching-tcases.xml`
+				`junit-upload --url ${baseURL} -p ${projectCode} -r ${runId} -t API_TOKEN --force ${xmlBasePath}/missing-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(0)
-			expect(tcaseUploadCount()).toBe(5)
+			expect(tcaseUploadCount()).toBe(4)
 		})
 	})
 
