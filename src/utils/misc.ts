@@ -1,3 +1,5 @@
+import { API_TOKEN } from '../config/env'
+
 export const twirlLoader = () => {
 	const chars = ['\\', '|', '/', '-']
 	let x = 0
@@ -27,5 +29,43 @@ export const twirlLoader = () => {
 			text = newText
 			update()
 		},
+	}
+}
+
+export const parseUrl = (args: Record<string, unknown>): string => {
+	if (typeof args.url === 'string') {
+		if (args.url.includes('://')) {
+			return args.url
+		}
+		return `http://${args.url}`
+	}
+	if (typeof args.s === 'string' && typeof args.z === 'string') {
+		return `https://${args.s}.${args.z}.qasphere.com`
+	}
+
+	throw new Error('missing parameters -z and -s or --url')
+}
+
+export const parseApiToken = (args: Record<string, unknown>): string => {
+	if (typeof args.token === 'string') {
+		return args.token
+	}
+	if (API_TOKEN) {
+		return API_TOKEN
+	}
+
+	throw new Error('missing parameters --token')
+}
+
+export const printErrorThenExit = (e: unknown): never => {
+	printError(e)
+	process.exit(1)
+}
+
+export const printError = (e: unknown) => {
+	if (e instanceof Error) {
+		console.error(e)
+	} else {
+		console.error(e)
 	}
 }

@@ -1,0 +1,188 @@
+<testsuites id="" name="" tests="6" failures="1" skipped="0" errors="0" time="31.450767">
+  <testsuite name="ui.cart.spec.ts" timestamp="2024-04-22T09:25:16.777Z" hostname="chromium"
+    tests="2" failures="0" skipped="0" time="16.746" errors="0">
+    <testcase name="Test cart TEST-002" classname="ui.cart.spec.ts" time="10.686">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./with-missing-tcases.xml]]
+]]>
+</system-out>
+    </testcase>
+    <testcase name="Test checkout TEST-003" classname="ui.cart.spec.ts" time="6.06">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./missing.xml]]
+]]>
+</system-out>
+    </testcase>
+  </testsuite>
+  <testsuite name="ui.contents.spec.ts" timestamp="2024-04-22T09:25:16.777Z" hostname="chromium"
+    tests="4" failures="1" skipped="0" time="28.38" errors="0">
+    <testcase name="TEST-000 Missing content" classname="ui.contents.spec.ts" time="6.257">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./with-missing-tcases.xml]]
+]]>
+</system-out>
+    </testcase>
+    <testcase name="About page content" classname="ui.contents.spec.ts" time="3.876">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./with-missing-tcases.xml]]
+]]>
+</system-out>
+    </testcase>
+    <testcase name="TEST-006 Navigation bar items" classname="ui.contents.spec.ts" time="14.922">
+      <failure message="ui.contents.spec.ts:32:1 Navigation bar items" type="FAILURE">
+<![CDATA[  [chromium] › ui.contents.spec.ts:32:1 › Navigation bar items ─────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+    @@ -1,8 +1,8 @@
+      Array [
+        Object {
+    -     "isActive": true,
+    +     "isActive": false,
+          "text": "Welcome",
+        },
+        Object {
+          "isActive": false,
+          "text": "Today's Menu",
+
+      37 | 	await welcome.goto()
+      38 | 	let navbarItems = await welcome.getNavbarItems()
+    > 39 | 	expect(navbarItems).toEqual([
+         | 	                    ^
+      40 | 		{ text: 'Welcome', isActive: true },
+      41 | 		{ text: "Today's Menu", isActive: false },
+      42 | 		{ text: 'About us', isActive: false },
+
+        at /home/ram/Documents/projects/bistrot-e2e/tests/ui.contents.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui.contents-Navigation-bar-items-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+    @@ -1,8 +1,8 @@
+      Array [
+        Object {
+    -     "isActive": true,
+    +     "isActive": false,
+          "text": "Welcome",
+        },
+        Object {
+          "isActive": false,
+          "text": "Today's Menu",
+
+      37 | 	await welcome.goto()
+      38 | 	let navbarItems = await welcome.getNavbarItems()
+    > 39 | 	expect(navbarItems).toEqual([
+         | 	                    ^
+      40 | 		{ text: 'Welcome', isActive: true },
+      41 | 		{ text: "Today's Menu", isActive: false },
+      42 | 		{ text: 'About us', isActive: false },
+
+        at /home/ram/Documents/projects/bistrot-e2e/tests/ui.contents.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui.contents-Navigation-bar-items-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/ui.contents-Navigation-bar-items-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/ui.contents-Navigation-bar-items-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+    @@ -1,8 +1,8 @@
+      Array [
+        Object {
+    -     "isActive": true,
+    +     "isActive": false,
+          "text": "Welcome",
+        },
+        Object {
+          "isActive": false,
+          "text": "Today's Menu",
+
+      37 | 	await welcome.goto()
+      38 | 	let navbarItems = await welcome.getNavbarItems()
+    > 39 | 	expect(navbarItems).toEqual([
+         | 	                    ^
+      40 | 		{ text: 'Welcome', isActive: true },
+      41 | 		{ text: "Today's Menu", isActive: false },
+      42 | 		{ text: 'About us', isActive: false },
+
+        at /home/ram/Documents/projects/bistrot-e2e/tests/ui.contents.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui.contents-Navigation-bar-items-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #3 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+    @@ -1,8 +1,8 @@
+      Array [
+        Object {
+    -     "isActive": true,
+    +     "isActive": false,
+          "text": "Welcome",
+        },
+        Object {
+          "isActive": false,
+          "text": "Today's Menu",
+
+      37 | 	await welcome.goto()
+      38 | 	let navbarItems = await welcome.getNavbarItems()
+    > 39 | 	expect(navbarItems).toEqual([
+         | 	                    ^
+      40 | 		{ text: 'Welcome', isActive: true },
+      41 | 		{ text: "Today's Menu", isActive: false },
+      42 | 		{ text: 'About us', isActive: false },
+
+        at /home/ram/Documents/projects/bistrot-e2e/tests/ui.contents.spec.ts:39:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui.contents-Navigation-bar-items-chromium-retry3/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./with-missing-tcases.xml]]
+]]>
+</system-out>
+    </testcase>
+    <testcase name="Menu page content TEST-007" classname="ui.contents.spec.ts" time="3.325">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/ui.cart-Test-cart-chromium/test-finished-1.png]]
+]]>
+</system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

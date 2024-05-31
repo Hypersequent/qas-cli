@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"test": "vitest",
 		"build": "npm run clean && tsc",
 		"build:prod": "npm run clean && tsc --sourceMap false",
 		"clean": "rm -rf ./build",
@@ -32,8 +33,10 @@
 		"eslint": "^8.57.0",
 		"globals": "^15.1.0",
 		"husky": "^9.0.11",
+		"msw": "^2.3.0",
 		"typescript": "^5.4.5",
-		"typescript-eslint": "^7.8.0"
+		"typescript-eslint": "^7.8.0",
+		"vitest": "^1.6.0"
 	},
 	"dependencies": {
 		"chalk": "^4.1.2",
@@ -43,6 +46,6 @@
 		"zod": "^3.23.7"
 	},
 	"bin": {
-		"qas-cli": "build/bin/qas-cli.js"
+		"qasphere": "build/bin/qasphere.js"
 	}
 }

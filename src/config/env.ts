@@ -1,1 +1,1 @@
-export const TOKEN = process.env.QAS_TOKEN
+export const API_TOKEN = process.env.QAS_TOKEN
