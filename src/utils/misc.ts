@@ -37,12 +37,11 @@ export const parseUrl = (args: Record<string, unknown>): string => {
 		if (args.url.includes('://')) {
 			return args.url
 		}
-		return `http://${args.url}`
+		return `https://${args.url}`
 	}
 	if (typeof args.s === 'string' && typeof args.z === 'string') {
 		return `https://${args.s}.${args.z}.qasphere.com`
 	}
-
 	throw new Error('missing parameters -z and -s or --url')
 }
 
