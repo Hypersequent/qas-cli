@@ -1,11 +1,8 @@
-Resolves https://github.com/Hypersequent/tms-issues/issues/429
-
 # QAS CLI
 
 ## Description
 
-The QAS CLI is command line tool to submit your test automation results to [QA Sphere](https://qasphere.com/). It is the best way to collect and report your test results from your test automation workflow, CI/CD pipeline and build servers.
-
+The QAS CLI is a command line tool to submit your test automation results to [QA Sphere](https://qasphere.com/). It is the best way to collect and report your test results from your test automation workflow, CI/CD pipeline and build servers.
 
 The QAS CLI tool can upload test case results from a JUnit XML file to QASphere test run by matching the testsuite name and test case name to QA Sphere's project folder and test case respectively.
 
@@ -27,7 +24,7 @@ npm install
 - `-z, --zone` - URL zone (string) (YOUR_DOMAIN.**eu1**.qasphere.com)
 - `-p, --project` - Project code (string) (required) from project URL (YOUR_DOMAIN.eu1.qasphere.com/project/**TES**/overview)
 - `-r, --run` - Run ID (number) (required) from test run URL (YOUR_DOMAIN.eu1.qasphere.com/project/TES/run/**11**)
-- `-t, --token` - API token (string) - can be generated under QASphere **Settings>API keys** 
+- `-t, --token` - API token (string) - can be generated under QASphere **Settings>API keys**
 - `--url` - Instance URL (string) - like **YOUR_DOMAIN.eu1.qasphere.com**
 - `--attachments` - Try to detect any attachments and upload it with the test result (boolean)
 - `--force` - Ignore API request errors, invalid test cases, or attachments (boolean)
