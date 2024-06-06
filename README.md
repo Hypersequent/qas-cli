@@ -70,5 +70,4 @@ qasphere junit-upload --url https://qas.eu1.hpsq.io -p P1 -r 23 -t API_TOKEN  ./
 3. Get a JUnit XML file. If you want to test the test cases from the CSV file above, use the JUnit XML file generated from [this repository](https://github.com/Hypersequent/bistrot-e2e).
 
 4. Run the CLI with: `node ./build/bin/qasphere.js junit-upload ./JUnit.xml --url https://YOUR_DOMAIN.eu1.qasphere.com -p PROJECT_CODE -r RUN_ID -t API_TOKEN`
-5. You may pass the `-h` flag to show help:
-   `node ./build/bin/qasphere junit-upload -h`
+5. You may pass the `-h` flag to show help: `node ./build/bin/qasphere junit-upload -h`
