@@ -32,7 +32,7 @@ npm link
 3. Verify installation
 
 ```bash
-qasphere -h
+qasphere --version
 ```
 
 ## Command: `junit-upload`
