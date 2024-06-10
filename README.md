@@ -54,7 +54,7 @@ qasphere --version
 1. Upload JUnit XML file to `https://qas.eu1.qasphere.com/project/P1/run/23`
 
 ```bash
-qasphere junit-upload -d qas -z eu1 -p P1 -r 23 -t API_TOKEN ./path/to/junit.xml
+qasphere junit-upload -s qas -z eu1 -p P1 -r 23 -t API_TOKEN ./path/to/junit.xml
 ```
 
 2. To upload JUnit XML file to `https://qas.eu1.qasphere.com/project/P1/run/23`
