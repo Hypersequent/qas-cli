@@ -55,6 +55,18 @@ const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result'))
 
 describe('Uploading JUnit xml files', () => {
+	describe('Argument parsing', () => {
+		test('Passed --url argument should use https when protocol is omitted', async () => {
+			const fileUploadCount = countFileUploadApiCalls()
+			const tcaseUploadCount = countResultUploadApiCalls()
+			await run(
+				`junit-upload --url ${domain}.${zone}.qasphere.com -p ${projectCode} -r ${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
+			)
+			expect(fileUploadCount()).toBe(0)
+			expect(tcaseUploadCount()).toBe(5)
+		})
+	})
+
 	describe('Uploading test results', () => {
 		test('Test cases on xml file with all matching test cases on QAS should be successful', async () => {
 			const fileUploadCount = countFileUploadApiCalls()
