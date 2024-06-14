@@ -56,7 +56,17 @@ const countResultUploadApiCalls = () =>
 
 describe('Uploading JUnit xml files', () => {
 	describe('Argument parsing', () => {
-		test('Passed --url argument should use https when protocol is omitted', async () => {
+		test('Passing -s and -z argument should use the correct URL', async () => {
+			const fileUploadCount = countFileUploadApiCalls()
+			const tcaseUploadCount = countResultUploadApiCalls()
+			await run(
+				`junit-upload -s ${domain} -z ${zone} -p ${projectCode} -r ${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
+			)
+			expect(fileUploadCount()).toBe(0)
+			expect(tcaseUploadCount()).toBe(5)
+		})
+
+		test('Passing --url argument should use https when protocol is omitted', async () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
