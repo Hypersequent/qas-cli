@@ -1,6 +1,7 @@
 import { gte } from 'semver'
 import { API_TOKEN } from '../config/env'
 import { REQUIRED_NODE_VERSION } from './config'
+import chalk from 'chalk'
 
 export const twirlLoader = () => {
 	const chars = ['\\', '|', '/', '-']
@@ -72,6 +73,7 @@ export const printError = (e: unknown) => {
 			message = e.message
 		}
 	}
+	message = `${chalk.red('Error:')} ${message}`
 
 	console.error(message)
 }
