@@ -1,59 +1,31 @@
 import { Arguments, Argv, CommandModule } from 'yargs'
-import { parseUrl } from '../utils/misc'
+import { parseRunUrl } from '../utils/misc'
 import { API_TOKEN } from '../config/env'
 import { JUnitCommandHandler } from '../utils/junit/JUnitCommandHandler'
 
 export interface JUnitArgs {
-	subdomain: string
-	zone: string
-	project: string
-	run: number
+	runUrl: string
 	token: string
-	file: string
+	files: string[]
 	force: boolean
 	attachments: boolean
 }
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
-	command = 'junit-upload [args..] <file>'
+	command = 'junit-upload [args..] <files..>'
 	describe = 'upload JUnit xml files'
 
 	builder = (argv: Argv) => {
 		argv.options({
-			subdomain: {
-				alias: 's',
-				type: 'string',
-				describe: 'URL subdomain',
-				requiresArg: true,
-			},
-			zone: {
-				alias: 'z',
-				type: 'string',
-				describe: 'URL zone',
-				requiresArg: true,
-			},
-			project: {
-				alias: 'p',
-				type: 'string',
-				describe: 'Project code',
-				demandOption: true,
-				requiresArg: true,
-			},
-			run: {
-				alias: 'r',
-				type: 'number',
-				describe: 'Run ID',
-				demandOption: true,
-				requiresArg: true,
-			},
 			token: {
 				alias: 't',
 				describe: 'API token',
 				type: 'string',
 				requiresArg: true,
 			},
-			url: {
-				describe: 'Instance URL',
+			'run-url': {
+				alias: 'r',
+				describe: 'URL of the Run (from QASphere) for uploading results',
 				type: 'string',
 				requiresArg: true,
 			},
@@ -72,7 +44,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		})
 
 		argv.check((args) => {
-			return !!parseUrl(args)
+			return !!parseRunUrl(args)
 		})
 
 		argv.check((args) => {
@@ -83,13 +55,13 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		})
 
 		argv.example(
-			'$0 junit-upload -s qas -z eu1 -p P1 -r 23 -t API_TOKEN ./path/to/junit.xml ',
+			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 -t API_TOKEN ./path/to/junit.xml',
 			'Upload JUnit xml file to https://qas.eu1.qasphere.com/project/P1/run/23'
 		)
 
 		argv.example(
-			'$0 junit-upload --url qas.eu1.hpsq.io -p P1 -r 23 -t API_TOKEN  ./path/to/junit.xml',
-			'Upload JUnit xml file to https://qas.eu1.qasphere.com/project/P1/run/23'
+			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 --token API_TOKEN *.xml',
+			'Upload all xml files in the current directory to https://qas.eu1.qasphere.com/project/P1/run/23'
 		)
 
 		return argv as Argv<JUnitArgs>
