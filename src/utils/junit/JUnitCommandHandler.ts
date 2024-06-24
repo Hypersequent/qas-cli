@@ -76,7 +76,8 @@ export class JUnitCommandHandler {
 					for (const attachment of result.attachments) {
 						if (attachment.buffer) {
 							const { url } = await this.api.file.uploadFile(
-								new File([attachment.buffer], attachment.filename)
+								new Blob([attachment.buffer]),
+								attachment.filename
 							)
 							attachmentUrls.push({ url, name: attachment.filename })
 						}
