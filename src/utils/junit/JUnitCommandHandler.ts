@@ -92,6 +92,7 @@ export class JUnitCommandHandler {
 			}
 			loader.stop()
 		} catch (e) {
+			loader.stop()
 			printErrorThenExit(e)
 		}
 	}
