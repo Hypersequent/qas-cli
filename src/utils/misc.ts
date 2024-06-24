@@ -64,10 +64,10 @@ export const printErrorThenExit = (e: unknown): never => {
 }
 
 export const printError = (e: unknown) => {
-	const isDev = process.argv.some((arg) => arg === '--verbose')
+	const isVerbose = process.argv.some((arg) => arg === '--verbose')
 	let message = e
 
-	if (!isDev) {
+	if (!isVerbose) {
 		if (e instanceof Error) {
 			message = e.message
 		}
