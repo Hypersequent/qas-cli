@@ -7,7 +7,7 @@ import { REQUIRED_NODE_VERSION } from '../utils/config'
 
 if (!validateNodeVersion()) {
 	printErrorThenExit(
-		`NodeJS version must be v${REQUIRED_NODE_VERSION} or higher. Current version ${process.version}`
+		`Node.js version must be v${REQUIRED_NODE_VERSION} or higher. Current version ${process.version}`
 	)
 }
 
