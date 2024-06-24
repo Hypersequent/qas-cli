@@ -25,7 +25,7 @@ export const twirlLoader = () => {
 			if (timer) {
 				clearInterval(timer)
 			}
-			process.stdout.write('\r')
+			process.stdout.write('\n')
 		},
 		setText: (newText: string) => {
 			text = newText
