@@ -32,17 +32,23 @@ export const twirlLoader = () => {
 	}
 }
 
-export const parseUrl = (args: Record<string, unknown>): string => {
-	if (typeof args.url === 'string') {
-		if (args.url.includes('://')) {
-			return args.url
+export const parseRunUrl = (args: Record<string, unknown>) => {
+	if (typeof args.runUrl === 'string') {
+		let runUrl = args.runUrl
+		if (!runUrl.includes('://')) {
+			runUrl = `https://${runUrl}`
 		}
-		return `https://${args.url}`
+
+		const matches = runUrl.match(/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/)
+		if (matches && matches.length === 5) {
+			return {
+				url: matches[1],
+				project: matches[2],
+				run: Number(matches[3]),
+			}
+		}
 	}
-	if (typeof args.s === 'string' && typeof args.z === 'string') {
-		return `https://${args.s}.${args.z}.qasphere.com`
-	}
-	throw new Error('missing parameters -z and -s or --url')
+	throw new Error('invalid --run-url specified')
 }
 
 export const parseApiToken = (args: Record<string, unknown>): string => {
