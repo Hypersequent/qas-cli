@@ -10,7 +10,7 @@ The QAS CLI tool can upload test case results from a JUnit XML file to QASphere 
 
 ### Requirements
 
-Node.js version 20.0.0 or higher.
+Node.js version 18.0.0 or higher.
 
 ### Via NPM
 
