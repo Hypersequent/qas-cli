@@ -56,6 +56,13 @@ export class JUnitCommandHandler {
 				`${header}${chalk.blue(`${folderMessage} "${item.name}"`)} does not match any test cases`
 			)
 		})
+
+		if (missing.length) {
+			console.error(chalk.yellow('\nTo fix this issue, please rename your test cases in the JUnit file to match the expected format:'))
+			console.error(`  Expected format: ${chalk.green(`${this.project}-XXX: Your test name`)}`)
+			console.error(`  Where XXX is the three-digit test case sequence number.\n`)
+		}
+      
 		if (missing.length && !this.args.force) {
 			process.exit(1)
 		}
