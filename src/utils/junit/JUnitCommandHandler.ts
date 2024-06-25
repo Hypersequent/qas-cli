@@ -3,7 +3,7 @@ import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml, type JUnitResultType, type JUnitTestCase } from './junitXmlParser'
 import chalk from 'chalk'
 import { ResultStatus, RunTCase } from '../../api/schemas'
-import { parseApiToken, parseUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
+import { parseApiToken, parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
@@ -11,18 +11,33 @@ import { dirname } from 'path'
 export class JUnitCommandHandler {
 	private api: Api
 
+	private project: string
+
+	private run: number
+
 	constructor(private args: Arguments<JUnitArgs>) {
 		const apiToken = parseApiToken(args)
-		const url = parseUrl(args)
+		const {url, project, run} = parseRunUrl(args)
+
+		this.project = project
+		this.run = run
 		this.api = createApi(url, apiToken)
 	}
 
 	async handle() {
-		const file = readFileSync(this.args.file).toString()
-		const { testcases: junitResults } = await parseJUnitXml(file, dirname(this.args.file))
+		const junitResults : JUnitTestCase[] = []
+
+		console.log(`Uploading files [${this.args.files.map((f) => chalk.green(f)).join(", ")}]`+
+		` to run [${chalk.green(this.run)}] of project [${chalk.green(this.project)}]`)
+
+		for (const file of this.args.files) {
+			const xmlString = readFileSync(file).toString()
+			const { testcases: results } = await parseJUnitXml(xmlString, dirname(file))
+			junitResults.push(...results)
+		}
 
 		const tcases = await this.api.runs
-			.getRunTCases(this.args.project, this.args.run)
+			.getRunTCases(this.project, this.run)
 			.catch(printErrorThenExit)
 
 		const { results, missing } = this.mapTestCaseResults(junitResults, tcases)
@@ -85,7 +100,7 @@ export class JUnitCommandHandler {
 					comment += `\n<p>Attachments:</p>\n${makeListHtml(attachmentUrls)}`
 				}
 
-				await this.api.runs.createResultStatus(this.args.project, this.args.run, tcase.id, {
+				await this.api.runs.createResultStatus(this.project, this.run, tcase.id, {
 					status: getResult(result.type),
 					comment,
 				})
@@ -105,7 +120,7 @@ export class JUnitCommandHandler {
 			const tcase = testcases.find((tcase) => {
 				if (!result.name) return false
 
-				const tcaseCode = `${this.args.project}-${tcase.seq.toString().padStart(3, '0')}`
+				const tcaseCode = `${this.project}-${tcase.seq.toString().padStart(3, '0')}`
 				return result.name.includes(tcaseCode)
 			})
 			if (tcase) {
