@@ -1,4 +1,7 @@
+import { gte } from 'semver'
 import { API_TOKEN } from '../config/env'
+import { REQUIRED_NODE_VERSION } from './config'
+import chalk from 'chalk'
 
 export const twirlLoader = () => {
 	const chars = ['\\', '|', '/', '-']
@@ -23,7 +26,7 @@ export const twirlLoader = () => {
 			if (timer) {
 				clearInterval(timer)
 			}
-			process.stdout.write('\r')
+			process.stdout.write('\n')
 		},
 		setText: (newText: string) => {
 			text = newText
@@ -68,9 +71,19 @@ export const printErrorThenExit = (e: unknown): never => {
 }
 
 export const printError = (e: unknown) => {
-	if (e instanceof Error) {
-		console.error(e)
-	} else {
-		console.error(e)
+	const isVerbose = process.argv.some((arg) => arg === '--verbose')
+	let message = e
+
+	if (!isVerbose) {
+		if (e instanceof Error) {
+			message = e.message
+		}
 	}
+	message = `${chalk.red('Error:')} ${message}`
+
+	console.error(message)
+}
+
+export const validateNodeVersion = () => {
+	return gte(process.version, REQUIRED_NODE_VERSION)
 }

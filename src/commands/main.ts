@@ -8,5 +8,11 @@ export const run = (args: string | string[]) =>
 		.demandCommand()
 		.help('h')
 		.alias('h', 'help')
+		.options({
+			verbose: {
+				type: 'boolean',
+				describe: 'Show verbose errors',
+			},
+		})
 		.wrap(null)
 		.parse()
