@@ -56,12 +56,12 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
 		argv.example(
 			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 -t API_TOKEN ./path/to/junit.xml',
-			'Upload JUnit xml file to https://qas.eu1.qasphere.com/project/P1/run/23'
+			'Upload JUnit xml file to Run ID 23 of Project P1'
 		)
 
 		argv.example(
 			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 --token API_TOKEN *.xml',
-			'Upload all xml files in the current directory to https://qas.eu1.qasphere.com/project/P1/run/23'
+			'Upload all xml files in the current directory to Run ID 23 of Project P1'
 		)
 
 		return argv as Argv<JUnitArgs>

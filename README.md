@@ -38,20 +38,20 @@ qasphere --version
 ### Options
 
 - `-t, --token` - API token (string) - Can be generated under QASphere **Settings>API keys**
-- `-r, --run-url` - URL of the Run (from QASphere) for uploading results, eg. https://qas.eu1.qasphere.com/project/TEST/run/1/tcase/1 (string)
+- `-r, --run-url` - URL of the Run (from QASphere) for uploading results, eg. https://qas.eu1.qasphere.com/project/P1/run/23 (string)
 - `--attachments` - Try to detect any attachments and upload it with the test result (boolean)
 - `--force` - Ignore API request errors, invalid test cases, or attachments (boolean)
 - `-h, --help` - Show help (boolean)
 
 ### Examples
 
-1. Upload JUnit XML file to `https://qas.eu1.qasphere.com/project/P1/run/23`
+1. Upload JUnit XML file to Run ID 23 of Project P1
 
 ```bash
 qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 -t API_TOKEN ./path/to/junit.xml
 ```
 
-2. To upload all (JUnit) XML files from the current directory to `https://qas.eu1.qasphere.com/project/P1/run/23`
+2. To upload all (JUnit) XML files from the current directory to Run ID 23 of Project P1
 
 ```bash
 qasphere junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 --token API_TOKEN ./*.xml
