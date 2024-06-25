@@ -57,23 +57,19 @@ const countResultUploadApiCalls = () =>
 describe('Uploading JUnit xml files', () => {
 	describe('Argument parsing', () => {
 		test('Passing correct Run URL pattern should result in success', async () => {
-			const fileUploadCount = countFileUploadApiCalls()
-			const tcaseUploadCount = countResultUploadApiCalls()
-			await run(
-				`junit-upload --run-url ${runURL} --token API_TOKEN ${xmlBasePath}/matching-tcases.xml`
-			)
-			expect(fileUploadCount()).toBe(0)
-			expect(tcaseUploadCount()).toBe(5)
-		})
+			const patterns = [
+				`junit-upload --run-url ${runURL} --token API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}/ -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}/tcase/1 -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+			]
 
-		test('Passing correct Run URL pattern with extra / at the end, should result in success', async () => {
-			const fileUploadCount = countFileUploadApiCalls()
-			const tcaseUploadCount = countResultUploadApiCalls()
-			await run(
-				`junit-upload -r ${runURL}/ -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
-			)
-			expect(fileUploadCount()).toBe(0)
-			expect(tcaseUploadCount()).toBe(5)
+			for (const pattern of patterns) {
+				const fileUploadCount = countFileUploadApiCalls()
+				const tcaseUploadCount = countResultUploadApiCalls()
+				await run(pattern)
+				expect(fileUploadCount()).toBe(0)
+				expect(tcaseUploadCount()).toBe(5)
+			}
 		})
 
 		test('Passing correct Run URL pattern without https, should result in success', async () => {
@@ -87,20 +83,25 @@ describe('Uploading JUnit xml files', () => {
 		})
 
 		test('Passing incorrect Run URL pattern should result in failure', async () => {
-			const fileUploadCount = countFileUploadApiCalls()
-			const tcaseUploadCount = countResultUploadApiCalls()
-			let isError = false
+			const patterns = [
+				`junit-upload -r ${qasHost}/projects/${projectCode}/runs/${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}abc/tcase/1 -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+			]
 
-			try {
-				await run(
-					`junit-upload -r ${qasHost}/projects/${projectCode}/runs/${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
-				)
-			} catch(error) {
-				isError = true
+			for (const pattern of patterns) {
+				const fileUploadCount = countFileUploadApiCalls()
+				const tcaseUploadCount = countResultUploadApiCalls()
+				let isError = false
+
+				try {
+					await run(pattern)
+				} catch (error) {
+					isError = true
+				}
+				expect(isError).toBeTruthy()
+				expect(fileUploadCount()).toBe(0)
+				expect(tcaseUploadCount()).toBe(0)
 			}
-			expect(isError).toBeTruthy()
-			expect(fileUploadCount()).toBe(0)
-			expect(tcaseUploadCount()).toBe(0)
 		})
 	})
 

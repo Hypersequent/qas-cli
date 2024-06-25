@@ -39,8 +39,8 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 			runUrl = `https://${runUrl}`
 		}
 
-		const matches = runUrl.match(/^(\S+)\/project\/(\w+)\/run\/(\d+)\/?$/)
-		if (matches && matches.length === 4) {
+		const matches = runUrl.match(/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/)
+		if (matches && matches.length === 5) {
 			return {
 				url: matches[1],
 				project: matches[2],
