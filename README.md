@@ -62,6 +62,5 @@ qasphere junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 -
 1. Build the code with `npm run build`.
 2. Create a project with test cases using local QASphere build or by registering on [qasphere.com](https://qasphere.com/)
 3. Get a JUnit XML file. If you want to test the test cases from the CSV file above, use the JUnit XML file generated from [this repository](https://github.com/Hypersequent/bistrot-e2e).
-
-4. Run the CLI with: `node ./build/bin/qasphere.js junit-upload ./JUnit.xml --run-url https://YOUR_DOMAIN.eu1.qasphere.com -p PROJECT_CODE -r RUN_ID -t API_TOKEN`
+4. Run the CLI with: `node ./build/bin/qasphere.js junit-upload -r QAS_URL/project/PROJECT_CODE/run/RUN_ID -t API_TOKEN ./JUnit.xml`. If you get permission errors, please retry after running: `chmod +x ./build/bin/qasphere.js`
 5. You may pass the `-h` flag to show help: `node ./build/bin/qasphere junit-upload -h`
