@@ -62,7 +62,7 @@ The format for test case names should be: **PROJECT-SEQUENCE: Your test name**
 - **SEQUENCE** is at least three-digit test case sequence number in QASphere test case URL
 - **Your test name** is a descriptive name for your test
 
-For example, if your QASphere project code is "P1" and you have a test case with sequence number 001, your JUnit test case name might look like:
+For example, if your QASphere project code is "P1" and you have a test case with sequence number 1024, your JUnit test case name might look like:
 **P1-1024: Login with valid credentials**
 
 ### Examples
