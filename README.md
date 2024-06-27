@@ -47,6 +47,24 @@ qasphere --version
 - `--force` - Ignore API request errors, invalid test cases, or attachments (boolean)
 - `-h, --help` - Show help (boolean)
 
+## JUnit XML File Requirements
+
+The qas-cli tool requires JUnit XML files to have test case names that match the test case codes on QASphere. If your XML file doesn't contain any matching test cases, the tool will display an error message.
+
+### Test Case Naming Convention
+
+To ensure proper matching between your JUnit XML file and QASphere test cases, follow this naming convention:
+
+Test case names in your JUnit XML file should include the QASphere test case code.
+The format for test case names should be: **PROJECT-SEQUENCE: Your test name**
+
+- **PROJECT** is your QASphere project code
+- **SEQUENCE** is at least three-digit test case sequence number in QASphere test case URL
+- **Your test name** is a descriptive name for your test
+
+For example, if your QASphere project code is "P1" and you have a test case with sequence number 1024, your JUnit test case name might look like:
+**P1-1024: Login with valid credentials**
+
 ### Examples
 
 1. Upload JUnit XML file to Run ID 23 of Project P1
