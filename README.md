@@ -37,11 +37,23 @@ npm link
 qasphere --version
 ```
 
+## Environment
+
+- The CLI requires following variables to be defined, absence of which will result in error
+  - `QAS_TOKEN` - QASphere API token
+- These should either be `export`ed as environment variables while running the command or defined in a `.qaspherecli` configuration file in the directory where the command is being run or one of its parent directories
+- `.qaspherecli` follows the simple syntax of `.env` files
+  ```sh
+  # Comment
+  QAS_TOKEN=token
+  QAS_TOKEN=token # comment
+  export QAS_TOKEN=token
+  ```
+
 ## Command: `junit-upload`
 
 ### Options
 
-- `-t, --token` - API token (string) - Can be generated under QASphere **Settings>API keys**
 - `-r, --run-url` - URL of the Run (from QASphere) for uploading results, eg. https://qas.eu1.qasphere.com/project/P1/run/23 (string)
 - `--attachments` - Try to detect any attachments and upload it with the test result (boolean)
 - `--force` - Ignore API request errors, invalid test cases, or attachments (boolean)
@@ -49,16 +61,18 @@ qasphere --version
 
 ### Examples
 
+Make sure that the required variables, as mentioned in [Environment](#environment), are defined before running the commands.
+
 1. Upload JUnit XML file to Run ID 23 of Project P1
 
 ```bash
-qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 -t API_TOKEN ./path/to/junit.xml
+qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./path/to/junit.xml
 ```
 
 2. To upload all (JUnit) XML files from the current directory to Run ID 23 of Project P1
 
 ```bash
-qasphere junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 --token API_TOKEN ./*.xml
+qasphere junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 ./*.xml
 ```
 
 ## How to Test
@@ -66,5 +80,6 @@ qasphere junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 -
 1. Build the code with `npm run build`.
 2. Create a project with test cases using local QASphere build or by registering on [qasphere.com](https://qasphere.com/)
 3. Get a JUnit XML file. If you want to test the test cases from the CSV file above, use the JUnit XML file generated from [this repository](https://github.com/Hypersequent/bistrot-e2e).
-4. Run the CLI with: `node ./build/bin/qasphere.js junit-upload -r QAS_URL/project/PROJECT_CODE/run/RUN_ID -t API_TOKEN ./JUnit.xml`. If you get permission errors, please retry after running: `chmod +x ./build/bin/qasphere.js`
-5. You may pass the `-h` flag to show help: `node ./build/bin/qasphere junit-upload -h`
+4. Define required variables as mentioned in [Environment](#environment).
+5. Run the CLI with: `node ./build/bin/qasphere.js junit-upload -r QAS_URL/project/PROJECT_CODE/run/RUN_ID ./JUnit.xml`. If you get permission errors, please retry after running: `chmod +x ./build/bin/qasphere.js`
+6. You may pass the `-h` flag to show help: `node ./build/bin/qasphere junit-upload -h`

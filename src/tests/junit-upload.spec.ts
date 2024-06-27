@@ -12,9 +12,11 @@ const baseURL = `https://${qasHost}`
 const runURL = `${baseURL}/project/${projectCode}/run/${runId}`
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 
+process.env['QAS_TOKEN'] = 'QAS_TOKEN'
+
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey API_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		return HttpResponse.json({
 			tcases: runTestCases,
 		})
@@ -22,14 +24,14 @@ const server = setupServer(
 	http.post(
 		new RegExp(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase/.+/result`),
 		({ request }) => {
-			expect(request.headers.get('Authorization')).toEqual('ApiKey API_TOKEN')
+			expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 			return HttpResponse.json({
 				id: 0,
 			})
 		}
 	),
 	http.post(`${baseURL}/api/public/v0/file`, async ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey API_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		expect(request.headers.get('Content-Type')).includes('multipart/form-data')
 		return HttpResponse.json({
 			id: 'TEST',
@@ -58,9 +60,9 @@ describe('Uploading JUnit xml files', () => {
 	describe('Argument parsing', () => {
 		test('Passing correct Run URL pattern should result in success', async () => {
 			const patterns = [
-				`junit-upload --run-url ${runURL} --token API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
-				`junit-upload -r ${runURL}/ -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
-				`junit-upload -r ${runURL}/tcase/1 -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload --run-url ${runURL} ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}/ ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}/tcase/1 ${xmlBasePath}/matching-tcases.xml`,
 			]
 
 			for (const pattern of patterns) {
@@ -76,7 +78,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${qasHost}/project/${projectCode}/run/${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
+				`junit-upload -r ${qasHost}/project/${projectCode}/run/${runId} ${xmlBasePath}/matching-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(0)
 			expect(tcaseUploadCount()).toBe(5)
@@ -84,8 +86,8 @@ describe('Uploading JUnit xml files', () => {
 
 		test('Passing incorrect Run URL pattern should result in failure', async () => {
 			const patterns = [
-				`junit-upload -r ${qasHost}/projects/${projectCode}/runs/${runId} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
-				`junit-upload -r ${runURL}abc/tcase/1 -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${qasHost}/projects/${projectCode}/runs/${runId} ${xmlBasePath}/matching-tcases.xml`,
+				`junit-upload -r ${runURL}abc/tcase/1 ${xmlBasePath}/matching-tcases.xml`,
 			]
 
 			for (const pattern of patterns) {
@@ -110,7 +112,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${runURL} -t API_TOKEN ${xmlBasePath}/matching-tcases.xml`
+				`junit-upload -r ${runURL} ${xmlBasePath}/matching-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(0)
 			expect(tcaseUploadCount()).toBe(5)
@@ -121,7 +123,7 @@ describe('Uploading JUnit xml files', () => {
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await expect(
 				run(
-					`junit-upload -r ${runURL} -t API_TOKEN ${xmlBasePath}/missing-tcases.xml`
+					`junit-upload -r ${runURL} ${xmlBasePath}/missing-tcases.xml`
 				)
 			).rejects.toThrowError()
 			expect(fileUploadCount()).toBe(0)
@@ -132,7 +134,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${runURL} -t API_TOKEN --force ${xmlBasePath}/missing-tcases.xml`
+				`junit-upload -r ${runURL} --force ${xmlBasePath}/missing-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(0)
 			expect(tcaseUploadCount()).toBe(4)
@@ -142,7 +144,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${runURL} -t API_TOKEN --force ${xmlBasePath}/missing-tcases.xml ${xmlBasePath}/missing-tcases.xml`
+				`junit-upload -r ${runURL} --force ${xmlBasePath}/missing-tcases.xml ${xmlBasePath}/missing-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(0)
 			expect(tcaseUploadCount()).toBe(8)
@@ -154,7 +156,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${runURL} -t API_TOKEN --attachments ${xmlBasePath}/matching-tcases.xml`
+				`junit-upload -r ${runURL} --attachments ${xmlBasePath}/matching-tcases.xml`
 			)
 			expect(fileUploadCount()).toBe(5)
 			expect(tcaseUploadCount()).toBe(5)
@@ -164,7 +166,7 @@ describe('Uploading JUnit xml files', () => {
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await expect(
 				run(
-					`junit-upload -r ${runURL} -t API_TOKEN --attachments ${xmlBasePath}/missing-attachments.xml`
+					`junit-upload -r ${runURL} --attachments ${xmlBasePath}/missing-attachments.xml`
 				)
 			).rejects.toThrow()
 			expect(fileUploadCount()).toBe(0)
@@ -174,7 +176,7 @@ describe('Uploading JUnit xml files', () => {
 			const fileUploadCount = countFileUploadApiCalls()
 			const tcaseUploadCount = countResultUploadApiCalls()
 			await run(
-				`junit-upload -r ${runURL} -t API_TOKEN --attachments --force ${xmlBasePath}/missing-attachments.xml`
+				`junit-upload -r ${runURL} --attachments --force ${xmlBasePath}/missing-attachments.xml`
 			)
 			expect(fileUploadCount()).toBe(4)
 			expect(tcaseUploadCount()).toBe(5)
