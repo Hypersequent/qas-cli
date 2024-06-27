@@ -41,7 +41,7 @@ const xmlSchema = z.object({
 					time: z.string().optional(),
 					timeStamp: z.string().optional(),
 				}),
-				testcase: z.array(testCaseSchema),
+				testcase: z.array(testCaseSchema).optional(),
 			})
 		),
 	}),
@@ -77,7 +77,7 @@ export const parseJUnitXml = async (xmlString: string, basePath: string): Promis
 	const attachmentsPromises: Array<{ index: number; promise: Promise<JUnitAttachment[]> }> = []
 
 	for (const suite of validated.testsuites.testsuite) {
-		for (const tcase of suite.testcase) {
+		for (const tcase of suite.testcase??[]) {
 			const result = getResult(tcase)
 			const index =
 				testcases.push({
