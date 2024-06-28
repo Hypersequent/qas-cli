@@ -1,5 +1,4 @@
 import { gte } from 'semver'
-import { API_TOKEN } from '../config/env'
 import { REQUIRED_NODE_VERSION } from './config'
 import chalk from 'chalk'
 
@@ -52,17 +51,6 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 		}
 	}
 	throw new Error('invalid --run-url specified')
-}
-
-export const parseApiToken = (args: Record<string, unknown>): string => {
-	if (typeof args.token === 'string') {
-		return args.token
-	}
-	if (API_TOKEN) {
-		return API_TOKEN
-	}
-
-	throw new Error('missing parameters --token')
 }
 
 export const printErrorThenExit = (e: unknown): never => {

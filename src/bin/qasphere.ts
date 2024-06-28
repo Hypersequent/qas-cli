@@ -4,6 +4,7 @@ import { hideBin } from 'yargs/helpers'
 import { run } from '../commands/main'
 import { validateNodeVersion } from '../utils/misc'
 import { REQUIRED_NODE_VERSION } from '../utils/config'
+import { loadEnvs } from '../utils/env'
 import chalk from 'chalk'
 
 if (!validateNodeVersion()) {
@@ -14,4 +15,5 @@ if (!validateNodeVersion()) {
 	)
 }
 
+loadEnvs()
 run(hideBin(process.argv))

@@ -3,7 +3,7 @@ import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml, type JUnitResultType, type JUnitTestCase } from './junitXmlParser'
 import chalk from 'chalk'
 import { ResultStatus, RunTCase } from '../../api/schemas'
-import { parseApiToken, parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
+import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
@@ -16,7 +16,7 @@ export class JUnitCommandHandler {
 	private run: number
 
 	constructor(private args: Arguments<JUnitArgs>) {
-		const apiToken = parseApiToken(args)
+		const apiToken = process.env.QAS_TOKEN!
 		const {url, project, run} = parseRunUrl(args)
 
 		this.project = project

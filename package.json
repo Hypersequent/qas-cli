@@ -40,6 +40,7 @@
 	},
 	"dependencies": {
 		"chalk": "^4.1.2",
+		"dotenv": "^16.4.5",
 		"escape-html": "^1.0.3",
 		"semver": "^7.6.2",
 		"xml2js": "^0.6.2",

@@ -1,6 +1,5 @@
 import { Arguments, Argv, CommandModule } from 'yargs'
 import { parseRunUrl } from '../utils/misc'
-import { API_TOKEN } from '../config/env'
 import { JUnitCommandHandler } from '../utils/junit/JUnitCommandHandler'
 
 export interface JUnitArgs {
@@ -17,12 +16,6 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
 	builder = (argv: Argv) => {
 		argv.options({
-			token: {
-				alias: 't',
-				describe: 'API token',
-				type: 'string',
-				requiresArg: true,
-			},
 			'run-url': {
 				alias: 'r',
 				describe: 'URL of the Run (from QASphere) for uploading results',
@@ -47,20 +40,13 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			return !!parseRunUrl(args)
 		})
 
-		argv.check((args) => {
-			if (!args.token && !API_TOKEN) {
-				throw new Error('-t <token> or QAS_TOKEN environment variable must be present')
-			}
-			return true
-		})
-
 		argv.example(
-			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 -t API_TOKEN ./path/to/junit.xml',
+			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./path/to/junit.xml',
 			'Upload JUnit xml file to Run ID 23 of Project P1'
 		)
 
 		argv.example(
-			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 --token API_TOKEN *.xml',
+			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 *.xml',
 			'Upload all xml files in the current directory to Run ID 23 of Project P1'
 		)
 
