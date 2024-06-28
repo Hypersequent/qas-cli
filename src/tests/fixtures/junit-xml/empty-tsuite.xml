@@ -1,0 +1,10 @@
+<testsuites id="" name="" tests="6" failures="1" skipped="0" errors="0" time="31.450767">
+  <testsuite name="ui.cart.spec.ts" timestamp="2024-04-22T09:25:16.777Z" hostname="chromium"
+    tests="2" failures="0" skipped="0" time="16.746" errors="0">
+    <testcase name="Test cart TEST-002" classname="ui.cart.spec.ts" time="10.686">
+    </testcase>
+  </testsuite>
+  <testsuite name="ui.contents.spec.ts" timestamp="2024-04-22T09:25:16.777Z" hostname="chromium"
+    tests="4" failures="1" skipped="0" time="28.38" errors="0">
+  </testsuite>
+</testsuites>

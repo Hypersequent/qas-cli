@@ -149,6 +149,16 @@ describe('Uploading JUnit xml files', () => {
 			expect(fileUploadCount()).toBe(0)
 			expect(tcaseUploadCount()).toBe(8)
 		})
+
+		test('Test suite with empty tcases should not result in error and be skipped', async () => {
+			const fileUploadCount = countFileUploadApiCalls()
+			const tcaseUploadCount = countResultUploadApiCalls()
+			await run(
+				`junit-upload -r ${runURL} --force ${xmlBasePath}/empty-tsuite.xml`
+			)
+			expect(fileUploadCount()).toBe(0)
+			expect(tcaseUploadCount()).toBe(1)
+		})
 	})
 
 	describe('Uploading with attachments', () => {
