@@ -75,3 +75,16 @@ export const printError = (e: unknown) => {
 export const validateNodeVersion = () => {
 	return gte(process.version, REQUIRED_NODE_VERSION)
 }
+
+export async function isUrlReachable(url: string): Promise<boolean> {
+	try {
+	  const response = await fetch(url, { 
+		method: 'HEAD', 
+	  });
+
+	  return response.status !== 400
+	} catch (error) {
+	  console.error(`Error checking URL ${url}:`, error);
+	  return false;
+	}
+  }

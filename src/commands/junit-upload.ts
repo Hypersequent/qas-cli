@@ -1,5 +1,5 @@
 import { Arguments, Argv, CommandModule } from 'yargs'
-import { parseRunUrl } from '../utils/misc'
+import { parseRunUrl, isUrlReachable } from '../utils/misc'
 import { JUnitCommandHandler } from '../utils/junit/JUnitCommandHandler'
 
 export interface JUnitArgs {
@@ -35,11 +35,28 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				help: true,
 			},
 		})
+		argv.middleware(async (args) => {
+			const runUrl = parseRunUrl(args);
+			if (!runUrl) {
+				console.warn(`Warning: The subdomain or run URL you've provided is invalid: ${args['run-url']}. Please provide a valid QA Sphere URL and try again.`);
+				process.exit(1);
+			}
 
-		argv.check((args) => {
-			return !!parseRunUrl(args)
+			try {
+				const url = new URL(runUrl.url);
+				const domain = url.origin;
+				const isReachable = await isUrlReachable(domain);
+				if (!isReachable) {
+					console.warn(`Warning: The provided QA Sphere domain is not reachable: ${domain}. Please check the domain validity or your internet connection and try again.`);
+					process.exit(1);
+				}
+			} catch (error) {
+				console.warn(`Warning: The subdomain or run URL you've provided is invalid: ${runUrl.url}. Please provide a valid QA Sphere URL and try again.`);
+				process.exit(1);
+			}
 		})
-
+		argv.showHelpOnFail(false)
+		argv.exitProcess(true)
 		argv.example(
 			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./path/to/junit.xml',
 			'Upload JUnit xml file to Run ID 23 of Project P1'
