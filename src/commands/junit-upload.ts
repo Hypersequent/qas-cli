@@ -12,7 +12,7 @@ export interface JUnitArgs {
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
 	command = 'junit-upload [args..] <files..>'
-	describe = 'upload JUnit xml files'
+	describe = `Upload JUnit xml files`
 
 	builder = (argv: Argv) => {
 		argv.options({
@@ -49,6 +49,16 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 *.xml',
 			'Upload all xml files in the current directory to Run ID 23 of Project P1'
 		)
+
+		argv.epilogue(`Requirements:
+	XML test case names should match QA Sphere test cases and the following format:
+	PROJECT-SEQUENCE: Your test name,
+	where:
+	- PROJECT is your QASphere project code
+	- SEQUENCE is at least three-digit test case sequence number in QASphere test case URL
+	- Your test name is a descriptive name for your test
+			
+	Example: P1-1024: Test case description`)
 
 		return argv as Argv<JUnitArgs>
 	}
