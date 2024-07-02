@@ -56,7 +56,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 	where:
 	- PROJECT is your QASphere project code
 	- SEQUENCE is at least three-digit test case sequence number in QASphere test case URL
-	- Your test name is a descriptive name for your test
+	- Your test name is a descriptive test title
 			
 	Example: P1-1024: Test case description`)
 
