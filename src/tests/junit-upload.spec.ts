@@ -4,6 +4,8 @@ import { setupServer } from 'msw/node'
 import { HttpResponse, http } from 'msw'
 import { runTestCases } from './fixtures/testcases'
 import { countMockedApiCalls } from './utils'
+import { vi } from 'vitest';
+import { URL } from 'url';
 
 const projectCode = 'TEST'
 const runId = '1'
@@ -13,6 +15,19 @@ const runURL = `${baseURL}/project/${projectCode}/run/${runId}`
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 
 process.env['QAS_TOKEN'] = 'QAS_TOKEN'
+
+vi.mock('../utils/misc', async (importOriginal) => {
+	const actual = await importOriginal() as Record<string, unknown>;
+  return {
+    ...actual,
+    isUrlReachable: async (url: string) => {
+      if (url === baseURL) {
+        return true;
+      }
+      throw new Error(`Mocked function: URL not reachable: ${url}`);
+    },
+  };
+});
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
