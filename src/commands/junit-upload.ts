@@ -36,23 +36,18 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 			},
 		})
 		argv.middleware(async (args) => {
-			const runUrl = parseRunUrl(args);
-			if (!runUrl) {
-				console.warn(`Warning: The subdomain or run URL you've provided is invalid: ${args['run-url']}. Please provide a valid QA Sphere URL and try again.`);
-				process.exit(1);
-			}
-
+			const runUrl = parseRunUrl(args)
 			try {
-				const url = new URL(runUrl.url);
+				const url = new URL(runUrl.url)
 				const domain = url.origin;
-				const isReachable = await isUrlReachable(domain);
+				const isReachable = await isUrlReachable(domain)
 				if (!isReachable) {
-					console.warn(`Warning: The provided QA Sphere domain is not reachable: ${domain}. Please check the domain validity or your internet connection and try again.`);
-					process.exit(1);
+					console.warn(`Warning: The provided QA Sphere domain is not reachable: ${domain}. Please check the domain validity or your internet connection and try again.`)
+					process.exit(1)
 				}
 			} catch (error) {
-				console.warn(`Warning: The subdomain or run URL you've provided is invalid: ${runUrl.url}. Please provide a valid QA Sphere URL and try again.`);
-				process.exit(1);
+				console.warn(`Warning: The subdomain or run URL you've provided is invalid: ${runUrl.url}. Please provide a valid QA Sphere URL and try again.`)
+				process.exit(1)
 			}
 		})
 		argv.showHelpOnFail(false)

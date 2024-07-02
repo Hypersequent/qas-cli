@@ -1,7 +1,7 @@
 export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
 	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
 		if (typeof input === 'string') {
-			return fetcher(baseUrl + input, init)
+			return fetcher(new URL(input, baseUrl).toString(), init)
 		}
 		return fetcher(input, init)
 	}
