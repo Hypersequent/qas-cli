@@ -65,17 +65,15 @@ The qas-cli tool requires JUnit XML files to have test case names that match the
 
 ### Test Case Naming Convention
 
-To ensure proper matching between your JUnit XML file and QASphere test cases, follow this naming convention:
-
-Test case names in your JUnit XML file should include the QASphere test case code.
-The format for test case names should be: **PROJECT-SEQUENCE: Your test name**
+Test case names in the XML report should contain QA Sphere test case reference (PROJECT-SEQUENCE).
+This reference is used to match test cases in the XML report with test cases in QA Sphere.
 
 - **PROJECT** is your QASphere project code
 - **SEQUENCE** is at least three-digit test case sequence number in QASphere test case URL
-- **Your test name** is a descriptive name for your test
 
-For example, if your QASphere project code is "P1" and you have a test case with sequence number 1024, your JUnit test case name might look like:
-**P1-1024: Login with valid credentials**
+For example,
+- **PRJ-312: Login with valid credentials**
+- **Login with valid credentials: PRJ-312**
 
 ### Examples
 
