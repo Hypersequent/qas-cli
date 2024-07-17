@@ -12,7 +12,7 @@ export interface JUnitArgs {
 
 export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArgs> {
 	command = 'junit-upload [args..] <files..>'
-	describe = 'Upload JUnit xml files'
+	describe = 'upload JUnit xml files'
 
 	builder = (argv: Argv) => {
 		argv.options({
@@ -48,8 +48,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		argv.example(
 			'$0 junit-upload --run-url https://qas.eu1.qasphere.com/project/P1/run/23 *.xml',
 			'Upload all xml files in the current directory to Run ID 23 of Project P1'
-		)
-		
+		)		
 		return argv as Argv<JUnitArgs>
 	}
 
