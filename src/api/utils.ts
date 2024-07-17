@@ -7,7 +7,7 @@ export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetc
 
 	  return fetcher(url.toString(), init)
 	}
-  }
+}
 
 export const withJson = (fetcher: typeof fetch): typeof fetch => {
 	const JSON_CONFIG: RequestInit = {

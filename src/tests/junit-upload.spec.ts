@@ -52,9 +52,9 @@ afterEach(() => {
 })
 
 const countFileUploadApiCalls = () =>
-    countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/file'))
+    	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/file'))
 const countResultUploadApiCalls = () =>
-    countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result'))
+    	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result'))
 
 describe('Uploading JUnit xml files', () => {
 	describe('Argument parsing', () => {
