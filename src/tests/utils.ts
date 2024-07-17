@@ -6,11 +6,12 @@ export const countMockedApiCalls = (
 ) => {
 	let count = 0
 	const checkEvent = (e: { request: Request }) => {
+		const requestUrl = new URL(e.request.url)
 		if (typeof url === 'string') {
-			return url === e.request.url
+			return url === requestUrl.pathname
 		}
 		if (url instanceof RegExp) {
-			return url.test(e.request.url)
+			return url.test(requestUrl.pathname)
 		}
 		return url(e.request)
 	}

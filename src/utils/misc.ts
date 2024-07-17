@@ -1,9 +1,6 @@
 import { gte } from 'semver'
 import { REQUIRED_NODE_VERSION } from './config'
 import chalk from 'chalk'
-import { URL } from 'url';
-import * as https from 'https';
-import * as http from 'http';
 
 export const twirlLoader = () => {
 	const chars = ['\\', '|', '/', '-']
@@ -77,40 +74,4 @@ export const printError = (e: unknown) => {
 
 export const validateNodeVersion = () => {
 	return gte(process.version, REQUIRED_NODE_VERSION)
-}
-
-export async function isUrlReachable(url: string): Promise<boolean> {
-
-  try {
-    const parsedUrl = new URL(url)
-
-    return new Promise((resolve) => {
-      const requestModule = parsedUrl.protocol === 'https:' ? https : http
-
-      const req = requestModule.request(
-        parsedUrl,
-        { method: 'GET', timeout: 5000 },
-        (res: { statusCode?: number }) => {
-          resolve(res.statusCode !== undefined && res.statusCode < 400)
-          req.destroy() 
-        }
-      );
-
-      req.on('error', (error: Error) => {
-        console.error(`Error checking URL ${url}:`, error)
-        resolve(false)
-      });
-
-      req.on('timeout', () => {
-        console.error(`Request timed out for ${url}`)
-        req.destroy()
-        resolve(false)
-      });
-
-      req.end()
-    });
-  } catch (error) {
-    console.error(`Invalid URL: ${url}`)
-    throw new Error(`Invalid URL: ${url}`)
-  }
 }

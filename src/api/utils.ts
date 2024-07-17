@@ -1,11 +1,13 @@
 export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		if (typeof input === 'string') {
-			return fetcher(new URL(input, baseUrl).toString(), init)
-		}
-		return fetcher(input, init)
+	return (input: URL | RequestInfo, init?: RequestInit): Promise<Response> => {
+	  const url = input instanceof URL ? input : new URL(input.toString(), baseUrl)
+
+	  const domain = url.hostname.split('.')[0]
+	  url.searchParams.append('domain', domain);
+
+	  return fetcher(url.toString(), init)
 	}
-}
+  }
 
 export const withJson = (fetcher: typeof fetch): typeof fetch => {
 	const JSON_CONFIG: RequestInit = {
