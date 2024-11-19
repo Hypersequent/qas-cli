@@ -1,15 +1,15 @@
 {
 	"compilerOptions": {
-	  "target": "es2016",
-	  "module": "commonjs",
-	  "sourceMap": true,
-	  "esModuleInterop": true,
-	  "forceConsistentCasingInFileNames": true,
-	  "strict": true,
-	  "skipLibCheck": true,
-	  "outDir": "./build",
-	  "declaration": true,
-	  "declarationMap": true
+		"target": "es2016",
+		"module": "commonjs",
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"outDir": "./build",
+		"declaration": true,
+		"declarationMap": true
 	},
 	"include": ["./src"],
 	"exclude": ["src/tests"]
