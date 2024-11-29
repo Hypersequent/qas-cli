@@ -1,8 +1,9 @@
 {
 	"name": "qas-cli",
-	"version": "0.0.1",
-	"description": "",
-	"main": "index.js",
+	"version": "0.1.0",
+	"description": "QAS CLI is a command line tool for submitting your automation test results to QA Sphere at https://qasphere.com/",
+	"main": "./build/bin/qasphere.js",
+	"types": "./build/bin/qasphere.d.ts",
 	"scripts": {
 		"test": "vitest",
 		"build": "npm run clean && tsc",
@@ -49,5 +50,13 @@
 	},
 	"bin": {
 		"qasphere": "build/bin/qasphere.js"
-	}
+	},
+	"files": [
+		"build/**/*.js",
+		"build/**/*.d.ts",
+		"build/**/*.js.map",
+		"build/**/*.d.ts.map",
+		"README.md",
+		"LICENSE"
+	]
 }
