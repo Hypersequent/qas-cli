@@ -1,11 +1,13 @@
 import { createFileApi } from './file'
 import { createRunApi } from './run'
+import { createTCaseApi } from './tcases'
 import { withApiKey, withBaseUrl } from './utils'
 
 const getApi = (fetcher: typeof fetch) => {
 	return {
 		runs: createRunApi(fetcher),
 		file: createFileApi(fetcher),
+		testcases: createTCaseApi(fetcher),
 	}
 }
 
