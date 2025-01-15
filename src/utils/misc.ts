@@ -61,7 +61,7 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 			run: Number(matches[3]),
 		}
 	}
-	throw new Error('Invalid --run-url specified')
+	throw new Error('--run-url is required but not provided.')
 }
 
 export const parseProjectUrl = (args: Record<string, unknown>) => {
@@ -77,7 +77,7 @@ export const parseProjectUrl = (args: Record<string, unknown>) => {
 			project: matches[2],
 		}
 	}
-	throw new Error('Invalid --project specified')
+	throw new Error('--project is required but not provided.')
 }
 
 export const printErrorThenExit = (e: unknown): never => {

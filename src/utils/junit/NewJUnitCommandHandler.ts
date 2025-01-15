@@ -2,7 +2,7 @@ import { Arguments } from 'yargs'
 import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml } from './junitXmlParser'
 import chalk from 'chalk'
-import { parseProjectUrl } from '../misc'
+import { parseProjectUrl, parseRunUrl } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
@@ -15,6 +15,7 @@ export class NewJUnitCommandHandler {
 	private apiToken: string
 	private url: string
 	private project: string
+	private run?: number
 
 	constructor(private args: Arguments<JUnitArgs>) {
 		const apiToken = process.env.QAS_TOKEN
@@ -23,9 +24,19 @@ export class NewJUnitCommandHandler {
 		}
 		this.apiToken = apiToken
 
-		const urlInfo = parseProjectUrl(args)
-		this.url = urlInfo.url
-		this.project = urlInfo.project
+		if (args.runUrl) {
+			const { url, project, run } = parseRunUrl(args)
+			this.url = url
+			this.project = project
+			this.run = run
+		} else if (args.project) {
+			const { url, project } = parseProjectUrl(args)
+			this.url = url
+			this.project = project
+		} else {
+			throw new Error('You must specify either --project or --run-url.')
+		}
+
 		this.api = createApi(this.url, this.apiToken)
 	}
 
@@ -34,16 +45,8 @@ export class NewJUnitCommandHandler {
 			throw new Error('No files specified')
 		}
 
-		if (this.args.project && this.args.runUrl) {
-			throw new Error('You cannot provide both --project and --run-url. Please specify only one.')
-		}
-
-		if (this.args.runUrl) {
-			// Use the existing test run URL
-			if (!this.args.runUrl.includes('/run/')) {
-				throw new Error('Invalid run URL. The run URL must include "/run/".')
-			}
-
+		if (this.run) {
+			// Handle existing test run
 			console.log(chalk.blue(`Using existing test run: ${this.args.runUrl}`))
 			const handler = new JUnitCommandHandler({
 				...this.args,
@@ -53,14 +56,12 @@ export class NewJUnitCommandHandler {
 			return
 		}
 
-		if (this.args.project) {
-			// Create a new test run for the specified project
-			console.log(chalk.blue(`Creating a new test run for project: ${this.args.project}`))
-			const tcaseRefs = await this.extractTestCaseRefs()
-			const tcases = await this.getTestCases(tcaseRefs)
-			const runId = await this.createNewRun(tcases)
-			await this.uploadResults(runId)
-		}
+		// Create a new test run
+		console.log(chalk.blue(`Creating a new test run for project: ${this.args.project}`))
+		const tcaseRefs = await this.extractTestCaseRefs()
+		const tcases = await this.getTestCases(tcaseRefs)
+		const runId = await this.createNewRun(tcases)
+		await this.uploadResults(runId)
 	}
 
 	private async extractTestCaseRefs(): Promise<Set<string>> {
