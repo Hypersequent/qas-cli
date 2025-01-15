@@ -53,6 +53,24 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 	throw new Error('invalid --run-url specified')
 }
 
+export const parseProjectUrl = (args: Record<string, unknown>) => {
+    if (typeof args.runUrl === 'string') {
+        let runUrl = args.runUrl
+        if (!runUrl.includes('://')) {
+            runUrl = `https://${runUrl}`
+        }
+		
+        const matchesProject = runUrl.match(/^(\S+)\/project\/(\w+)(\/\S*)?$/)
+        if (matchesProject && matchesProject.length >= 3) {
+            return {
+                url: matchesProject[1],
+                project: matchesProject[2],
+            }
+        }
+    }
+    throw new Error('invalid --run-url specified')
+}
+
 export const printErrorThenExit = (e: unknown): never => {
 	printError(e)
 	process.exit(1)
