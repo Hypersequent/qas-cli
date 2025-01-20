@@ -1,6 +1,5 @@
 import yargs from 'yargs'
 import { JUnitUploadCommandModule } from './junit-upload'
-import { NewJUnitTestRunCommandModule } from './new-junit-upload'
 import { qasEnvs, qasEnvFile } from '../utils/env'
 
 export const run = (args: string | string[]) =>
@@ -12,7 +11,6 @@ Required variables: ${qasEnvs.join(', ')}
   These should be either exported as environment variables or defined in a ${qasEnvFile} file in the current directory or one of its parents.`
 		)
 		.command(new JUnitUploadCommandModule())
-		.command(new NewJUnitTestRunCommandModule())
 		.demandCommand()
 		.help('h')
 		.alias('h', 'help')

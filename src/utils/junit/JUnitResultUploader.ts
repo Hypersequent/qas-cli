@@ -2,42 +2,40 @@ import { Arguments } from 'yargs'
 import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml } from './junitXmlParser'
 import chalk from 'chalk'
-import { parseProjectUrl, parseRunUrl } from '../misc'
+import { parseRunUrl } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
 import { JUnitCommandHandler } from './JUnitCommandHandler'
-import { PaginatedResponse, TCaseBySeq } from '../../api/tcases'
+import { extractProjectCode } from '../projectExtractor'
 import { CreateRunResponse } from '../../api/run'
+import { PaginatedResponse, TCaseBySeq } from '../../api/tcases'
 
-export class NewJUnitCommandHandler {
+export class JUnitResultUploader {
 	private api: Api
 	private apiToken: string
-	private url: string
+	private baseUrl: string
 	private project: string
 	private run?: number
 
 	constructor(private args: Arguments<JUnitArgs>) {
-		const apiToken = process.env.QAS_TOKEN
-		if (!apiToken) {
-			throw new Error('QAS_TOKEN environment variable is required')
-		}
-		this.apiToken = apiToken
+		// Get required environment variables
+		this.apiToken = process.env.QAS_TOKEN!
+		this.baseUrl = process.env.QAS_URL!
 
 		if (args.runUrl) {
+			// Handle existing run URL
 			const { url, project, run } = parseRunUrl(args)
-			this.url = url
+			this.baseUrl = url
 			this.project = project
 			this.run = run
-		} else if (args.project) {
-			const { url, project } = parseProjectUrl(args)
-			this.url = url
-			this.project = project
 		} else {
-			throw new Error('You must specify either --project or --run-url.')
+			// Auto-detect project from XML files
+			this.project = extractProjectCode(args.files)
+			console.log(chalk.blue(`Detected project code: ${this.project}`))
 		}
 
-		this.api = createApi(this.url, this.apiToken)
+		this.api = createApi(this.baseUrl, this.apiToken)
 	}
 
 	async handle() {
@@ -57,7 +55,7 @@ export class NewJUnitCommandHandler {
 		}
 
 		// Create a new test run
-		console.log(chalk.blue(`Creating a new test run for project: ${this.args.project}`))
+		console.log(chalk.blue(`Creating a new test run for project: ${this.project}`))
 		const tcaseRefs = await this.extractTestCaseRefs()
 		const tcases = await this.getTestCases(tcaseRefs)
 		const runId = await this.createNewRun(tcases)
@@ -100,13 +98,13 @@ export class NewJUnitCommandHandler {
 		const response = await this.api.testcases.getTCasesBySeq(this.project, {
 			seqIds: Array.from(tcaseRefs),
 			page: 1,
-			limit: tcaseRefs.size
+			limit: tcaseRefs.size,
 		})
-	
+
 		if (response.total === 0 || response.data.length === 0) {
 			throw new Error('No matching test cases found in the project')
 		}
-	
+
 		return response
 	}
 
@@ -121,13 +119,13 @@ export class NewJUnitCommandHandler {
 				},
 			],
 		})
-	
+
 		console.log(chalk.green(`Created new test run with ID: ${runId.id}`))
 		return runId
 	}
 
 	private async uploadResults(runId: CreateRunResponse) {
-		const newRunUrl = `${this.url}/project/${this.project}/run/${runId.id}`
+		const newRunUrl = `${this.baseUrl}/project/${this.project}/run/${runId.id}`
 		const newHandler = new JUnitCommandHandler({
 			...this.args,
 			runUrl: newRunUrl,
