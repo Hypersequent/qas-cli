@@ -7,7 +7,7 @@ import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
 import { JUnitCommandHandler } from './JUnitCommandHandler'
-import { GetTCasesBySeqResponse, TCaseBySeq } from '../../api/tcases'
+import { PaginatedResponse, TCaseBySeq } from '../../api/tcases'
 import { CreateRunResponse } from '../../api/run'
 
 export class NewJUnitCommandHandler {
@@ -97,29 +97,31 @@ export class NewJUnitCommandHandler {
 	}
 
 	private async getTestCases(tcaseRefs: Set<string>) {
-		const tcases = await this.api.testcases.getTCasesBySeq(this.project, {
+		const response = await this.api.testcases.getTCasesBySeq(this.project, {
 			seqIds: Array.from(tcaseRefs),
+			page: 1,
+			limit: tcaseRefs.size
 		})
-
-		if (tcases.tcases.length === 0) {
+	
+		if (response.total === 0 || response.data.length === 0) {
 			throw new Error('No matching test cases found in the project')
 		}
-
-		return tcases
+	
+		return response
 	}
 
-	private async createNewRun(tcases: GetTCasesBySeqResponse) {
+	private async createNewRun(tcases: PaginatedResponse<TCaseBySeq>) {
 		const runId = await this.api.runs.createRun(this.project, {
 			title: `Automated test run - ${new Date().toISOString()}`,
 			description: 'Test run created through automation pipeline',
 			type: 'static_struct',
 			queryPlans: [
 				{
-					tcaseIds: tcases.tcases.map((t: TCaseBySeq) => t.id),
+					tcaseIds: tcases.data.map((t: TCaseBySeq) => t.id),
 				},
 			],
 		})
-
+	
 		console.log(chalk.green(`Created new test run with ID: ${runId.id}`))
 		return runId
 	}
