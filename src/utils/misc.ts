@@ -64,22 +64,6 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 	throw new Error('--run-url is required but not provided.')
 }
 
-export const parseProjectUrl = (args: Record<string, unknown>) => {
-	if (typeof args.project === 'string') {
-		const matches = parseUrl(
-			args.project,
-			/^(\S+)\/project\/(\w+)(\/\S*)?$/,
-			'Invalid --project specified. Must be in the format: /project/{projectId}'
-		)
-
-		return {
-			url: matches[1],
-			project: matches[2],
-		}
-	}
-	throw new Error('--project is required but not provided.')
-}
-
 export const printErrorThenExit = (e: unknown): never => {
 	printError(e)
 	process.exit(1)
