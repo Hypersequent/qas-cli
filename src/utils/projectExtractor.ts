@@ -15,5 +15,5 @@ export function extractProjectCode(files: string[]): string {
             console.error(chalk.yellow(`Warning: Could not read file ${file}`));
         }
     }
-    throw new Error('Could not detect project code from test case names in XML files. Please provide it as --project (-p) parameter');
+    throw new Error('Could not detect project code from test case names in XML files. Please make sure that test case names contain a valid project code (e.g., PRJ-123)');
 }

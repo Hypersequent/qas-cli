@@ -52,7 +52,7 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 		const matches = parseUrl(
 			args.runUrl,
 			/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/,
-			'Invalid --run-url specified. Must be in the format: /project/{projectId}/run/{runId}'
+			'Invalid --run-url specified. Must be in the format: https://example.com/project/PROJECT/run/RUN',
 		)
 
 		return {

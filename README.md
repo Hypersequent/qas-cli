@@ -90,10 +90,10 @@ qasphere junit-upload ./test-results.xml
 qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
 ```
 
-3. Upload multiple files with attachments to a new test run:
+3. Upload a file with attachment to a new test run:
 
 ```bash
-qasphere junit-upload --attachments ./test1.xml ./test2.xml
+qasphere junit-upload --attachments ./test1.xml
 ```
 
 4. Force upload even with missing test cases:
@@ -124,8 +124,8 @@ The project code in your test names must match the project code in QASphere.
 ## How to Test
 
 1. Build the code with `npm run build`.
-2. Create a project with test cases using a local QASphere build or by registering on [qasphere.com](https://qasphere.com/).
-3. Get a JUnit XML file. If you want to test the test cases from the CSV file above, use the JUnit XML file generated from [this repository](https://github.com/Hypersequent/bistrot-e2e).
+2. Create a project with test cases by registering on [qasphere.com](https://qasphere.com/). QA Sphere also provides a demo **Bistrot Delivery** project out of the box.
+3. Get a JUnit XML file. You can use sample test cases from the JUnit XML file generated in [this repository](https://github.com/Hypersequent/bistrot-e2e).
 4. Create a `.qaspherecli` file with your QASphere configuration.
 5. Run the CLI with: `qasphere junit-upload ./test-results.xml`
 6. If you get permission errors, retry after running: `chmod +x ./build/bin/qasphere.js`
