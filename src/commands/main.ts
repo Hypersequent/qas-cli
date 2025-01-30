@@ -4,10 +4,12 @@ import { qasEnvs, qasEnvFile } from '../utils/env'
 
 export const run = (args: string | string[]) =>
 	yargs(args)
-		.usage(`$0 <command> [options]
+		.usage(
+			`$0 <command> [options]
 
 Required variables: ${qasEnvs.join(', ')}
-  These should be either exported as environment variables or defined in a ${qasEnvFile} file in the current directory or one of its parents.`)
+  These should be either exported as environment variables or defined in a ${qasEnvFile} file in the current directory or one of its parents.`
+		)
 		.command(new JUnitUploadCommandModule())
 		.demandCommand()
 		.help('h')

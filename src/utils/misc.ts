@@ -34,23 +34,34 @@ export const twirlLoader = () => {
 	}
 }
 
+const parseUrl = (url: string, pattern: RegExp, errorMessage: string) => {
+	if (!url.includes('://')) {
+		url = `https://${url}`
+	}
+
+	const matches = url.match(pattern)
+	if (matches) {
+		return matches
+	}
+
+	throw new Error(errorMessage)
+}
+
 export const parseRunUrl = (args: Record<string, unknown>) => {
 	if (typeof args.runUrl === 'string') {
-		let runUrl = args.runUrl
-		if (!runUrl.includes('://')) {
-			runUrl = `https://${runUrl}`
-		}
+		const matches = parseUrl(
+			args.runUrl,
+			/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/,
+			'Invalid --run-url specified. Must be in the format: https://example.com/project/PROJECT/run/RUN',
+		)
 
-		const matches = runUrl.match(/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/)
-		if (matches && matches.length === 5) {
-			return {
-				url: matches[1],
-				project: matches[2],
-				run: Number(matches[3]),
-			}
+		return {
+			url: matches[1],
+			project: matches[2],
+			run: Number(matches[3]),
 		}
 	}
-	throw new Error('invalid --run-url specified')
+	throw new Error('--run-url is required but not provided.')
 }
 
 export const printErrorThenExit = (e: unknown): never => {
