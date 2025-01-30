@@ -124,8 +124,8 @@ The project code in your test names must match the project code in QASphere.
 ## How to Test
 
 1. Build the code with `npm run build`.
-2. Create a project with test cases by registering on [qasphere.com](https://qasphere.com/). QA Sphere also provides a demo **Bistrot Delivery** project out of the box.
-3. Get a JUnit XML file. You can use sample test cases from the JUnit XML file generated in [this repository](https://github.com/Hypersequent/bistrot-e2e).
+2. Create a project with test cases by registering on [qasphere.com](https://qasphere.com/). QA Sphere also provides a demo **Bistro Delivery** project out of the box.
+3. Get a JUnit XML file. You can use sample test cases from the JUnit XML file generated in [this repository](https://github.com/Hypersequent/bistro-e2e).
 4. Create a `.qaspherecli` file with your QASphere configuration.
 5. Run the CLI with: `qasphere junit-upload ./test-results.xml`
 6. If you get permission errors, retry after running: `chmod +x ./build/bin/qasphere.js`
