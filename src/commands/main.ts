@@ -22,4 +22,5 @@ Required variables: ${qasEnvs.join(', ')}
 		})
 		.wrap(null)
 		.strict()
+		.showHelpOnFail(false)
 		.parse()

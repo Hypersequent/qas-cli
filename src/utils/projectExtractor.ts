@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import chalk from 'chalk';
+import { printErrorThenExit } from './misc';
 
 export function extractProjectCode(files: string[]): string {
     for (const file of files) {
@@ -15,5 +16,5 @@ export function extractProjectCode(files: string[]): string {
             console.error(chalk.yellow(`Warning: Could not read file ${file}`));
         }
     }
-    throw new Error('Could not detect project code from test case names in XML files. Please make sure that test case names contain a valid project code (e.g., PRJ-123)');
+    return printErrorThenExit('Could not detect project code from test case names in XML files. Please make sure that test case names contain a valid project code (e.g., PRJ-123)');
 }
