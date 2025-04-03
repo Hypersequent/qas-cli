@@ -2,7 +2,7 @@ import { Arguments } from 'yargs'
 import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml } from './junitXmlParser'
 import chalk from 'chalk'
-import { parseRunUrl } from '../misc'
+import { parseRunUrl, printErrorThenExit } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'fs'
 import { dirname } from 'path'
@@ -40,7 +40,7 @@ export class JUnitResultUploader {
 
 	async handle() {
 		if (!this.args.files || this.args.files.length === 0) {
-			throw new Error('No files specified')
+			return printErrorThenExit('No files specified')
 		}
 
 		if (this.run) {
@@ -72,7 +72,7 @@ export class JUnitResultUploader {
 			for (const testcase of testcases) {
 				if (!testcase.name) {
 					if (!this.args.force) {
-						throw new Error(`Test case in ${file} has no name`)
+						return printErrorThenExit(`Test case in ${file} has no name`)
 					}
 					continue
 				}
@@ -80,7 +80,7 @@ export class JUnitResultUploader {
 				if (match) {
 					tcaseRefs.add(`${this.project}-${match[1]}`)
 				} else if (!this.args.force) {
-					throw new Error(
+					return printErrorThenExit(
 						`Test case name "${testcase.name}" in ${file} does not contain valid sequence number (e.g., 123)`
 					)
 				}
@@ -88,7 +88,7 @@ export class JUnitResultUploader {
 		}
 
 		if (tcaseRefs.size === 0) {
-			throw new Error('No valid test case references found in files')
+			return printErrorThenExit('No valid test case references found in files')
 		}
 
 		return tcaseRefs
@@ -102,7 +102,7 @@ export class JUnitResultUploader {
 		})
 
 		if (response.total === 0 || response.data.length === 0) {
-			throw new Error('No matching test cases found in the project')
+			return printErrorThenExit('No matching test cases found in the project')
 		}
 
 		return response
@@ -110,7 +110,15 @@ export class JUnitResultUploader {
 
 	private async createNewRun(tcases: PaginatedResponse<TCaseBySeq>) {
 		const runId = await this.api.runs.createRun(this.project, {
-			title: `Automated test run - ${new Date().toISOString()}`,
+			title: `Automated test run - ${new Date().toLocaleString('en-US', { 
+				year: 'numeric',
+				month: 'short',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+				hour12: true
+			})}`,
 			description: 'Test run created through automation pipeline',
 			type: 'static_struct',
 			queryPlans: [
