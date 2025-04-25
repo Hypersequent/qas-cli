@@ -1,4 +1,4 @@
-import path, { basename } from 'path'
+import path, { basename } from 'node:path'
 import escapeHtml from 'escape-html'
 import { readFile } from 'fs/promises'
 import xml from 'xml2js'

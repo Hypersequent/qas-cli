@@ -5,8 +5,8 @@ import chalk from 'chalk'
 import { ResultStatus, RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
-import { readFileSync } from 'fs'
-import { dirname } from 'path'
+import { readFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 
 export class JUnitCommandHandler {
 	private api: Api
