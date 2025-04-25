@@ -1,13 +1,15 @@
-import { createFileApi } from './file'
+import { createProjectApi } from './projects'
 import { createRunApi } from './run'
 import { createTCaseApi } from './tcases'
+import { createFileApi } from './file'
 import { withApiKey, withBaseUrl } from './utils'
 
 const getApi = (fetcher: typeof fetch) => {
     return {
+        projects: createProjectApi(fetcher),
         runs: createRunApi(fetcher),
-        file: createFileApi(fetcher),
         testcases: createTCaseApi(fetcher),
+        file: createFileApi(fetcher),
     }
 }
 
