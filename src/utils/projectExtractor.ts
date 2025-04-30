@@ -7,7 +7,7 @@ export function extractProjectCode(files: string[]): string {
         try {
             const xmlString = readFileSync(file).toString();
             // Look for pattern like PRJ-123 or TEST-456
-            const match = xmlString.match(/([A-Z]+)-\d{3,}/);
+            const match = xmlString.match(/([A-Za-z0-9]{1,5})-\d{3,}/);
             if (match) {
                 const [, projectCode] = match;
                 return projectCode;
