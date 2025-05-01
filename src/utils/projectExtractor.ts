@@ -20,7 +20,7 @@ export function extractProjectCode(files: string[]): string {
                     return printErrorThenExit(`File ${file} does not exist`);
                 }
             } else {
-                console.error(chalk.yellow(`Warning: Could not read file ${file}`));
+                return printErrorThenExit(`Could not read file ${file}`);
             }
         }
     }
