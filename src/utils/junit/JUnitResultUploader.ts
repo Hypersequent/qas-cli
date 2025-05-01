@@ -54,6 +54,10 @@ export class JUnitResultUploader {
 			return
 		}
 
+		if (!(await this.api.projects.checkProjectExists(this.project))) {
+			return printErrorThenExit(`Project ${this.project} does not exist`)
+		}
+
 		// Create a new test run
 		console.log(chalk.blue(`Creating a new test run for project: ${this.project}`))
 		const tcaseRefs = await this.extractTestCaseRefs()
@@ -110,7 +114,7 @@ export class JUnitResultUploader {
 
 	private async createNewRun(tcases: PaginatedResponse<TCaseBySeq>) {
 		const runId = await this.api.runs.createRun(this.project, {
-			title: `Automated test run - ${new Date().toLocaleString('en-US', { 
+			title: `Automated test run - ${new Date().toLocaleString('en-US', {
 				year: 'numeric',
 				month: 'short',
 				day: '2-digit',
