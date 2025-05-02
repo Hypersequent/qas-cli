@@ -1,0 +1,50 @@
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Get version from package.json
+        id: pkg-version
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Get published version from npm
+        id: npm-version
+        run: |
+          PUBLISHED_VERSION=$(npm view $(jq -r .name package.json) version || echo "0.0.0")
+          echo "published_version=$PUBLISHED_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          CURRENT_VERSION="${{ steps.pkg-version.outputs.version }}"
+          PUBLISHED_VERSION="${{ steps.npm-version.outputs.published_version }}"
+
+          SHOULD_PUBLISH=$(node -p "
+            const semver = require('semver');
+            semver.gt('$CURRENT_VERSION', '$PUBLISHED_VERSION') ? 'true' : 'false';
+          ")
+
+          echo "publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        if: steps.compare.outputs.publish == 'true'
+        run: npm ci
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

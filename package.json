@@ -1,6 +1,6 @@
 {
 	"name": "qas-cli",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "QAS CLI is a command line tool for submitting your automation test results to QA Sphere at https://qasphere.com/",
 	"main": "./build/bin/qasphere.js",
 	"types": "./build/bin/qasphere.d.ts",
@@ -26,28 +26,28 @@
 	},
 	"homepage": "https://github.com/Hypersequent/qas-cli#readme",
 	"devDependencies": {
-		"@eslint/js": "^9.2.0",
+		"@eslint/js": "^9.25.1",
 		"@types/escape-html": "^1.0.4",
-		"@types/node": "^20.17.30",
+		"@types/node": "^20.17.32",
 		"@types/semver": "^7.7.0",
 		"@types/xml2js": "^0.4.14",
-		"@types/yargs": "^17.0.32",
-		"eslint": "^8.57.0",
-		"globals": "^15.1.0",
-		"husky": "^9.0.11",
-		"msw": "^2.3.0",
-		"typescript": "^5.4.5",
-		"typescript-eslint": "^7.8.0",
-		"vitest": "^1.6.0"
+		"@types/yargs": "^17.0.33",
+		"eslint": "^9.25.1",
+		"globals": "^16.0.0",
+		"husky": "^9.1.7",
+		"msw": "^2.7.5",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.31.1",
+		"vitest": "^3.1.2"
 	},
 	"dependencies": {
-		"chalk": "^4.1.2",
-		"dotenv": "^16.4.5",
+		"chalk": "^5.4.1",
+		"dotenv": "^16.5.0",
 		"escape-html": "^1.0.3",
-		"semver": "^7.6.2",
+		"semver": "^7.7.1",
 		"xml2js": "^0.6.2",
 		"yargs": "^17.7.2",
-		"zod": "^3.23.7"
+		"zod": "^3.24.3"
 	},
 	"bin": {
 		"qasphere": "build/bin/qasphere.js"
