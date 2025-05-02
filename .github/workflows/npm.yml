@@ -44,7 +44,8 @@ jobs:
 
       - name: Publish to npm
         if: steps.compare.outputs.publish == 'true'
-        run: npm ci
-        run: npm publish --provenance --access public
+        run: |
+          npm ci
+          npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
