@@ -29,6 +29,9 @@ jobs:
           PUBLISHED_VERSION=$(npm view $(jq -r .name package.json) version || echo "0.0.0")
           echo "published_version=$PUBLISHED_VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Compare versions
         id: compare
         run: |
@@ -44,8 +47,6 @@ jobs:
 
       - name: Publish to npm
         if: steps.compare.outputs.publish == 'true'
-        run: |
-          npm ci
-          npm publish --provenance --access public
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
