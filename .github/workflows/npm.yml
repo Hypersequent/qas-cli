@@ -1,17 +1,19 @@
 name: Publish to npm
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'publish')
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -50,3 +52,18 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Notify success
+        if: steps.compare.outputs.publish == 'true' && success()
+        run: |
+          echo "Package version ${{ steps.pkg-version.outputs.version }} successfully published to npm"
+
+      - name: Notify skipped
+        if: steps.compare.outputs.publish == 'false'
+        run: |
+          echo "Publication skipped. Package version ${{ steps.pkg-version.outputs.version }} is not higher than the published version ${{ steps.npm-version.outputs.published_version }}"
+
+      - name: Notify failure
+        if: steps.compare.outputs.publish == 'true' && failure()
+        run: |
+          echo "Failed to publish package version ${{ steps.pkg-version.outputs.version }} to npm"
