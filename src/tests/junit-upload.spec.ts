@@ -97,7 +97,7 @@ describe('Uploading JUnit xml files', () => {
 
 				try {
 					await run(pattern)
-				} catch (error) {
+				} catch {
 					isError = true
 				}
 				expect(isError).toBeTruthy()
