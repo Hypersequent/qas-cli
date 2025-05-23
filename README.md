@@ -114,3 +114,22 @@ The project code in your test names must match the project code in QA Sphere.
 4. Get a JUnit XML file - you can use sample test cases from the JUnit XML file generated in [this repository](https://github.com/Hypersequent/bistro-e2e)
 5. Create a `.qaspherecli` file with your QA Sphere configuration
 6. Run the CLI: `qasphere junit-upload ./test-results.xml`
+
+## Contribution
+
+### Development Workflow
+
+1. Create a new branch for your changes
+2. Make your changes and test them locally
+3. Submit a Pull Request with a clear description of your changes
+4. Ensure all tests pass and code follows the project's style guidelines
+
+### Publishing to NPM
+
+To publish a new version to NPM:
+
+1. Add the `publish` label to your Pull Request
+2. Once the PR is merged, the package will be automatically published to NPM
+3. The version will be automatically incremented based on conventional commits in the PR
+
+Note: Only maintainers can add the `publish` label to PRs.
