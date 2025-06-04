@@ -1,6 +1,7 @@
 import { Arguments, Argv, CommandModule } from 'yargs'
 import chalk from 'chalk'
 import { JUnitResultUploader } from '../utils/junit/JUnitResultUploader'
+import { loadEnvs } from '../utils/env'
 
 export interface JUnitArgs {
 	runUrl?: string
@@ -65,6 +66,7 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 	}
 
 	handler = async (args: Arguments<JUnitArgs>) => {
+		loadEnvs()
 		const handler = new JUnitResultUploader(args)
 		await handler.handle()
 	}
