@@ -34,3 +34,6 @@ jobs:
 
       - name: Build project
         run: npm run build
+
+      - name: CLI smoke test
+        run: node ./build/bin/qasphere.js --help

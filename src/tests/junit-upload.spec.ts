@@ -13,6 +13,7 @@ const runURL = `${baseURL}/project/${projectCode}/run/${runId}`
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 
 process.env['QAS_TOKEN'] = 'QAS_TOKEN'
+process.env['QAS_URL'] = 'http://mock-qas-server.com'
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
