@@ -117,19 +117,6 @@ The project code in your test names must match the project code in QA Sphere.
 
 ## Contribution
 
-### Development Workflow
+Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
 
-1. Create a new branch for your changes
-2. Make your changes and test them locally
-3. Submit a Pull Request with a clear description of your changes
-4. Ensure all tests pass and code follows the project's style guidelines
-
-### Publishing to NPM
-
-To publish a new version to NPM:
-
-1. Add the `publish` label to your Pull Request
-2. Once the PR is merged, the package will be automatically published to NPM
-3. The version will be automatically incremented based on conventional commits in the PR
-
-Note: Only maintainers can add the `publish` label to PRs.
+Publishing: Add `publish` label to PR for auto-release to NPM (maintainers only)

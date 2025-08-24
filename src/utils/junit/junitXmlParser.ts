@@ -159,7 +159,7 @@ const getResultMessage = (...options: GetResultMessageOption[]): string | undefi
 				message += `<p>${escapeHtml(r._)}</p>`
 				return
 			} else if (option.type === 'code') {
-				message += `<code>${escapeHtml(r._)}</code>`
+				message += `<pre><code>${escapeHtml(r._)}</code></pre>`
 				return
 			}
 		})
