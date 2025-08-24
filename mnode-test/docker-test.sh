@@ -54,6 +54,12 @@ echo ""
 
 NODE_VERSIONS=("18" "20" "22" "24")
 
+# Get current user ID for fixing permissions on Linux
+FIX_PERMS=""
+if [ "$(uname)" = "Linux" ]; then
+    FIX_PERMS="&& chown -R $(id -u):$(id -g) /test"
+fi
+
 for VERSION in "${NODE_VERSIONS[@]}"; do
     echo "Testing with Node.js v${VERSION}..."
     echo "----------------------------------------"
@@ -103,6 +109,9 @@ for VERSION in "${NODE_VERSIONS[@]}"; do
             fi
             
             echo '✓ npx execution works correctly'
+            
+            # Fix ownership on Linux
+            ${FIX_PERMS}
         "
 
     echo "✓ Node.js v${VERSION}: PASSED"
