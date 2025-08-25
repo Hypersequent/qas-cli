@@ -1,5 +1,9 @@
 # QAS CLI
 
+[![npm version](https://img.shields.io/npm/v/qas-cli.svg)](https://www.npmjs.com/package/qas-cli)
+[![license](https://img.shields.io/npm/l/qas-cli)](https://github.com/Hypersequent/qas-cli/blob/main/LICENSE)
+[![CI](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml)
+
 ## Description
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
@@ -12,11 +16,13 @@ The tool can upload test case results from JUnit XML files to QA Sphere test run
 
 Node.js version 18.0.0 or higher.
 
-### Via NPX 
+### Via NPX
 
-Simply run `npx qas-cli`. On first use, you'll need to agree to download the package. You can use `npx qas-cli` in all contexts instead of the `qasphere` command.  
+Simply run `npx qas-cli`. On first use, you'll need to agree to download the package. You can use `npx qas-cli` in all contexts instead of the `qasphere` command.
 
 Verify installation: `npx qas-cli --version`
+
+**Note:** npx caches packages. To ensure latest version, clear cache with `npx clear-npx-cache`.
 
 ### Via NPM
 
@@ -25,6 +31,8 @@ npm install -g qas-cli
 ```
 
 Verify installation: `qasphere --version`
+
+**Update:** Run `npm update -g qas-cli` to get the latest version.
 
 ## Environment
 
@@ -35,10 +43,10 @@ The CLI requires the following variables to be defined:
 
 These variables could be defined:
 - as environment variables
-- in .env of a current working directory 
+- in .env of a current working directory
 - in a special `.qaspherecli` configuration file in your project directory (or any parent directory)
 
-Example: .qaspherecli 
+Example: .qaspherecli
 ```sh
 # .qaspherecli
 QAS_TOKEN=your_token
@@ -104,32 +112,13 @@ Examples:
 
 The project code in your test names must match the project code in QA Sphere.
 
-## Development 
+### Development (for those who want to contribute to the tool)
 
-### Getting Started with Development
+1. Install and build: `npm install && npm run build && npm link`
+2. Get test account at [qasphere.com](https://qasphere.com/) (includes demo project)
+3. Configure `.qaspherecli` with credentials
+4. Test with sample XML from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
-1. Clone the repository and install dependencies 
-2. Build the code with `npm run build` and make it globally available using `npm link`
-3. Create a project with test cases by registering on [qasphere.com](https://qasphere.com/). QA Sphere provides a demo **Bistro Delivery** project out of the box
-4. Get a JUnit XML file - you can use sample test cases from the JUnit XML file generated in [this repository](https://github.com/Hypersequent/bistro-e2e)
-5. Create a `.qaspherecli` file with your QA Sphere configuration
-6. Run the CLI: `qasphere junit-upload ./test-results.xml`
+Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
 
-## Contribution
-
-### Development Workflow
-
-1. Create a new branch for your changes
-2. Make your changes and test them locally
-3. Submit a Pull Request with a clear description of your changes
-4. Ensure all tests pass and code follows the project's style guidelines
-
-### Publishing to NPM
-
-To publish a new version to NPM:
-
-1. Add the `publish` label to your Pull Request
-2. Once the PR is merged, the package will be automatically published to NPM
-3. The version will be automatically incremented based on conventional commits in the PR
-
-Note: Only maintainers can add the `publish` label to PRs.
+Publishing: Add `publish` label to PR for auto-release to NPM (maintainers only)
