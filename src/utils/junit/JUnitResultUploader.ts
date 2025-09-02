@@ -128,7 +128,7 @@ export class JUnitResultUploader {
 			],
 		})
 
-		console.log(chalk.green(`Created new test run with ID: ${runId.id}`))
+		console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
 		return runId
 	}
 
