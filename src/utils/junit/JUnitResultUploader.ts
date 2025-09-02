@@ -48,7 +48,6 @@ export class JUnitResultUploader {
 			console.log(chalk.blue(`Using existing test run: ${this.args.runUrl}`))
 			const handler = new JUnitCommandHandler({
 				...this.args,
-				token: this.apiToken,
 			})
 			await handler.handle()
 			return
@@ -117,19 +116,34 @@ export class JUnitResultUploader {
 			? processTemplate(this.args.runName)
 			: processTemplate('Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}')
 
-		const runId = await this.api.runs.createRun(this.project, {
-			title,
-			description: 'Test run created through automation pipeline',
-			type: 'static_struct',
-			queryPlans: [
-				{
-					tcaseIds: tcases.data.map((t: TCaseBySeq) => t.id),
-				},
-			],
-		})
+		try {
+			const runId = await this.api.runs.createRun(this.project, {
+				title,
+				description: 'Test run created through automation pipeline',
+				type: 'static_struct',
+				queryPlans: [
+					{
+						tcaseIds: tcases.data.map((t: TCaseBySeq) => t.id),
+					},
+				],
+			})
 
-		console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
-		return runId
+			console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
+			return runId
+		} catch (error) {
+			// Check if the error is about conflicting run ID
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			const conflictMatch = errorMessage.match(/conflicting run id: (\d+)$/)
+
+			if (conflictMatch) {
+				const existingRunId = conflictMatch[1]
+				console.log(chalk.yellow(`Reusing existing test run "${title}" with ID: ${existingRunId}`))
+				return { id: existingRunId }
+			}
+
+			// If it's not a conflicting run ID error, re-throw the original error
+			throw error
+		}
 	}
 
 	private async uploadResults(runId: CreateRunResponse) {
@@ -137,7 +151,6 @@ export class JUnitResultUploader {
 		const newHandler = new JUnitCommandHandler({
 			...this.args,
 			runUrl: newRunUrl,
-			token: this.apiToken,
 		})
 		await newHandler.handle()
 	}
