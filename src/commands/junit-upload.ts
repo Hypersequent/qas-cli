@@ -5,6 +5,7 @@ import { loadEnvs } from '../utils/env'
 
 export interface JUnitArgs {
 	runUrl?: string
+	runName?: string
 	token: string
 	files: string[]
 	force: boolean
@@ -23,6 +24,11 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 				type: 'string',
 				requiresArg: true,
 			},
+			'run-name': {
+				describe:
+					'Optional name template for creating new test run when run url is not specified. If not specified, "Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}" is used as default',
+				type: 'string',
+			},
 			attachments: {
 				describe: 'Try to detect any attachments and upload it with the test result',
 				type: 'boolean',
@@ -39,12 +45,22 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
 		argv.example(
 			'$0 junit-upload ./test-results.xml',
-			'Create a new test run and upload results (project code detected from test names)'
+			'Create a new test run with default name template and upload results (project code detected from test names)'
 		)
 
 		argv.example(
 			'$0 junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml',
 			'Upload results to existing run ID 23 of Project P1'
+		)
+
+		argv.example(
+			'$0 junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml',
+			'Create a new run with name template using environment variable and date placeholders and upload results'
+		)
+
+		argv.example(
+			'$0 junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {hh}:{mm}" ./test-results.xml',
+			'Create a new run with name template using date and time placeholders and upload results'
 		)
 
 		argv.epilogue(`Requirements:
@@ -60,7 +76,20 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 
     Required environment variables (in .qaspherecli or exported):
     - QAS_TOKEN: Your QASphere API token
-    - QAS_URL: Your QASphere instance URL (e.g., http://tenant1.localhost:5173)`)
+    - QAS_URL: Your QASphere instance URL (e.g., http://tenant1.localhost:5173)
+
+Run name template placeholders:
+    - ${chalk.bold('{env:VAR_NAME}')}: Environment variables
+    - ${chalk.bold('{YYYY}')}: 4-digit year
+    - ${chalk.bold('{YY}')}: 2-digit year
+    - ${chalk.bold('{MMM}')}: 3-letter month (e.g., Jan, Feb, Mar)
+    - ${chalk.bold('{MM}')}: 2-digit month
+    - ${chalk.bold('{DD}')}: 2-digit day
+    - ${chalk.bold('{HH}')}: 2-digit hour (24-hour format)
+    - ${chalk.bold('{hh}')}: 2-digit hour (12-hour format)
+    - ${chalk.bold('{mm}')}: 2-digit minute
+    - ${chalk.bold('{ss}')}: 2-digit second
+    - ${chalk.bold('{AMPM}')}: AM/PM`)
 
 		return argv as Argv<JUnitArgs>
 	}

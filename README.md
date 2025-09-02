@@ -64,34 +64,62 @@ The `junit-upload` command creates a new test run within a QA Sphere project fro
 
 ### Options
 
-- `-r, --run-url` - Optional URL of an existing Run for uploading results
+- `-r, --run-url` - Optional URL of an existing run for uploading results (a new run is created if not specified)
+- `--run-name` - Optional name template for creating new test run when run url is not specified (supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders). If not specified, `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}` is used as default
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
 - `-h, --help` - Show command help
+
+### Run Name Template Placeholders
+
+The `--run-name` option supports the following placeholders:
+
+- `{env:VARIABLE_NAME}` - Environment variables (e.g., `{env:BUILD_NUMBER}`, `{env:CI_COMMIT_SHA}`)
+- `{YYYY}` - 4-digit year
+- `{YY}` - 2-digit year
+- `{MMM}` - 3-letter month (e.g., Jan, Feb, Mar)
+- `{MM}` - 2-digit month
+- `{DD}` - 2-digit day
+- `{HH}` - 2-digit hour in 24-hour format
+- `{hh}` - 2-digit hour in 12-hour format
+- `{mm}` - 2-digit minute
+- `{ss}` - 2-digit second
+
+**Note:** The `--run-name` option is only used when creating new test runs (i.e., when `--run-url` is not specified).
 
 ### Usage Examples
 
 Ensure the required environment variables are defined before running these commands:
 
-1. Create a new test run and upload results:
-```bash
-qasphere junit-upload ./test-results.xml
-```
+1. Create a new test run with default name template (`Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`) and upload results:
+  ```bash
+  qasphere junit-upload ./test-results.xml
+  ```
 
 2. Upload to an existing test run:
-```bash
-qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
-```
+  ```bash
+  qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
+  ```
 
-3. Upload results with attachments:
-```bash
-qasphere junit-upload --attachments ./test1.xml
-```
+3. Create a new test run with name template using environment variables and date placeholders and upload results:
+  ```bash
+  qasphere junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
+  ```
 
-4. Force upload even with missing test cases:
-```bash
-qasphere junit-upload --force ./test-results.xml
-```
+4. Create a new test run with name template using date/time placeholders and upload results:
+  ```bash
+  qasphere junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {hh}:{mm}" ./test-results.xml
+  ```
+
+5. Upload results with attachments:
+  ```bash
+  qasphere junit-upload --attachments ./test1.xml
+  ```
+
+6. Force upload even with missing test cases:
+  ```bash
+  qasphere junit-upload --force ./test-results.xml
+  ```
 
 ## JUnit XML File Requirements
 

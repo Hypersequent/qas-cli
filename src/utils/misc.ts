@@ -52,7 +52,7 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 		const matches = parseUrl(
 			args.runUrl,
 			/^(\S+)\/project\/(\w+)\/run\/(\d+)(\/\S*)?$/,
-			'Invalid --run-url specified. Must be in the format: https://example.com/project/PROJECT/run/RUN',
+			'Invalid --run-url specified. Must be in the format: https://example.com/project/PROJECT/run/RUN'
 		)
 
 		return {
@@ -85,4 +85,62 @@ export const printError = (e: unknown) => {
 
 export const validateNodeVersion = () => {
 	return gte(process.version, REQUIRED_NODE_VERSION)
+}
+
+/**
+ * Processes template placeholders in a string with environment variables and date components
+ * Supported placeholders:
+ * - {env:VAR_NAME} - Environment variables
+ * - {YYYY} - 4-digit year
+ * - {YY} - 2-digit year
+ * - {MMM} - 3-letter month (e.g., Jan, Feb, Mar)
+ * - {MM} - 2-digit month
+ * - {DD} - 2-digit day
+ * - {HH} - 2-digit hour (24-hour format)
+ * - {hh} - 2-digit hour (12-hour format)
+ * - {mm} - 2-digit minute
+ * - {ss} - 2-digit second
+ * - {AMPM} - AM/PM indicator
+ */
+export const processTemplate = (template: string): string => {
+	const now = new Date()
+	const monthNames = [
+		'Jan',
+		'Feb',
+		'Mar',
+		'Apr',
+		'May',
+		'Jun',
+		'Jul',
+		'Aug',
+		'Sep',
+		'Oct',
+		'Nov',
+		'Dec',
+	]
+
+	// Get 12-hour format hour and AM/PM
+	const hour24 = now.getHours()
+	const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24
+	const ampm = hour24 < 12 ? 'AM' : 'PM'
+
+	return (
+		template
+			// Environment variables: {env:VAR_NAME}
+			.replace(/\{env:([^}]+)\}/g, (_, varName) => {
+				const value = process.env[varName]
+				return value !== undefined ? value : `{env:${varName}}`
+			})
+			// Date placeholders
+			.replace(/\{YYYY\}/g, String(now.getFullYear()))
+			.replace(/\{YY\}/g, String(now.getFullYear()).slice(-2))
+			.replace(/\{MMM\}/g, monthNames[now.getMonth()])
+			.replace(/\{MM\}/g, String(now.getMonth() + 1).padStart(2, '0'))
+			.replace(/\{DD\}/g, String(now.getDate()).padStart(2, '0'))
+			.replace(/\{HH\}/g, String(hour24).padStart(2, '0'))
+			.replace(/\{hh\}/g, String(hour12).padStart(2, '0'))
+			.replace(/\{mm\}/g, String(now.getMinutes()).padStart(2, '0'))
+			.replace(/\{ss\}/g, String(now.getSeconds()).padStart(2, '0'))
+			.replace(/\{AMPM\}/g, ampm)
+	)
 }

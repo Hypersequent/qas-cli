@@ -2,7 +2,7 @@ import { Arguments } from 'yargs'
 import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml } from './junitXmlParser'
 import chalk from 'chalk'
-import { parseRunUrl, printErrorThenExit } from '../misc'
+import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -113,16 +113,12 @@ export class JUnitResultUploader {
 	}
 
 	private async createNewRun(tcases: PaginatedResponse<TCaseBySeq>) {
+		const title = this.args.runName
+			? processTemplate(this.args.runName)
+			: processTemplate('Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}')
+
 		const runId = await this.api.runs.createRun(this.project, {
-			title: `Automated test run - ${new Date().toLocaleString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit',
-				second: '2-digit',
-				hour12: true
-			})}`,
+			title,
 			description: 'Test run created through automation pipeline',
 			type: 'static_struct',
 			queryPlans: [
