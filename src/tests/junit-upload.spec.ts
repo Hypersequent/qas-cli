@@ -4,7 +4,7 @@ import { setupServer } from 'msw/node'
 import { HttpResponse, http } from 'msw'
 import { runTestCases } from './fixtures/testcases'
 import { countMockedApiCalls } from './utils'
-import { processTemplate } from '../utils/misc'
+import { processTemplate, monthNames } from '../utils/misc'
 
 const projectCode = 'TEST'
 const runId = '1'
@@ -98,23 +98,8 @@ describe('Template string processing', () => {
 		try {
 			const now = new Date()
 			const template = '{env:TEST_BUILD} - {YYYY}/{YY}/{MMM}/{MM}/{DD} {HH}:{hh}:{mm}:{ss} {AMPM}'
-			const result = processTemplate(template)
+			const result = processTemplate(template, now)
 
-			// Build expected result
-			const monthNames = [
-				'Jan',
-				'Feb',
-				'Mar',
-				'Apr',
-				'May',
-				'Jun',
-				'Jul',
-				'Aug',
-				'Sep',
-				'Oct',
-				'Nov',
-				'Dec',
-			]
 			const yearStr = String(now.getFullYear())
 			const month = now.getMonth()
 			const monthStr = String(month + 1).padStart(2, '0')

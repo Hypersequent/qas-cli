@@ -2,6 +2,21 @@ import { gte } from 'semver'
 import { REQUIRED_NODE_VERSION } from './config'
 import chalk from 'chalk'
 
+export const monthNames = [
+	'Jan',
+	'Feb',
+	'Mar',
+	'Apr',
+	'May',
+	'Jun',
+	'Jul',
+	'Aug',
+	'Sep',
+	'Oct',
+	'Nov',
+	'Dec',
+]
+
 export const twirlLoader = () => {
 	const chars = ['\\', '|', '/', '-']
 	let x = 0
@@ -101,26 +116,14 @@ export const validateNodeVersion = () => {
  * - {mm} - 2-digit minute
  * - {ss} - 2-digit second
  * - {AMPM} - AM/PM indicator
+ *
+ * The `date` parameter is optional and defaults to the current date and time.
  */
-export const processTemplate = (template: string): string => {
-	const now = new Date()
-	const monthNames = [
-		'Jan',
-		'Feb',
-		'Mar',
-		'Apr',
-		'May',
-		'Jun',
-		'Jul',
-		'Aug',
-		'Sep',
-		'Oct',
-		'Nov',
-		'Dec',
-	]
+export const processTemplate = (template: string, date?: Date): string => {
+	date = date ?? new Date()
 
 	// Get 12-hour format hour and AM/PM
-	const hour24 = now.getHours()
+	const hour24 = date.getHours()
 	const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24
 	const ampm = hour24 < 12 ? 'AM' : 'PM'
 
@@ -132,15 +135,15 @@ export const processTemplate = (template: string): string => {
 				return value !== undefined ? value : `{env:${varName}}`
 			})
 			// Date placeholders
-			.replace(/\{YYYY\}/g, String(now.getFullYear()))
-			.replace(/\{YY\}/g, String(now.getFullYear()).slice(-2))
-			.replace(/\{MMM\}/g, monthNames[now.getMonth()])
-			.replace(/\{MM\}/g, String(now.getMonth() + 1).padStart(2, '0'))
-			.replace(/\{DD\}/g, String(now.getDate()).padStart(2, '0'))
+			.replace(/\{YYYY\}/g, String(date.getFullYear()))
+			.replace(/\{YY\}/g, String(date.getFullYear()).slice(-2))
+			.replace(/\{MMM\}/g, monthNames[date.getMonth()])
+			.replace(/\{MM\}/g, String(date.getMonth() + 1).padStart(2, '0'))
+			.replace(/\{DD\}/g, String(date.getDate()).padStart(2, '0'))
 			.replace(/\{HH\}/g, String(hour24).padStart(2, '0'))
 			.replace(/\{hh\}/g, String(hour12).padStart(2, '0'))
-			.replace(/\{mm\}/g, String(now.getMinutes()).padStart(2, '0'))
-			.replace(/\{ss\}/g, String(now.getSeconds()).padStart(2, '0'))
+			.replace(/\{mm\}/g, String(date.getMinutes()).padStart(2, '0'))
+			.replace(/\{ss\}/g, String(date.getSeconds()).padStart(2, '0'))
 			.replace(/\{AMPM\}/g, ampm)
 	)
 }
