@@ -26,6 +26,12 @@ export class JUnitResultUploader {
 		if (args.runUrl) {
 			// Handle existing run URL
 			const { url, project, run } = parseRunUrl(args)
+			if (url !== this.baseUrl) {
+				printErrorThenExit(
+					`Invalid --run-url specified. Must be in the format: ${this.baseUrl}/project/PROJECT/run/RUN`
+				)
+			}
+
 			this.baseUrl = url
 			this.project = project
 			this.run = run
@@ -129,6 +135,9 @@ export class JUnitResultUploader {
 			})
 
 			console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
+			console.log(
+				chalk.green(`New test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
+			)
 			return runId
 		} catch (error) {
 			// Check if the error is about conflicting run ID
