@@ -69,7 +69,7 @@ export class JUnitResultUploader {
 		const tcases = await this.getTestCases(tcaseRefs)
 		const runId = await this.createNewRun(tcases)
 		console.log(
-			chalk.green(`Test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
+			chalk.blue(`Test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
 		)
 		await this.uploadResults(runId)
 	}
