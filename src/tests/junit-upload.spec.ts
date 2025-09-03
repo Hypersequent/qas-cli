@@ -17,6 +17,7 @@ process.env['QAS_TOKEN'] = 'QAS_TOKEN'
 process.env['QAS_URL'] = baseURL
 
 let lastCreatedRunTitle = ''
+let createRunTitleConflict = false
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}`, ({ request }) => {
@@ -34,6 +35,18 @@ const server = setupServer(
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		const body = (await request.json()) as { title: string }
 		lastCreatedRunTitle = body.title
+
+		if (createRunTitleConflict) {
+			return HttpResponse.json(
+				{
+					message: 'run title must be unique within the milestone, conflicting run id: 1',
+				},
+				{
+					status: 403,
+				}
+			)
+		}
+
 		return HttpResponse.json({
 			id: parseInt(runId),
 		})
@@ -256,6 +269,7 @@ describe('Uploading JUnit xml files', () => {
 	describe('Run name template processing', () => {
 		afterEach(() => {
 			lastCreatedRunTitle = ''
+			createRunTitleConflict = false
 		})
 
 		test('Should create new run with name template using environment variables', async () => {
@@ -314,6 +328,18 @@ describe('Uploading JUnit xml files', () => {
 					delete process.env.TEST_PROJECT
 				}
 			}
+		})
+
+		test('Should reuse existing run when run title is already used', async () => {
+			const fileUploadCount = countFileUploadApiCalls()
+			const tcaseUploadCount = countResultUploadApiCalls()
+
+			createRunTitleConflict = true
+			await run(`junit-upload --run-name "duplicate run title" ${xmlBasePath}/matching-tcases.xml`)
+
+			expect(lastCreatedRunTitle).toBe('duplicate run title')
+			expect(fileUploadCount()).toBe(0)
+			expect(tcaseUploadCount()).toBe(5)
 		})
 
 		test('Should use default name template when --run-name is not specified', async () => {

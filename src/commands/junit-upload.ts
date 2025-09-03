@@ -6,7 +6,6 @@ import { loadEnvs } from '../utils/env'
 export interface JUnitArgs {
 	runUrl?: string
 	runName?: string
-	token: string
 	files: string[]
 	force: boolean
 	attachments: boolean
