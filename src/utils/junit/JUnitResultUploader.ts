@@ -68,6 +68,9 @@ export class JUnitResultUploader {
 		const tcaseRefs = await this.extractTestCaseRefs()
 		const tcases = await this.getTestCases(tcaseRefs)
 		const runId = await this.createNewRun(tcases)
+		console.log(
+			chalk.green(`Test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
+		)
 		await this.uploadResults(runId)
 	}
 
@@ -135,9 +138,6 @@ export class JUnitResultUploader {
 			})
 
 			console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
-			console.log(
-				chalk.green(`New test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
-			)
 			return runId
 		} catch (error) {
 			// Check if the error is about conflicting run ID
