@@ -2,7 +2,7 @@ import { Arguments } from 'yargs'
 import { JUnitArgs } from '../../commands/junit-upload'
 import { parseJUnitXml } from './junitXmlParser'
 import chalk from 'chalk'
-import { parseRunUrl, printErrorThenExit } from '../misc'
+import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { Api, createApi } from '../../api'
 import { readFileSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -26,6 +26,12 @@ export class JUnitResultUploader {
 		if (args.runUrl) {
 			// Handle existing run URL
 			const { url, project, run } = parseRunUrl(args)
+			if (url !== this.baseUrl) {
+				printErrorThenExit(
+					`Invalid --run-url specified. Must be in the format: ${this.baseUrl}/project/PROJECT/run/RUN`
+				)
+			}
+
 			this.baseUrl = url
 			this.project = project
 			this.run = run
@@ -48,7 +54,6 @@ export class JUnitResultUploader {
 			console.log(chalk.blue(`Using existing test run: ${this.args.runUrl}`))
 			const handler = new JUnitCommandHandler({
 				...this.args,
-				token: this.apiToken,
 			})
 			await handler.handle()
 			return
@@ -63,6 +68,9 @@ export class JUnitResultUploader {
 		const tcaseRefs = await this.extractTestCaseRefs()
 		const tcases = await this.getTestCases(tcaseRefs)
 		const runId = await this.createNewRun(tcases)
+		console.log(
+			chalk.blue(`Test run URL: ${this.baseUrl}/project/${this.project}/run/${runId.id}`)
+		)
 		await this.uploadResults(runId)
 	}
 
@@ -113,27 +121,38 @@ export class JUnitResultUploader {
 	}
 
 	private async createNewRun(tcases: PaginatedResponse<TCaseBySeq>) {
-		const runId = await this.api.runs.createRun(this.project, {
-			title: `Automated test run - ${new Date().toLocaleString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit',
-				second: '2-digit',
-				hour12: true
-			})}`,
-			description: 'Test run created through automation pipeline',
-			type: 'static_struct',
-			queryPlans: [
-				{
-					tcaseIds: tcases.data.map((t: TCaseBySeq) => t.id),
-				},
-			],
-		})
+		const title = this.args.runName
+			? processTemplate(this.args.runName)
+			: processTemplate('Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}')
 
-		console.log(chalk.green(`Created new test run with ID: ${runId.id}`))
-		return runId
+		try {
+			const runId = await this.api.runs.createRun(this.project, {
+				title,
+				description: 'Test run created through automation pipeline',
+				type: 'static_struct',
+				queryPlans: [
+					{
+						tcaseIds: tcases.data.map((t: TCaseBySeq) => t.id),
+					},
+				],
+			})
+
+			console.log(chalk.green(`Created new test run "${title}" with ID: ${runId.id}`))
+			return runId
+		} catch (error) {
+			// Check if the error is about conflicting run ID
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			const conflictMatch = errorMessage.match(/conflicting run id: (\d+)$/)
+
+			if (conflictMatch) {
+				const existingRunId = conflictMatch[1]
+				console.log(chalk.yellow(`Reusing existing test run "${title}" with ID: ${existingRunId}`))
+				return { id: existingRunId }
+			}
+
+			// If it's not a conflicting run ID error, re-throw the original error
+			throw error
+		}
 	}
 
 	private async uploadResults(runId: CreateRunResponse) {
@@ -141,7 +160,6 @@ export class JUnitResultUploader {
 		const newHandler = new JUnitCommandHandler({
 			...this.args,
 			runUrl: newRunUrl,
-			token: this.apiToken,
 		})
 		await newHandler.handle()
 	}
