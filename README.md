@@ -92,34 +92,41 @@ The `--run-name` option supports the following placeholders:
 Ensure the required environment variables are defined before running these commands:
 
 1. Create a new test run with default name template (`Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`) and upload results:
-  ```bash
-  qasphere junit-upload ./test-results.xml
-  ```
+    ```bash
+    qasphere junit-upload ./test-results.xml
+    ```
 
 2. Upload to an existing test run:
-  ```bash
-  qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
-  ```
+    ```bash
+    qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
+    ```
 
-3. Create a new test run with name template using environment variables and date placeholders and upload results:
-  ```bash
-  qasphere junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
-  ```
+3. Create a new test run with name template without any placeholders and upload results:
+    ```bash
+    qasphere junit-upload --run-name "v1.4.4-rc5" ./test-results.xml
+    ```
 
-4. Create a new test run with name template using date/time placeholders and upload results:
-  ```bash
-  qasphere junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {hh}:{mm}" ./test-results.xml
-  ```
+4. Create a new test run with name template using environment variables and date placeholders and upload results:
+    ```bash
+    qasphere junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
+    ```
+    If `BUILD_NUMBER` environment variable is set to `v1.4.4-rc5` and today's date is January 1, 2025, the run would be named "CI Build v1.4.4-rc5 - 2025-01-01".
 
-5. Upload results with attachments:
-  ```bash
-  qasphere junit-upload --attachments ./test1.xml
-  ```
+5. Create a new test run with name template using date/time placeholders and upload results:
+    ```bash
+    qasphere junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" ./test-results.xml
+    ```
+    If the current time is 10:34 PM on January 1, 2025, the run would be named "Nightly Tests 2025/01/01 22:34".
 
-6. Force upload even with missing test cases:
-  ```bash
-  qasphere junit-upload --force ./test-results.xml
-  ```
+6. Upload results with attachments:
+    ```bash
+    qasphere junit-upload --attachments ./test1.xml
+    ```
+
+7. Force upload even with missing test cases:
+    ```bash
+    qasphere junit-upload --force ./test-results.xml
+    ```
 
 ## JUnit XML File Requirements
 

@@ -54,13 +54,18 @@ export class JUnitUploadCommandModule implements CommandModule<unknown, JUnitArg
 		)
 
 		argv.example(
-			'$0 junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml',
-			'Create a new run with name template using environment variable and date placeholders and upload results'
+			'$0 junit-upload --run-name "v1.4.4-rc5" ./test-results.xml',
+			'Create a new test run with name template without any placeholders and upload results'
 		)
 
 		argv.example(
-			'$0 junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {hh}:{mm}" ./test-results.xml',
-			'Create a new run with name template using date and time placeholders and upload results'
+			'$0 junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml',
+			'Create a new test run with name template using environment variable and date placeholders and upload results'
+		)
+
+		argv.example(
+			'$0 junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" ./test-results.xml',
+			'Create a new test run with name template using date and time placeholders and upload results'
 		)
 
 		argv.epilogue(`Requirements:
