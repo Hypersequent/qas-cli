@@ -32,7 +32,6 @@ export class JUnitResultUploader {
 				)
 			}
 
-			this.baseUrl = url
 			this.project = project
 			this.run = run
 		} else {
