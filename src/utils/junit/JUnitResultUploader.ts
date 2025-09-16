@@ -21,7 +21,7 @@ export class JUnitResultUploader {
 	constructor(private args: Arguments<JUnitArgs>) {
 		// Get required environment variables
 		this.apiToken = process.env.QAS_TOKEN!
-		this.baseUrl = process.env.QAS_URL!
+		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
 
 		if (args.runUrl) {
 			// Handle existing run URL
