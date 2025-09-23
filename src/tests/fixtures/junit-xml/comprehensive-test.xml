@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites id="comprehensive-test" name="Comprehensive Test Suite" tests="12" failures="3" skipped="4" errors="3" time="25.123">
+  <testsuite name="failure.scenarios.spec.ts" timestamp="2024-09-23T19:15:00.000Z" hostname="test-runner" tests="3" failures="3" skipped="0" time="8.456" errors="0">
+    <!-- Failure with only type -->
+    <testcase name="TEST-001 Failure with only type" classname="failure.scenarios.spec.ts" time="2.123">
+      <failure type="AssertionError">
+      </failure>
+    </testcase>
+
+    <!-- Failure with type and message -->
+    <testcase name="TEST-002 Failure with type and message" classname="failure.scenarios.spec.ts" time="3.234">
+      <failure type="AssertionError" message="Expected true but was false">
+      </failure>
+    </testcase>
+
+    <!-- Failure with type, message and text content -->
+    <testcase name="TEST-003 Failure with type, message and text content" classname="failure.scenarios.spec.ts" time="3.099">
+      <failure type="AssertionError" message="Expected value did not match actual value">
+<![CDATA[
+  AssertionError: Expected value did not match actual value
+    at Object.assert (/path/to/test.js:15:23)
+    at TestCase.run (/path/to/test.js:45:12)
+    Stack trace continues...
+]]>
+      </failure>
+    </testcase>
+  </testsuite>
+
+  <testsuite name="error.scenarios.spec.ts" timestamp="2024-09-23T19:15:00.000Z" hostname="test-runner" tests="3" failures="0" skipped="0" time="6.789" errors="3">
+    <!-- Error with only type -->
+    <testcase name="TEST-004 Error with only type" classname="error.scenarios.spec.ts" time="1.456">
+      <error type="NullPointerException">
+      </error>
+    </testcase>
+
+    <!-- Error with type and text content -->
+    <testcase name="TEST-005 Error with type and text content" classname="error.scenarios.spec.ts" time="2.567">
+      <error type="RuntimeException">
+<![CDATA[
+RuntimeException: Unexpected error occurred during test execution
+]]>
+      </error>
+    </testcase>
+
+    <!-- Error with type, message and text content -->
+    <testcase name="TEST-006 Error with type, message and text content" classname="error.scenarios.spec.ts" time="2.766">
+      <error type="IOException" message="File not found">
+<![CDATA[
+  IOException: File not found
+    at FileReader.read (/path/to/file.js:23:45)
+    at TestSetup.initialize (/path/to/setup.js:67:89)
+    Full stack trace here...
+]]>
+      </error>
+    </testcase>
+  </testsuite>
+
+  <testsuite name="skipped.scenarios.spec.ts" timestamp="2024-09-23T19:15:00.000Z" hostname="test-runner" tests="6" failures="0" skipped="4" time="9.878" errors="0">
+    <!-- Empty skipped -->
+    <testcase name="TEST-007 Empty skipped" classname="skipped.scenarios.spec.ts" time="0.001">
+      <skipped>
+      </skipped>
+    </testcase>
+
+    <!-- Skipped with only message -->
+    <testcase name="TEST-008 Skipped with only message" classname="skipped.scenarios.spec.ts" time="0.002">
+      <skipped message="Test not applicable for current configuration">
+      </skipped>
+    </testcase>
+
+    <!-- Skipped with only text content -->
+    <testcase name="TEST-009 Skipped with only text content" classname="skipped.scenarios.spec.ts" time="0.003">
+      <skipped>
+        This test was skipped because the required feature is not enabled
+      </skipped>
+    </testcase>
+
+    <!-- Skipped with both message and text content -->
+    <testcase name="TEST-010 Skipped with message and text content" classname="skipped.scenarios.spec.ts" time="0.004">
+      <skipped message="Environment not ready">
+<![CDATA[
+Test skipped due to environment not being ready.
+The database connection is not available.
+Please check the configuration and try again.
+]]>
+      </skipped>
+    </testcase>
+
+    <!-- Successful test cases for completeness -->
+    <testcase name="TEST-011 Successful test" classname="skipped.scenarios.spec.ts" time="4.433">
+      <system-out>
+<![CDATA[
+Test completed successfully with all assertions passing.
+]]>
+      </system-out>
+    </testcase>
+
+    <testcase name="TEST-012 Another successful test" classname="skipped.scenarios.spec.ts" time="5.435">
+      <system-out>
+<![CDATA[
+[[ATTACHMENT|./test-results/successful-test-screenshot.png]]
+]]>
+      </system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

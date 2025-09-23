@@ -8,12 +8,21 @@ const stringContent = z.object({
 	_: z.string().optional(),
 })
 
-const resultSchema = stringContent.extend({
+const failureErrorSchema = stringContent.extend({
 	$: z.object({
 		message: z.string().optional(),
-		type: z.string().optional(),
+		type: z.string(),
 	}),
 })
+
+const skippedSchema = z.union([
+	z.string(),
+	stringContent.extend({
+		$: z.object({
+			message: z.string().optional(),
+		}).optional(),
+	})
+])
 
 const testCaseSchema = z.object({
 	$: z.object({
@@ -22,9 +31,9 @@ const testCaseSchema = z.object({
 	}),
 	'system-out': z.array(stringContent).optional(),
 	'system-err': z.array(stringContent).optional(),
-	failure: z.array(resultSchema).optional(),
-	skipped: z.array(resultSchema).optional(),
-	error: z.array(resultSchema).optional(),
+	failure: z.array(failureErrorSchema).optional(),
+	skipped: z.array(skippedSchema).optional(),
+	error: z.array(failureErrorSchema).optional(),
 })
 
 const xmlSchema = z.object({
@@ -145,7 +154,7 @@ const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
 }
 
 interface GetResultMessageOption {
-	result?: Partial<z.infer<typeof resultSchema>>[]
+	result?: (Partial<z.infer<typeof failureErrorSchema>> | Partial<z.infer<typeof skippedSchema>>)[]
 	type?: 'paragraph' | 'code'
 }
 
@@ -153,13 +162,15 @@ const getResultMessage = (...options: GetResultMessageOption[]): string | undefi
 	let message = ''
 	options.forEach((option) => {
 		option.result?.forEach((r) => {
-			if (!r._) return
+			// Handle both string and object formats from xml2js parsing
+			const content = typeof r === 'string' ? r : r._
+			if (!content) return
 
 			if (!option.type || option.type === 'paragraph') {
-				message += `<p>${escapeHtml(r._)}</p>`
+				message += `<p>${escapeHtml(content)}</p>`
 				return
 			} else if (option.type === 'code') {
-				message += `<pre><code>${escapeHtml(r._)}</code></pre>`
+				message += `<pre><code>${escapeHtml(content)}</code></pre>`
 				return
 			}
 		})
