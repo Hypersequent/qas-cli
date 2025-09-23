@@ -11,10 +11,14 @@ const stringContent = z.object({
 const failureErrorSchema = stringContent.extend({
 	$: z.object({
 		message: z.string().optional(),
-		type: z.string(),
+		type: z.string(), // type attribute is required for failure and error
 	}),
 })
 
+// As per https://github.com/windyroad/JUnit-Schema/blob/master/JUnit.xsd, only message attribute
+// and text content can be present for skipped (both optional)
+// 1. If message attribute or text content is present, skipped is parsed as an object
+// 2. If skipped is empty (no message attribute and text content), skipped is parsed as an string
 const skippedSchema = z.union([
 	z.string(),
 	stringContent.extend({
