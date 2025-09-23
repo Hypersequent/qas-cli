@@ -1,0 +1,9 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="1.0">
+  <testsuite name="splitvale/rune-status/rune-status.spec.ts" timestamp="2025-09-22T20:40:39.036Z" hostname="Marks" tests="1" failures="0" skipped="0" time="1.0" errors="0">
+    <testcase name="Rune Status: Basic Functionality › QST-2764: Verify that the &quot;ORB&quot; icon appears" classname="splitvale/rune-status/rune-status.spec.ts" time="0.123">
+      <system-out><![CDATA[[2025-09-22T20:40:39.804Z] [AppManager] [INFO] ViewManager initialized]]></system-out>
+      <system-err>
+      </system-err>
+    </testcase>
+  </testsuite>
+</testsuites>

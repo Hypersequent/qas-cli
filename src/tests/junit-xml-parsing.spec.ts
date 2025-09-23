@@ -69,4 +69,18 @@ describe('Junit XML parsing', () => {
         expect(skippedTests.some(tc => tc.name?.includes('only text content'))).toBe(true)
         expect(skippedTests.some(tc => tc.name?.includes('message and text content'))).toBe(true)
     })
+
+    test('Should handle empty <system-err> and similar empty tags', async () => {
+        const xmlPath = `${xmlBasePath}/empty-system-err.xml`
+        const xmlContent = await readFile(xmlPath, 'utf8')
+
+        const result = await parseJUnitXml(xmlContent, xmlBasePath)
+        expect(result.testcases).toHaveLength(1)
+
+        // Should parse as success (no failure/error/skipped present)
+        expect(result.testcases[0].type).toBe('success')
+
+        // Message should include system-out content but not fail on empty system-err
+        expect(result.testcases[0].message).toContain('ViewManager initialized')
+    })
 })
