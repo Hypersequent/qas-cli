@@ -163,7 +163,7 @@ const getResultMessage = (...options: GetResultMessageOption[]): string | undefi
 	options.forEach((option) => {
 		option.result?.forEach((r) => {
 			// Handle both string and object formats from xml2js parsing
-			const content = typeof r === 'string' ? r : r._
+			const content = (typeof r === 'string' ? r : r._)?.trim()
 			if (!content) return
 
 			if (!option.type || option.type === 'paragraph') {
