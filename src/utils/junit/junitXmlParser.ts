@@ -33,8 +33,10 @@ const testCaseSchema = z.object({
 		name: z.string().optional(),
 		time: z.string().optional(),
 	}),
-	'system-out': z.array(stringContent).optional(),
-	'system-err': z.array(stringContent).optional(),
+	// Some JUnit producers emit empty tags like <system-err></system-err> which
+	// xml2js may parse as empty strings. Accept both object and string forms.
+	'system-out': z.array(z.union([stringContent, z.string()])).optional(),
+	'system-err': z.array(z.union([stringContent, z.string()])).optional(),
 	failure: z.array(failureErrorSchema).optional(),
 	skipped: z.array(skippedSchema).optional(),
 	error: z.array(failureErrorSchema).optional(),
@@ -158,7 +160,11 @@ const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
 }
 
 interface GetResultMessageOption {
-	result?: (Partial<z.infer<typeof failureErrorSchema>> | Partial<z.infer<typeof skippedSchema>>)[]
+	result?: (
+		string |
+		Partial<z.infer<typeof failureErrorSchema>> |
+		Partial<z.infer<typeof skippedSchema>>
+	)[]
 	type?: 'paragraph' | 'code'
 }
 
@@ -191,8 +197,9 @@ const getAttachments = async (
 	const promises: Array<{ file: Promise<Buffer>; path: string; filename: string }> = []
 
 	for (const contents of out) {
-		if (contents._) {
-			const paths = extractAttachmentPaths(contents._)
+		const text = typeof contents === 'string' ? contents : contents._ ?? ''
+		if (text) {
+			const paths = extractAttachmentPaths(text)
 			paths.forEach((p) =>
 				promises.push({
 					file: getFile(p, basePath),
