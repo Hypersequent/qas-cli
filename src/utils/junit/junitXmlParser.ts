@@ -4,6 +4,13 @@ import { readFile } from 'fs/promises'
 import xml from 'xml2js'
 import z from 'zod'
 
+// Note about junit xml schema:
+// there are multiple schemas on the internet, and apparently some are more strict than others
+// we have to use LESS strict schema (see one from Jest, based on Jenkins JUnit schema)
+// see https://github.com/jest-community/jest-junit/blob/master/__tests__/lib/junit.xsd#L42
+
+
+
 const stringContent = z.object({
 	_: z.string().optional(),
 })
@@ -11,8 +18,8 @@ const stringContent = z.object({
 const failureErrorSchema = stringContent.extend({
 	$: z.object({
 		message: z.string().optional(),
-		type: z.string(), // type attribute is required for failure and error
-	}),
+		type: z.string().optional(), // type attribute is optional (some test runners like Jest don't include it)
+	}).optional(),
 })
 
 // As per https://github.com/windyroad/JUnit-Schema/blob/master/JUnit.xsd, only message attribute
