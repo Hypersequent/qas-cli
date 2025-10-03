@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="3" failures="1" errors="0" time="0.122">
+  <testsuite name="Math operations" errors="0" failures="1" skipped="0" timestamp="2025-10-03T13:24:21" time="0.096" tests="3">
+    <testcase classname="Math operations adds two numbers correctly" name="Math operations adds two numbers correctly" time="0">
+    </testcase>
+    <testcase classname="Math operations subtracts two numbers correctly" name="Math operations subtracts two numbers correctly" time="0.001">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 2
+Received: 3
+    at Object.toBe (/Users/a/tmp/jest-test/src/math.test.js:10:28)
+    at Promise.then.completed (/Users/a/tmp/jest-test/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/a/tmp/jest-test/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/a/tmp/jest-test/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/Users/a/tmp/jest-test/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/a/tmp/jest-test/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/a/tmp/jest-test/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/a/tmp/jest-test/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/a/tmp/jest-test/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/a/tmp/jest-test/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/a/tmp/jest-test/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/a/tmp/jest-test/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+    <testcase classname="Math operations multiplies two numbers correctly" name="Math operations multiplies two numbers correctly" time="0.001">
+    </testcase>
+  </testsuite>
+</testsuites>

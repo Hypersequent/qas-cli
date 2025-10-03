@@ -83,4 +83,27 @@ describe('Junit XML parsing', () => {
         // Message should include system-out content but not fail on empty system-err
         expect(result.testcases[0].message).toContain('ViewManager initialized')
     })
+
+    test('Should handle Jest failure without type attribute', async () => {
+        const xmlPath = `${xmlBasePath}/jest-failure-type-missing.xml`
+        const xmlContent = await readFile(xmlPath, 'utf8')
+
+        const result = await parseJUnitXml(xmlContent, xmlBasePath)
+        expect(result.testcases).toHaveLength(3)
+
+        // Verify test result types
+        const typeCounts = result.testcases.reduce((acc, tc) => {
+            acc[tc.type] = (acc[tc.type] || 0) + 1
+            return acc
+        }, {} as Record<string, number>)
+
+        expect(typeCounts.success).toBe(2)
+        expect(typeCounts.failure).toBe(1)
+
+        // Find the failure test case
+        const failedTest = result.testcases.find(tc => tc.type === 'failure')
+        expect(failedTest).toBeDefined()
+        expect(failedTest?.name).toContain('subtracts two numbers correctly')
+        expect(failedTest?.message).toContain('expect(received).toBe(expected)')
+    })
 })
