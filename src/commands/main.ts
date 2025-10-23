@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { JUnitUploadCommandModule } from './junit-upload'
+import { ResultUploadCommandModule } from './resultUpload'
 import { qasEnvs, qasEnvFile } from '../utils/env'
 import { getVersion } from '../utils/version'
 
@@ -11,7 +11,8 @@ export const run = (args: string | string[]) =>
 Required variables: ${qasEnvs.join(', ')}
   These should be either exported as env vars or defined in a ${qasEnvFile} file.`
 		)
-		.command(new JUnitUploadCommandModule())
+		.command(new ResultUploadCommandModule('junit-upload'))
+		.command(new ResultUploadCommandModule('playwright-json-upload'))
 		.demandCommand(1, "")
 		.help('h')
 		.alias('h', 'help')

@@ -1,54 +1,39 @@
 import { Arguments } from 'yargs'
-import { JUnitArgs } from '../../commands/junit-upload'
-import { parseJUnitXml, type JUnitResultType, type JUnitTestCase } from './junitXmlParser'
 import chalk from 'chalk'
-import { ResultStatus, RunTCase } from '../../api/schemas'
+import { RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
-import { readFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { TestCaseResult } from './types'
+import { ResultUploadCommandArgs } from './ResultUploadCommandHandler'
 
-export class JUnitCommandHandler {
+export class ResultUploader {
 	private api: Api
-
 	private project: string
-
 	private run: number
 
-	constructor(private args: Arguments<JUnitArgs>) {
+	constructor(private args: Arguments<ResultUploadCommandArgs>) {
 		const apiToken = process.env.QAS_TOKEN!
-		const {url, project, run} = parseRunUrl(args)
+		const { url, project, run } = parseRunUrl(args)
 
 		this.project = project
 		this.run = run
 		this.api = createApi(url, apiToken)
 	}
 
-	async handle() {
-		const junitResults : JUnitTestCase[] = []
-
-		console.log(`Uploading files [${this.args.files.map((f) => chalk.green(f)).join(", ")}]`+
-		` to run [${chalk.green(this.run)}] of project [${chalk.green(this.project)}]`)
-
-		for (const file of this.args.files) {
-			const xmlString = readFileSync(file).toString()
-			const { testcases: results } = await parseJUnitXml(xmlString, dirname(file))
-			junitResults.push(...results)
-		}
-
+	async handle(results: TestCaseResult[]) {
 		const tcases = await this.api.runs
 			.getRunTCases(this.project, this.run)
 			.catch(printErrorThenExit)
 
-		const { results, missing } = this.mapTestCaseResults(junitResults, tcases)
+		const { results: mappedResults, missing } = this.mapTestCaseResults(results, tcases)
 		this.validateAndPrintMissingTestCases(missing)
-		this.validateAndPrintMissingAttachments(results)
-		await this.uploadTestCases(results)
+		this.validateAndPrintMissingAttachments(mappedResults)
+		await this.uploadTestCases(mappedResults)
 
-		console.log(`Uploaded ${results.length} test cases`)
+		console.log(`Uploaded ${mappedResults.length} test cases`)
 	}
 
-	private validateAndPrintMissingTestCases(missing: JUnitTestCase[]) {
+	private validateAndPrintMissingTestCases(missing: TestCaseResult[]) {
 		missing.forEach((item) => {
 			const folderMessage = item.folder ? ` "${item.folder}" ->` : ''
 			const header = this.args.force ? chalk.yellow('Warning:') : chalk.red('Error:')
@@ -58,11 +43,21 @@ export class JUnitCommandHandler {
 		})
 
 		if (missing.length) {
-			console.error(chalk.yellow('\nTo fix this issue, please rename your test cases in the JUnit file to match the expected format:'))
-			console.error(`  Expected format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}`)
-			console.error(`  Where <sequence> is the test case sequence number (can be 3 or more digits).`)
-			console.error(`  Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}\n`)
-			console.error(chalk.yellow("Also ensure that the test cases are part of the the run.\n"))
+			console.error(
+				chalk.yellow(
+					'\nTo fix this issue, please rename your test cases in the report file to match the expected format:'
+				)
+			)
+			console.error(
+				`  Expected format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}`
+			)
+			console.error(
+				`  Where <sequence> is the test case sequence number (can be 3 or more digits).`
+			)
+			console.error(
+				`  Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}\n`
+			)
+			console.error(chalk.yellow('Also ensure that the test cases are part of the run.\n'))
 		}
 
 		if (missing.length && !this.args.force) {
@@ -106,11 +101,11 @@ export class JUnitCommandHandler {
 							attachmentUrls.push({ url, name: attachment.filename })
 						}
 					}
-					comment += `\n<p>Attachments:</p>\n${makeListHtml(attachmentUrls)}`
+					comment += `\n<h4>Attachments:</h4>\n${makeListHtml(attachmentUrls)}`
 				}
 
 				await this.api.runs.createResultStatus(this.project, this.run, tcase.id, {
-					status: getResult(result.type),
+					status: result.status,
 					comment,
 				})
 			}
@@ -121,11 +116,11 @@ export class JUnitCommandHandler {
 		}
 	}
 
-	private mapTestCaseResults = (junitTCases: JUnitTestCase[], testcases: RunTCase[]) => {
+	private mapTestCaseResults = (testcaseResults: TestCaseResult[], testcases: RunTCase[]) => {
 		const results: TCaseWithResult[] = []
-		const missing: JUnitTestCase[] = []
+		const missing: TestCaseResult[] = []
 
-		junitTCases.forEach((result) => {
+		testcaseResults.forEach((result) => {
 			const tcase = testcases.find((tcase) => {
 				if (!result.name) return false
 
@@ -148,24 +143,11 @@ export class JUnitCommandHandler {
 
 interface TCaseWithResult {
 	tcase: RunTCase
-	result: JUnitTestCase
+	result: TestCaseResult
 }
 
 const makeListHtml = (list: { name: string; url: string }[]) => {
 	return `<ul>
 ${list.map((item) => `<li><a href="${item.url}">${item.name}</a></li>`).join('\n')}
 </ul>`
-}
-
-const getResult = (result: JUnitResultType): ResultStatus => {
-	switch (result) {
-		case 'error':
-			return 'blocked'
-		case 'failure':
-			return 'failed'
-		case 'skipped':
-			return 'skipped'
-		case 'success':
-			return 'passed'
-	}
 }

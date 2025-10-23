@@ -8,7 +8,7 @@
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
 
-The tool can upload test case results from JUnit XML files to QA Sphere test runs by matching test case names (mentions of special markers) to QA Sphere's test cases.
+The tool can upload test case results from JUnit XML and Playwright JSON files to QA Sphere test runs by matching test case names (mentions of special markers) to QA Sphere's test cases.
 
 ## Installation
 
@@ -53,14 +53,14 @@ QAS_TOKEN=your_token
 QAS_URL=https://qas.eu1.qasphere.com
 
 # Example with real values:
-# QAS_TOKEN=tst0000001.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
+# QAS_TOKEN=qas.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
 # QAS_URL=https://qas.eu1.qasphere.com
 ```
 
 
-## Command: `junit-upload`
+## Commands: `junit-upload`, `playwright-json-upload`
 
-The `junit-upload` command creates a new test run within a QA Sphere project from your JUnit XML files or uploads results to an existing run.
+The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively. Both commands can either create a new test run within a QA Sphere project or upload results to an existing run, and they share the same set of options.
 
 ### Options
 
@@ -89,7 +89,9 @@ The `--run-name` option supports the following placeholders:
 
 ### Usage Examples
 
-Ensure the required environment variables are defined before running these commands:
+Ensure the required environment variables are defined before running these commands.
+
+**Note:** The following examples use `junit-upload`, but you can replace it with `playwright-json-upload` and adjust the file extension from `.xml` to `.json` to upload Playwright JSON reports instead.
 
 1. Create a new test run with default name template (`Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`) and upload results:
     ```bash
@@ -128,15 +130,13 @@ Ensure the required environment variables are defined before running these comma
     qasphere junit-upload --force ./test-results.xml
     ```
 
-## JUnit XML File Requirements
+## Test Report Requirements
 
-The QAS CLI tool requires JUnit XML files to have test case names that match the test case codes on QA Sphere. If your XML file doesn't contain any matching test cases, the tool will display an error message.
+The QAS CLI tool requires test reports (JUnit XML or Playwright JSON) to have test case names that match the test case codes on QA Sphere. If your report files don't contain any matching test cases, the tool will display an error message.
 
 ### Test Case Naming Convention
 
-Test case names in the XML report should contain a QA Sphere test case marker (PROJECT-SEQUENCE).
-
-This marker is used to match test cases in the XML report with test cases in QA Sphere:
+Test case names in the report should contain a QA Sphere test case marker (`PROJECT-SEQUENCE`). This marker is used to match test cases in the report with test cases in QA Sphere:
 
 - **PROJECT** is your QA Sphere project code
 - **SEQUENCE** is at least a three-digit test case sequence number
@@ -152,7 +152,7 @@ The project code in your test names must match the project code in QA Sphere.
 1. Install and build: `npm install && npm run build && npm link`
 2. Get test account at [qasphere.com](https://qasphere.com/) (includes demo project)
 3. Configure `.qaspherecli` with credentials
-4. Test with sample XML from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
+4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
 Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
 
