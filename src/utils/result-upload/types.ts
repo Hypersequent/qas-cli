@@ -13,7 +13,3 @@ export interface TestCaseResult {
 	message?: string
 	attachments: Attachment[]
 }
-
-export interface ParseResult {
-	testcases: TestCaseResult[]
-}

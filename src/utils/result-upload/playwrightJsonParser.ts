@@ -133,9 +133,7 @@ export const parsePlaywrightJson: Parser = async (
 		// Top level suites in Playwright JSON are equivalent to test suites in JUnit XML, which are used
 		// to populate TestCaseResult.folder property. The title of nested suites are used as prefix for
 		// TestCaseResult.name for nested specs (similar to JUnit XML)
-		const title = suite.title
-		suite.title = ''
-		await processSuite(suite, title, '')
+		await processSuite({ ...suite, title: '' }, suite.title, '')
 	}
 
 	const attachments = await Promise.all(attachmentsPromises.map((p) => p.promise))
@@ -166,7 +164,7 @@ const buildMessage = (result: z.infer<typeof resultSchema>) => {
 	let message = ''
 
 	if (result.retry) {
-		message += `<p><b>Test passed on ${result.retry} attempt</b></p>`
+		message += `<p><b>Test passed in ${result.retry + 1} attempts</b></p>`
 	}
 
 	if (result.errors.length > 0) {
