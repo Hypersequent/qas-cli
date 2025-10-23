@@ -100,7 +100,7 @@ describe('Playwright JSON parsing', () => {
 
 		// Should use the last result (passed on retry)
 		expect(testcases[0].status).toBe('passed')
-		expect(testcases[0].message).toContain('Test passed on 1 attempt')
+		expect(testcases[0].message).toContain('Test passed in 2 attempts')
 	})
 
 	test('Should handle nested suites correctly', async () => {
@@ -240,6 +240,107 @@ describe('Playwright JSON parsing', () => {
 		expect(message).toContain('Warning:')
 		expect(message).toContain('Error output')
 		expect(message).toContain('Stack trace')
+	})
+
+	test('Should prefix test case marker from annotations to test name', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'annotation.spec.ts',
+					specs: [
+						{
+							title: 'User login test',
+							tags: [],
+							tests: [
+								{
+									annotations: [
+										{
+											type: 'test case',
+											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123',
+										},
+									],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+						{
+							title: 'Test without annotation',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+						{
+							title: 'PRJ-456: Test with marker in name and annotation',
+							tags: [],
+							tests: [
+								{
+									annotations: [
+										{
+											type: 'Test Case',
+											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/789',
+										},
+									],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '')
+		expect(testcases).toHaveLength(3)
+
+		// Test with annotation should have marker prefixed
+		expect(testcases[0].name).toBe('PRJ-123: User login test')
+
+		// Test without annotation should use original name
+		expect(testcases[1].name).toBe('Test without annotation')
+
+		// Test with both annotation and marker in name - annotation takes precedence
+		expect(testcases[2].name).toBe('PRJ-789: PRJ-456: Test with marker in name and annotation')
 	})
 
 	test('Should map test status correctly', async () => {

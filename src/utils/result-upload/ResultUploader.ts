@@ -121,18 +121,16 @@ export class ResultUploader {
 		const missing: TestCaseResult[] = []
 
 		testcaseResults.forEach((result) => {
-			const tcase = testcases.find((tcase) => {
-				if (!result.name) return false
-
-				const tcaseCode = `${this.project}-${tcase.seq.toString().padStart(3, '0')}`
-				return result.name.includes(tcaseCode)
-			})
-			if (tcase) {
-				results.push({
-					result,
-					tcase,
+			if (result.name) {
+				const tcase = testcases.find((tcase) => {
+					const tcaseCode = `${this.project}-${tcase.seq.toString().padStart(3, '0')}`
+					return result.name.includes(tcaseCode)
 				})
-				return
+
+				if (tcase) {
+					results.push({ result, tcase })
+					return
+				}
 			}
 			missing.push(result)
 		})

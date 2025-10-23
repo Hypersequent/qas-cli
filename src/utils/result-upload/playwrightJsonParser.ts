@@ -4,6 +4,7 @@ import stripAnsi from 'strip-ansi'
 import { Attachment, TestCaseResult } from './types'
 import { Parser } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
+import { parseTCaseUrl } from '../misc'
 import { getAttachments } from './utils'
 
 // Schema definition as per https://github.com/microsoft/playwright/blob/main/packages/playwright/types/testReporter.d.ts
@@ -11,6 +12,7 @@ import { getAttachments } from './utils'
 const expectedStatusSchema = z.enum(['passed', 'failed', 'interrupted', 'skipped', 'timedOut'])
 
 const statusSchema = z.enum(['expected', 'unexpected', 'flaky', 'skipped'])
+type Status = z.infer<typeof statusSchema>
 
 const reportErrorSchema = z.object({
 	message: z.string(),
@@ -22,6 +24,7 @@ const annotationSchema = z.object({
 	type: z.string(),
 	description: z.string().optional(),
 })
+type Annotation = z.infer<typeof annotationSchema>
 
 const attachmentSchema = z.object({
 	name: z.string(),
@@ -39,6 +42,7 @@ const resultSchema = z.object({
 	attachments: attachmentSchema.array().optional(),
 	annotations: annotationSchema.array().optional(),
 })
+type Result = z.infer<typeof resultSchema>
 
 const testSchema = z.object({
 	annotations: annotationSchema.array(),
@@ -53,10 +57,11 @@ const specSchema = z.object({
 	tags: z.string().array(),
 	tests: testSchema.array(),
 })
+type Spec = z.infer<typeof specSchema>
 
 interface Suite {
 	title: string
-	specs: z.infer<typeof specSchema>[]
+	specs: Spec[]
 	suites?: Suite[]
 }
 
@@ -85,11 +90,7 @@ export const parsePlaywrightJson: Parser = async (
 		promise: Promise<Attachment[]>
 	}> = []
 
-	const processSuite = async (
-		suite: z.infer<typeof suiteSchema>,
-		topLevelSuite: string,
-		titlePrefix: string
-	) => {
+	const processSuite = async (suite: Suite, topLevelSuite: string, titlePrefix: string) => {
 		// Process specs in this suite
 		for (const spec of suite.specs || []) {
 			const test = spec.tests[0] // Why is tests an array?
@@ -99,8 +100,13 @@ export const parsePlaywrightJson: Parser = async (
 				return // Can this happen?
 			}
 
+			const markerFromAnnotations = getTCaseMarkerFromAnnotations(test.annotations) // What about result.annotations?
 			const numTestcases = testcases.push({
-				name: `${titlePrefix}${spec.title}`,
+				// Use markerFromAnnotations as name prefix, so that it takes precedence over any
+				// other marker present. Prefixing it to name also helps in detectProjectCode
+				name: markerFromAnnotations
+					? `${markerFromAnnotations}: ${titlePrefix}${spec.title}`
+					: `${titlePrefix}${spec.title}`,
 				folder: topLevelSuite,
 				status: mapPlaywrightStatus(test.status),
 				message: buildMessage(result),
@@ -145,7 +151,18 @@ export const parsePlaywrightJson: Parser = async (
 	return testcases
 }
 
-const mapPlaywrightStatus = (status: z.infer<typeof statusSchema>): ResultStatus => {
+const getTCaseMarkerFromAnnotations = (annotations: Annotation[]) => {
+	for (const annotation of annotations) {
+		if (annotation.type.toLowerCase().includes('test case') && annotation.description) {
+			const res = parseTCaseUrl(annotation.description)
+			if (res) {
+				return `${res.project}-${res.tcaseSeq.toString().padStart(3, '0')}`
+			}
+		}
+	}
+}
+
+const mapPlaywrightStatus = (status: Status): ResultStatus => {
 	switch (status) {
 		case 'expected':
 			return 'passed'
@@ -160,7 +177,7 @@ const mapPlaywrightStatus = (status: z.infer<typeof statusSchema>): ResultStatus
 	}
 }
 
-const buildMessage = (result: z.infer<typeof resultSchema>) => {
+const buildMessage = (result: Result) => {
 	let message = ''
 
 	if (result.retry) {

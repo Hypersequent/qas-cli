@@ -79,6 +79,21 @@ export const parseRunUrl = (args: Record<string, unknown>) => {
 	throw new Error('--run-url is required but not provided.')
 }
 
+export const parseTCaseUrl = (url: string) => {
+	if (!url.includes('://')) {
+		url = `https://${url}`
+	}
+
+	const matches = url.match(/^(\S+)\/project\/(\w+)\/tcase\/(\d+)(\/|\?|$)/)
+	if (matches) {
+		return {
+			url: matches[1],
+			project: matches[2],
+			tcaseSeq: Number(matches[3]),
+		}
+	}
+}
+
 export const printErrorThenExit = (e: unknown): never => {
 	printError(e)
 	process.exit(1)

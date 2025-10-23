@@ -93,8 +93,8 @@ export const parseJUnitXml: Parser = async (
 			const result = getResult(tcase)
 			const index =
 				testcases.push({
-					folder: suite.$.name,
-					name: tcase.$.name,
+					folder: suite.$.name ?? '',
+					name: tcase.$.name ?? '',
 					...result,
 					attachments: [],
 				}) - 1
@@ -125,7 +125,7 @@ export const parseJUnitXml: Parser = async (
 
 const getResult = (
 	tcase: z.infer<typeof testCaseSchema>
-): { status: ResultStatus; message?: string } => {
+): { status: ResultStatus; message: string } => {
 	const err = tcase['system-err'] || []
 	const out = tcase['system-out'] || []
 	if (tcase.error)
@@ -170,7 +170,7 @@ interface GetResultMessageOption {
 	type?: 'paragraph' | 'code'
 }
 
-const getResultMessage = (...options: GetResultMessageOption[]): string | undefined => {
+const getResultMessage = (...options: GetResultMessageOption[]): string => {
 	let message = ''
 	options.forEach((option) => {
 		option.result?.forEach((r) => {

@@ -125,29 +125,47 @@ Ensure the required environment variables are defined before running these comma
     qasphere junit-upload --attachments ./test1.xml
     ```
 
-7. Force upload even with missing test cases:
+7. Force upload even with missing test cases or attachments:
     ```bash
     qasphere junit-upload --force ./test-results.xml
     ```
 
 ## Test Report Requirements
 
-The QAS CLI tool requires test reports (JUnit XML or Playwright JSON) to have test case names that match the test case codes on QA Sphere. If your report files don't contain any matching test cases, the tool will display an error message.
+The QAS CLI requires test cases in your reports (JUnit XML or Playwright JSON) to reference corresponding test cases in QA Sphere. These references are used to map test results from your automation to the appropriate test cases in QA Sphere. If a report lacks these references or the referenced test case doesn't exist in QA Sphere, the tool will display an error message.
 
-### Test Case Naming Convention
+### JUnit XML
 
-Test case names in the report should contain a QA Sphere test case marker (`PROJECT-SEQUENCE`). This marker is used to match test cases in the report with test cases in QA Sphere:
+Test case names in JUnit XML reports must include a QA Sphere test case marker in the format `PROJECT-SEQUENCE`:
 
-- **PROJECT** is your QA Sphere project code
-- **SEQUENCE** is at least a three-digit test case sequence number
+- **PROJECT** - Your QA Sphere project code
+- **SEQUENCE** - Test case sequence number (minimum 3 digits, zero-padded if needed)
 
-Examples:
-- **PRJ-312: Login with valid credentials**
-- **Login with valid credentials: PRJ-312**
+**Examples:**
+- `PRJ-002: Login with valid credentials`
+- `Login with invalid credentials: PRJ-1312`
 
-The project code in your test names must match the project code in QA Sphere.
+**Note:** The project code in test names must exactly match your QA Sphere project code.
 
-### Development (for those who want to contribute to the tool)
+### Playwright JSON
+
+Playwright JSON reports support two methods for referencing test cases (checked in order):
+
+1. **Test Annotations (Recommended)** - Add a [test annotation](https://playwright.dev/docs/test-annotations#annotate-tests) with:
+   - `type`: `"test case"` (case-insensitive)
+   - `description`: Full QA Sphere test case URL
+
+   ```typescript
+   test('user login', {
+     annotation: { type: 'test case', description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123' }
+   }, async ({ page }) => {
+     // test code
+   });
+   ```
+
+2. **Test Case Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML)
+
+## Development (for those who want to contribute to the tool)
 
 1. Install and build: `npm install && npm run build && npm link`
 2. Get test account at [qasphere.com](https://qasphere.com/) (includes demo project)

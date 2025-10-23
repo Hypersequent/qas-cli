@@ -56,22 +56,22 @@ describe('Junit XML parsing', () => {
 		const skippedTests = testcases.filter((tc) => tc.status === 'skipped')
 
 		// Verify we have the expected failure scenarios
-		expect(failureTests.some((tc) => tc.name?.includes('only type'))).toBe(true)
-		expect(failureTests.some((tc) => tc.name?.includes('type and message'))).toBe(true)
-		expect(failureTests.some((tc) => tc.name?.includes('type, message and text content'))).toBe(
+		expect(failureTests.some((tc) => tc.name.includes('only type'))).toBe(true)
+		expect(failureTests.some((tc) => tc.name.includes('type and message'))).toBe(true)
+		expect(failureTests.some((tc) => tc.name.includes('type, message and text content'))).toBe(
 			true
 		)
 
 		// Verify we have the expected error scenarios
-		expect(errorTests.some((tc) => tc.name?.includes('only type'))).toBe(true)
-		expect(errorTests.some((tc) => tc.name?.includes('type and text content'))).toBe(true)
-		expect(errorTests.some((tc) => tc.name?.includes('type, message and text content'))).toBe(true)
+		expect(errorTests.some((tc) => tc.name.includes('only type'))).toBe(true)
+		expect(errorTests.some((tc) => tc.name.includes('type and text content'))).toBe(true)
+		expect(errorTests.some((tc) => tc.name.includes('type, message and text content'))).toBe(true)
 
 		// Verify we have the expected skipped scenarios
-		expect(skippedTests.some((tc) => tc.name?.includes('Empty skipped'))).toBe(true)
-		expect(skippedTests.some((tc) => tc.name?.includes('only message'))).toBe(true)
-		expect(skippedTests.some((tc) => tc.name?.includes('only text content'))).toBe(true)
-		expect(skippedTests.some((tc) => tc.name?.includes('message and text content'))).toBe(true)
+		expect(skippedTests.some((tc) => tc.name.includes('Empty skipped'))).toBe(true)
+		expect(skippedTests.some((tc) => tc.name.includes('only message'))).toBe(true)
+		expect(skippedTests.some((tc) => tc.name.includes('only text content'))).toBe(true)
+		expect(skippedTests.some((tc) => tc.name.includes('message and text content'))).toBe(true)
 	})
 
 	test('Should handle empty <system-err> and similar empty tags', async () => {
