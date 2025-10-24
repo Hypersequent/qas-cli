@@ -2,14 +2,10 @@ import { Arguments, Argv, CommandModule } from 'yargs'
 import chalk from 'chalk'
 import { loadEnvs } from '../utils/env'
 import {
-    ResultUploadCommandArgs,
-    ResultUploadCommandHandler,
-    Parser,
+	ResultUploadCommandArgs,
+	ResultUploadCommandHandler,
+	UploadCommandType
 } from '../utils/result-upload/ResultUploadCommandHandler'
-import { parseJUnitXml } from '../utils/result-upload/junitXmlParser'
-import { parsePlaywrightJson } from '../utils/result-upload/playwrightJsonParser'
-
-export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
 
 const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
 	'junit-upload': 'JUnit XML',
@@ -19,11 +15,6 @@ const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
 const commandTypeFileExtensions: Record<UploadCommandType, string> = {
 	'junit-upload': 'xml',
 	'playwright-json-upload': 'json',
-}
-
-const commandTypeParsers: Record<UploadCommandType, Parser> = {
-	'junit-upload': parseJUnitXml,
-	'playwright-json-upload': parsePlaywrightJson,
 }
 
 export class ResultUploadCommandModule implements CommandModule<unknown, ResultUploadCommandArgs> {
@@ -120,7 +111,7 @@ Run name template placeholders:
 
 	handler = async (args: Arguments<ResultUploadCommandArgs>) => {
 		loadEnvs()
-		const handler = new ResultUploadCommandHandler(args, commandTypeParsers[this.type])
+		const handler = new ResultUploadCommandHandler(this.type, args)
 		await handler.handle()
 	}
 }

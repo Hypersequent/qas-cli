@@ -1,16 +1,21 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
+import { readFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { Api, createApi } from '../../api'
 import { PaginatedResponse, TCaseBySeq } from '../../api/tcases'
 import { TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
-import { readFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { parseJUnitXml } from './junitXmlParser'
+import { parsePlaywrightJson } from './playwrightJsonParser'
+
+export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
 
 export type Parser = (data: string, attachmentBaseDirectory: string) => Promise<TestCaseResult[]>
 
 export interface ResultUploadCommandArgs {
+	type: UploadCommandType
 	runUrl?: string
 	runName?: string
 	files: string[]
@@ -23,11 +28,16 @@ interface FileResults {
 	results: TestCaseResult[]
 }
 
+const commandTypeParsers: Record<UploadCommandType, Parser> = {
+	'junit-upload': parseJUnitXml,
+	'playwright-json-upload': parsePlaywrightJson,
+}
+
 export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
 
-	constructor(private args: Arguments<ResultUploadCommandArgs>, private parser: Parser) {
+	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
 		const apiToken = process.env.QAS_TOKEN!
 
 		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
@@ -82,7 +92,7 @@ export class ResultUploadCommandHandler {
 
 		for (const file of this.args.files) {
 			const fileData = readFileSync(file).toString()
-			const fileResults = await this.parser(fileData, dirname(file))
+			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file))
 			results.push({ file, results: fileResults })
 		}
 
@@ -185,16 +195,8 @@ export class ResultUploadCommandHandler {
 	}
 
 	private async uploadResults(projectCode: string, runId: number, results: TestCaseResult[]) {
-		console.log(
-			`Uploading files [${this.args.files.map((f) => chalk.green(f)).join(', ')}]` +
-				` to run [${chalk.green(runId)}] of project [${chalk.green(projectCode)}]`
-		)
-
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
-		const uploader = new ResultUploader({
-			...this.args,
-			runUrl,
-		})
+		const uploader = new ResultUploader(this.type, { ...this.args, runUrl })
 		await uploader.handle(results)
 	}
 }

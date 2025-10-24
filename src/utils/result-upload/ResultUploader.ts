@@ -4,14 +4,14 @@ import { RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { TestCaseResult } from './types'
-import { ResultUploadCommandArgs } from './ResultUploadCommandHandler'
+import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
 
 export class ResultUploader {
 	private api: Api
 	private project: string
 	private run: number
 
-	constructor(private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
 		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
@@ -28,8 +28,13 @@ export class ResultUploader {
 		const { results: mappedResults, missing } = this.mapTestCaseResults(results, tcases)
 		this.validateAndPrintMissingTestCases(missing)
 		this.validateAndPrintMissingAttachments(mappedResults)
-		await this.uploadTestCases(mappedResults)
 
+		console.log(
+			`Uploading files [${this.args.files
+				.map((f) => chalk.green(f))
+				.join(', ')}] to run [${chalk.green(this.run)}] of project [${chalk.green(this.project)}]`
+		)
+		await this.uploadTestCases(mappedResults)
 		console.log(`Uploaded ${mappedResults.length} test cases`)
 	}
 
@@ -43,21 +48,44 @@ export class ResultUploader {
 		})
 
 		if (missing.length) {
-			console.error(
-				chalk.yellow(
-					'\nTo fix this issue, please rename your test cases in the report file to match the expected format:'
-				)
-			)
-			console.error(
-				`  Expected format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}`
-			)
-			console.error(
-				`  Where <sequence> is the test case sequence number (can be 3 or more digits).`
-			)
-			console.error(
-				`  Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}\n`
-			)
-			console.error(chalk.yellow('Also ensure that the test cases are part of the run.\n'))
+			if (this.type === 'junit-upload') {
+                console.error(`
+${chalk.yellow('To fix this issue, include the test case marker in your test names:')}
+
+  Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
+  Example: ${chalk.green(`${this.project}-002: Login with valid credentials`)}
+           ${chalk.green(`Login with invalid credentials: ${this.project}-1312`)}
+
+  ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
+`)
+			} else {
+				console.error(`
+${chalk.yellow('To fix this issue, choose one of the following options:')}
+
+  ${chalk.bold('Option 1: Use Test Annotations (Recommended)')}
+  Add a test annotation to your Playwright test:
+
+  ${chalk.green(`test('${missing[0]?.name || 'your test name'}', {
+    annotation: {
+      type: 'test case',
+      description: 'https://your-qas-instance.com/project/${this.project}/tcase/123'
+    }
+  }, async ({ page }) => {
+    // your test code
+  });`)}
+
+  ${chalk.dim('Note: The "type" field is case-insensitive')}
+
+  ${chalk.bold('Option 2: Include Test Case Marker in Name')}
+  Rename your test to include the marker ${chalk.green(`${this.project}-<sequence>`)}:
+
+  Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
+  Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}
+  ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
+`)
+			}
+
+			console.error(chalk.yellow('Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'))
 		}
 
 		if (missing.length && !this.args.force) {
