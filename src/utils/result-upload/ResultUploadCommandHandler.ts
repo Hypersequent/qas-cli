@@ -127,12 +127,12 @@ export class ResultUploadCommandHandler {
 					continue
 				}
 
-				const match = /(\d{3,})/.exec(result.name)
+				const match = new RegExp(`${projectCode}-(\\d{3,})`).exec(result.name)
 				if (match) {
 					tcaseRefs.add(`${projectCode}-${match[1]}`)
 				} else if (!this.args.force) {
 					return printErrorThenExit(
-						`Test case name "${result.name}" in ${file} does not contain valid sequence number (e.g., 123)`
+						`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
 					)
 				}
 			}
