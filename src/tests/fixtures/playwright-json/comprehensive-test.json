@@ -1,0 +1,338 @@
+{
+  "suites": [
+    {
+      "title": "failure.scenarios.spec.ts",
+      "specs": [
+        {
+          "title": "TEST-001 Failure with only type",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "AssertionError"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-002 Failure with type and message",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "AssertionError: Expected true but was false"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-003 Failure with type, message and text content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "AssertionError: Expected value did not match actual value\n  AssertionError: Expected value did not match actual value\n    at Object.assert (/path/to/test.js:15:23)\n    at TestCase.run (/path/to/test.js:45:12)\n    Stack trace continues..."
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "error.scenarios.spec.ts",
+      "specs": [
+        {
+          "title": "TEST-004 Error with only type",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "NullPointerException"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-005 Error with type and text content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "RuntimeException: Unexpected error occurred during test execution"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-006 Error with type, message and text content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "IOException: File not found\n  IOException: File not found\n    at FileReader.read (/path/to/file.js:23:45)\n    at TestSetup.initialize (/path/to/setup.js:67:89)\n    Full stack trace here..."
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "skipped.scenarios.spec.ts",
+      "specs": [
+        {
+          "title": "TEST-007 Empty skipped",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "skipped",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "skipped",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ]
+        },
+        {
+          "title": "TEST-008 Skipped with only message",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Test not applicable for current configuration"
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "skipped",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ]
+        },
+        {
+          "title": "TEST-009 Skipped with only text content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "skipped",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "skipped",
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "This test was skipped because the required feature is not enabled"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ]
+        },
+        {
+          "title": "TEST-010 Skipped with message and text content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Environment not ready"
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "skipped",
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "Test skipped due to environment not being ready.\nThe database connection is not available.\nPlease check the configuration and try again."
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ]
+        },
+        {
+          "title": "TEST-011 Successful test",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "Test completed successfully with all assertions passing."
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-012 Another successful test",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "./test-results/successful-test-screenshot.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ]
+}

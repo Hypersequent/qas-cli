@@ -14,7 +14,7 @@ export interface CreateRunRequest {
 }
 
 export interface CreateRunResponse {
-	id: string
+	id: number
 }
 
 export const createRunApi = (fetcher: typeof fetch) => {

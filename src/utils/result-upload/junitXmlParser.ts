@@ -1,25 +1,27 @@
-import path, { basename } from 'node:path'
 import escapeHtml from 'escape-html'
-import { readFile } from 'fs/promises'
 import xml from 'xml2js'
 import z from 'zod'
+import { Attachment, TestCaseResult } from './types'
+import { Parser } from './ResultUploadCommandHandler'
+import { ResultStatus } from '../../api/schemas'
+import { getAttachments } from './utils'
 
 // Note about junit xml schema:
 // there are multiple schemas on the internet, and apparently some are more strict than others
 // we have to use LESS strict schema (see one from Jest, based on Jenkins JUnit schema)
 // see https://github.com/jest-community/jest-junit/blob/master/__tests__/lib/junit.xsd#L42
 
-
-
 const stringContent = z.object({
 	_: z.string().optional(),
 })
 
 const failureErrorSchema = stringContent.extend({
-	$: z.object({
-		message: z.string().optional(),
-		type: z.string().optional(), // type attribute is optional (some test runners like Jest don't include it)
-	}).optional(),
+	$: z
+		.object({
+			message: z.string().optional(),
+			type: z.string().optional(), // type attribute is optional (some test runners like Jest don't include it)
+		})
+		.optional(),
 })
 
 // As per https://github.com/windyroad/JUnit-Schema/blob/master/JUnit.xsd, only message attribute
@@ -29,10 +31,12 @@ const failureErrorSchema = stringContent.extend({
 const skippedSchema = z.union([
 	z.string(),
 	stringContent.extend({
-		$: z.object({
-			message: z.string().optional(),
-		}).optional(),
-	})
+		$: z
+			.object({
+				message: z.string().optional(),
+			})
+			.optional(),
+	}),
 ])
 
 const testCaseSchema = z.object({
@@ -49,7 +53,7 @@ const testCaseSchema = z.object({
 	error: z.array(failureErrorSchema).optional(),
 })
 
-const xmlSchema = z.object({
+const junitXmlSchema = z.object({
 	testsuites: z.object({
 		$: z.object({
 			name: z.string().optional(),
@@ -69,49 +73,43 @@ const xmlSchema = z.object({
 	}),
 })
 
-export type JUnitResultType = 'failure' | 'error' | 'skipped' | 'success'
-
-export interface JUnitAttachment {
-	path: string
-	buffer: Buffer | null
-	error: Error | null
-	filename: string
-}
-
-export interface JUnitTestCase extends JUnitResult {
-	name?: string
-	folder?: string
-	logs?: string
-	attachments: JUnitAttachment[]
-}
-
-export interface ParseResult {
-	testcases: JUnitTestCase[]
-}
-
-export const parseJUnitXml = async (xmlString: string, basePath: string): Promise<ParseResult> => {
+export const parseJUnitXml: Parser = async (
+	xmlString: string,
+	attachmentBaseDirectory: string
+): Promise<TestCaseResult[]> => {
 	const xmlData = await xml.parseStringPromise(xmlString, {
 		explicitCharkey: true,
 		includeWhiteChars: true,
 	})
-	const validated = xmlSchema.parse(xmlData)
-	const testcases: JUnitTestCase[] = []
-	const attachmentsPromises: Array<{ index: number; promise: Promise<JUnitAttachment[]> }> = []
+	const validated = junitXmlSchema.parse(xmlData)
+	const testcases: TestCaseResult[] = []
+	const attachmentsPromises: Array<{
+		index: number
+		promise: Promise<Attachment[]>
+	}> = []
 
 	for (const suite of validated.testsuites.testsuite) {
-		for (const tcase of suite.testcase??[]) {
+		for (const tcase of suite.testcase ?? []) {
 			const result = getResult(tcase)
 			const index =
 				testcases.push({
-					folder: suite.$.name,
-					name: tcase.$.name,
+					folder: suite.$.name ?? '',
+					name: tcase.$.name ?? '',
 					...result,
 					attachments: [],
 				}) - 1
-			const attachments = getAttachments(tcase, basePath)
+
+			const attachmentPaths = []
+			for (const out of tcase['system-out'] || []) {
+				const text = typeof out === 'string' ? out : out._ ?? ''
+				if (text) {
+					attachmentPaths.push(...extractAttachmentPaths(text))
+				}
+			}
+
 			attachmentsPromises.push({
 				index,
-				promise: attachments,
+				promise: getAttachments(attachmentPaths, attachmentBaseDirectory),
 			})
 		}
 	}
@@ -122,20 +120,17 @@ export const parseJUnitXml = async (xmlString: string, basePath: string): Promis
 		testcases[tcaseIndex].attachments = tcaseAttachment
 	})
 
-	return { testcases }
+	return testcases
 }
 
-interface JUnitResult {
-	type: JUnitResultType
-	message?: string
-}
-
-const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
+const getResult = (
+	tcase: z.infer<typeof testCaseSchema>
+): { status: ResultStatus; message: string } => {
 	const err = tcase['system-err'] || []
 	const out = tcase['system-out'] || []
 	if (tcase.error)
 		return {
-			type: 'error',
+			status: 'blocked',
 			message: getResultMessage(
 				{ result: tcase.error, type: 'code' },
 				{ result: out, type: 'code' },
@@ -144,7 +139,7 @@ const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
 		}
 	if (tcase.failure)
 		return {
-			type: 'failure',
+			status: 'failed',
 			message: getResultMessage(
 				{ result: tcase.failure, type: 'code' },
 				{ result: out, type: 'code' },
@@ -153,7 +148,7 @@ const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
 		}
 	if (tcase.skipped)
 		return {
-			type: 'skipped',
+			status: 'skipped',
 			message: getResultMessage(
 				{ result: tcase.skipped, type: 'code' },
 				{ result: out, type: 'code' },
@@ -161,21 +156,21 @@ const getResult = (tcase: z.infer<typeof testCaseSchema>): JUnitResult => {
 			),
 		}
 	return {
-		type: 'success',
+		status: 'passed',
 		message: getResultMessage({ result: out, type: 'code' }, { result: err, type: 'code' }),
 	}
 }
 
 interface GetResultMessageOption {
 	result?: (
-		string |
-		Partial<z.infer<typeof failureErrorSchema>> |
-		Partial<z.infer<typeof skippedSchema>>
+		| string
+		| Partial<z.infer<typeof failureErrorSchema>>
+		| Partial<z.infer<typeof skippedSchema>>
 	)[]
 	type?: 'paragraph' | 'code'
 }
 
-const getResultMessage = (...options: GetResultMessageOption[]): string | undefined => {
+const getResultMessage = (...options: GetResultMessageOption[]): string => {
 	let message = ''
 	options.forEach((option) => {
 		option.result?.forEach((r) => {
@@ -195,52 +190,6 @@ const getResultMessage = (...options: GetResultMessageOption[]): string | undefi
 	return message
 }
 
-const getAttachments = async (
-	tcase: z.infer<typeof testCaseSchema>,
-	basePath: string
-): Promise<JUnitAttachment[]> => {
-	const out = tcase['system-out'] || []
-	const attachments: JUnitAttachment[] = []
-	const promises: Array<{ file: Promise<Buffer>; path: string; filename: string }> = []
-
-	for (const contents of out) {
-		const text = typeof contents === 'string' ? contents : contents._ ?? ''
-		if (text) {
-			const paths = extractAttachmentPaths(text)
-			paths.forEach((p) =>
-				promises.push({
-					file: getFile(p, basePath),
-					path: p,
-					filename: basename(p),
-				})
-			)
-		}
-	}
-
-	const files = await Promise.allSettled(promises.map((p) => p.file))
-	files.forEach((p, i) => {
-		const path = promises[i].path
-		const filename = promises[i].filename
-		if (p.status === 'fulfilled') {
-			attachments.push({
-				buffer: p.value,
-				path,
-				error: null,
-				filename: filename,
-			})
-		} else {
-			attachments.push({
-				buffer: null,
-				path,
-				error: p.reason,
-				filename: filename,
-			})
-		}
-	})
-
-	return attachments
-}
-
 const extractAttachmentPaths = (content: string) => {
 	const regex = /^\[\[ATTACHMENT\|(.+)\]\]$/gm
 	const matches = content.matchAll(regex)
@@ -249,22 +198,4 @@ const extractAttachmentPaths = (content: string) => {
 		paths.push(match[1])
 	})
 	return paths
-}
-
-const getFile = async (filePath: string, basePath: string): Promise<Buffer> => {
-	try {
-		const file = readFile(path.join(basePath, filePath))
-		return file
-	} catch (e) {
-		if (
-			e &&
-			typeof e === 'object' &&
-			'code' in e &&
-			typeof e.code === 'string' &&
-			e.code === 'ENOENT'
-		) {
-			throw new Error(`Attachment not found: "${filePath}"`)
-		}
-		throw e
-	}
 }

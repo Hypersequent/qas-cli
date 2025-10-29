@@ -1,0 +1,160 @@
+{
+  "suites": [
+    {
+      "title": "ui.cart.spec.ts",
+      "specs": [
+        {
+          "title": "Test cart TEST-002",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./matching-tcases.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        },
+        {
+          "title": "Test checkout TEST-003",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./matching-tcases.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "ui.contents.spec.ts",
+      "specs": [
+        {
+          "title": "TEST-004 About page content",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./__missing-file.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        },
+        {
+          "title": "TEST-006 Navigation bar items",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "errors": [
+                    {
+                      "message": "Error: expect(received).toEqual(expected) // deep equality\n\n    - Expected  - 1\n    + Received  + 1\n\n    @@ -1,8 +1,8 @@\n      Array [\n        Object {\n    -     \"isActive\": true,\n    +     \"isActive\": false,\n          \"text\": \"Welcome\",\n        },\n        Object {\n          \"isActive\": false,\n          \"text\": \"Today's Menu\",\n\n      37 | \tawait welcome.goto()\n      38 | \tlet navbarItems = await welcome.getNavbarItems()\n    > 39 | \texpect(navbarItems).toEqual([\n         | \t                    ^\n      40 | \t\t{ text: 'Welcome', isActive: true },\n      41 | \t\t{ text: \"Today's Menu\", isActive: false },\n      42 | \t\t{ text: 'About', isActive: false }"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./matching-tcases.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ]
+        },
+      {
+        "title": "Menu page content TEST-007",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./matching-tcases.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ]
+}

@@ -7,7 +7,7 @@ export const qasEnvFile = '.qaspherecli'
 export const qasEnvs = ['QAS_TOKEN', 'QAS_URL']
 
 export function hasRequiredKeys(env: NodeJS.ProcessEnv | DotenvPopulateInput): boolean {
-	return qasEnvs.every(key => key in env && env[key] !== 'undefined')
+	return qasEnvs.every((key) => key in env && env[key] !== 'undefined')
 }
 
 export function loadEnvs(): void {
@@ -47,8 +47,7 @@ export function loadEnvs(): void {
 			const fileEnvValue = fileEnvs[env]
 			if (fileEnvValue && fileEnvValue !== 'undefined') {
 				process.env[env] = fileEnvValue
-			}
-			else {
+			} else {
 				missingEnvs.push(env)
 			}
 		}
