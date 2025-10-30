@@ -1,4 +1,4 @@
-import { CreateResultRequest, ResourceId, RunTCase } from './schemas'
+import { CreateResultsRequest, ResourceId, RunTCase } from './schemas'
 import { jsonResponse, withJson } from './utils'
 
 export interface CreateRunRequest {
@@ -24,16 +24,16 @@ export const createRunApi = (fetcher: typeof fetch) => {
 			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
 				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
 				.then((r) => r.tcases),
-		createResultStatus: (
+
+		createResults: (
 			projectCode: ResourceId,
 			runId: ResourceId,
-			tcaseId: ResourceId,
-			req: CreateResultRequest
+			req: CreateResultsRequest
 		) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}/result`, {
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/result/batch`, {
 				body: JSON.stringify(req),
 				method: 'POST',
-			}).then((r) => jsonResponse<{ id: number }>(r)),
+			}).then((r) => jsonResponse<{ ids: number[] }>(r)),
 
 		createRun: (projectCode: ResourceId, req: CreateRunRequest) =>
 			fetcher(`/api/public/v0/project/${projectCode}/run`, {

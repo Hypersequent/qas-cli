@@ -3,8 +3,11 @@ import chalk from 'chalk'
 import { RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
-import { TestCaseResult } from './types'
+import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
+
+const MAX_CONCURRENT_FILE_UPLOADS = 10
+const MAX_RESULTS_IN_REQUEST = 50
 
 export class ResultUploader {
 	private api: Api
@@ -49,7 +52,7 @@ export class ResultUploader {
 
 		if (missing.length) {
 			if (this.type === 'junit-upload') {
-                console.error(`
+				console.error(`
 ${chalk.yellow('To fix this issue, include the test case marker in your test names:')}
 
   Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
@@ -112,36 +115,140 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
 	private uploadTestCases = async (results: TCaseWithResult[]) => {
 		const loader = twirlLoader()
-		loader.start()
 		try {
-			for (let i = 0; i < results.length; i++) {
-				const { tcase, result } = results[i]
-				let comment = result.message
-				loader.setText(`Uploading test case ${i + 1} of ${results.length}`)
-				if (this.args.attachments) {
-					const attachmentUrls: Array<{ name: string; url: string }> = []
-					for (const attachment of result.attachments) {
-						if (attachment.buffer) {
-							const { url } = await this.api.file.uploadFile(
-								new Blob([attachment.buffer]),
-								attachment.filename
-							)
-							attachmentUrls.push({ url, name: attachment.filename })
-						}
-					}
-					comment += `\n<h4>Attachments:</h4>\n${makeListHtml(attachmentUrls)}`
-				}
-
-				await this.api.runs.createResultStatus(this.project, this.run, tcase.id, {
-					status: result.status,
-					comment,
-				})
-			}
-			loader.stop()
+			const resultsWithAttachments = await this.uploadAllAttachments(results, loader)
+			await this.createResultsInBatches(resultsWithAttachments, loader)
 		} catch (e) {
 			loader.stop()
 			printErrorThenExit(e)
 		}
+	}
+
+	private uploadAllAttachments = async (
+		results: TCaseWithResult[],
+		loader: ReturnType<typeof twirlLoader>
+	): Promise<TCaseWithResult[]> => {
+		if (!this.args.attachments) {
+			return results
+		}
+
+		// Collect all attachments from all test cases
+		const allAttachments: Array<{
+			attachment: Attachment
+			tcaseIndex: number
+		}> = []
+		let uploadedCount = 0
+
+		results.forEach((item, index) => {
+			item.result.attachments.forEach((attachment) => {
+				if (attachment.buffer !== null) {
+					allAttachments.push({ attachment, tcaseIndex: index })
+				}
+			})
+		})
+
+		if (allAttachments.length === 0) {
+			return results
+		}
+
+		// Upload all attachments concurrently with progress tracking
+		loader.start(`Uploading attachments: 0/${allAttachments.length} files uploaded`)
+		const uploadedAttachments = await this.processConcurrently(
+			allAttachments,
+			async ({ attachment, tcaseIndex }) => {
+				const { url } = await this.api.file.uploadFile(
+					new Blob([attachment.buffer! as BlobPart]),
+					attachment.filename
+				)
+				uploadedCount++
+				loader.setText(
+					`Uploading attachments: ${uploadedCount}/${allAttachments.length} files uploaded`
+				)
+				return {
+					tcaseIndex,
+					url,
+					name: attachment.filename,
+				}
+			},
+			MAX_CONCURRENT_FILE_UPLOADS
+		)
+		loader.stop()
+
+		// Group uploaded attachments by test case index
+		const attachmentsByTCase = new Map<number, Array<{ name: string; url: string }>>()
+		uploadedAttachments.forEach(({ tcaseIndex, url, name }) => {
+			if (!attachmentsByTCase.has(tcaseIndex)) {
+				attachmentsByTCase.set(tcaseIndex, [])
+			}
+			attachmentsByTCase.get(tcaseIndex)!.push({ url, name })
+		})
+
+		// Map results with their uploaded attachment URLs
+		return results.map(({ tcase, result }, index) => {
+			const attachmentUrls = attachmentsByTCase.get(index) || []
+			if (attachmentUrls.length > 0) {
+				result.message += `\n<h4>Attachments:</h4>\n${makeListHtml(attachmentUrls)}`
+			}
+
+			return {
+				tcase,
+				result,
+			}
+		})
+	}
+
+	private createResultsInBatches = async (
+		results: TCaseWithResult[],
+		loader: ReturnType<typeof twirlLoader>
+	) => {
+		const totalBatches = Math.ceil(results.length / MAX_RESULTS_IN_REQUEST)
+
+		loader.start(`Creating results: 0/${results.length} results created`)
+		for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+			const startIdx = batchIndex * MAX_RESULTS_IN_REQUEST
+			const endIdx = Math.min(startIdx + MAX_RESULTS_IN_REQUEST, results.length)
+			const batch = results.slice(startIdx, endIdx)
+
+			await this.api.runs.createResults(this.project, this.run, {
+				items: batch.map(({ tcase, result }) => ({
+					tcaseId: tcase.id,
+					status: result.status,
+					comment: result.message,
+				})),
+			})
+
+			loader.setText(`Creating results: ${endIdx}/${results.length} results created`)
+		}
+		loader.stop()
+	}
+
+	private async processConcurrently<T, R>(
+		items: T[],
+		handler: (item: T) => Promise<R>,
+		concurrency: number
+	): Promise<R[]> {
+		const results: R[] = []
+		const executing: Set<Promise<void>> = new Set()
+
+		for (const item of items) {
+			const promise = handler(item)
+				.then((result) => {
+					results.push(result)
+				})
+				.finally(() => {
+					executing.delete(wrappedPromise)
+				})
+
+			const wrappedPromise = promise
+			executing.add(wrappedPromise)
+
+			if (executing.size >= concurrency) {
+				await Promise.race(executing)
+			}
+		}
+
+		await Promise.all(Array.from(executing))
+		return results
 	}
 
 	private mapTestCaseResults = (testcaseResults: TestCaseResult[], testcases: RunTCase[]) => {
