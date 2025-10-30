@@ -40,6 +40,8 @@ export const twirlLoader = () => {
 			if (timer) {
 				clearInterval(timer)
 			}
+			x = chars.length - 1
+			update()
 			process.stdout.write('\n')
 		},
 		setText: (newText: string) => {

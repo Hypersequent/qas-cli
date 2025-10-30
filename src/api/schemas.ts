@@ -19,7 +19,12 @@ export interface RunTCase {
 	folder: Folder
 }
 
-export interface CreateResultRequest {
+export interface CreateResultsRequestItem {
+	tcaseId: string
 	status: ResultStatus
 	comment?: string
+}
+
+export interface CreateResultsRequest {
+	items: CreateResultsRequestItem[]
 }
