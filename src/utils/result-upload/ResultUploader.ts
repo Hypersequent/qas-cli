@@ -7,7 +7,7 @@ import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
 
 const MAX_CONCURRENT_FILE_UPLOADS = 10
-const MAX_RESULTS_IN_REQUEST = 50
+let MAX_RESULTS_IN_REQUEST = 50 // Only updated from tests, otherwise it's a constant
 
 export class ResultUploader {
 	private api: Api
@@ -272,6 +272,10 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
 		return { results, missing }
 	}
+}
+
+export const setMaxResultsInRequest = (max: number) => {
+	MAX_RESULTS_IN_REQUEST = max
 }
 
 interface TCaseWithResult {
