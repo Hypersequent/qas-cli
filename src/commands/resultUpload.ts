@@ -49,6 +49,10 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 				describe: 'Ignore API request errors, invalid test cases or attachments',
 				type: 'boolean',
 			},
+			'ignore-unmatched': {
+				describe: 'Suppress individual unmatched test messages, show summary only',
+				type: 'boolean',
+			},
 			help: {
 				alias: 'h',
 				help: true,

@@ -21,6 +21,7 @@ export interface ResultUploadCommandArgs {
 	files: string[]
 	force: boolean
 	attachments: boolean
+	ignoreUnmatched: boolean
 }
 
 interface FileResults {
