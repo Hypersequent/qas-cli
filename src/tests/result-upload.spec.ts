@@ -190,6 +190,16 @@ fileTypes.forEach((fileType) => {
 				expect(tcaseUploadCount()).toBe(4)
 			})
 
+			test('Test cases on reports with missing test cases should be successful with --ignore-unmatched', async () => {
+				const fileUploadCount = countFileUploadApiCalls()
+				const tcaseUploadCount = countResultUploadApiCalls()
+				await run(
+					`${fileType.command} -r ${runURL} --ignore-unmatched ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
+				)
+				expect(fileUploadCount()).toBe(0)
+				expect(tcaseUploadCount()).toBe(4)
+			})
+
 			test('Test cases from multiple reports should be processed successfully', async () => {
 				const fileUploadCount = countFileUploadApiCalls()
 				const tcaseUploadCount = countResultUploadApiCalls()

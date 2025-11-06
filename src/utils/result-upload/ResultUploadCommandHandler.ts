@@ -21,6 +21,7 @@ export interface ResultUploadCommandArgs {
 	files: string[]
 	force: boolean
 	attachments: boolean
+	ignoreUnmatched: boolean
 }
 
 interface FileResults {
@@ -117,11 +118,12 @@ export class ResultUploadCommandHandler {
 
 	protected extractTestCaseRefs(projectCode: string, fileResults: FileResults[]): Set<string> {
 		const tcaseRefs = new Set<string>()
+		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
 
 		for (const { file, results } of fileResults) {
 			for (const result of results) {
 				if (!result.name) {
-					if (!this.args.force) {
+					if (shouldFailOnInvalid) {
 						return printErrorThenExit(`Test case in ${file} has no name`)
 					}
 					continue
@@ -130,7 +132,10 @@ export class ResultUploadCommandHandler {
 				const match = new RegExp(`${projectCode}-(\\d{3,})`).exec(result.name)
 				if (match) {
 					tcaseRefs.add(`${projectCode}-${match[1]}`)
-				} else if (!this.args.force) {
+					continue
+				}
+
+				if (shouldFailOnInvalid) {
 					return printErrorThenExit(
 						`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
 					)

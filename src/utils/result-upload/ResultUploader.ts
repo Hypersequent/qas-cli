@@ -39,6 +39,24 @@ export class ResultUploader {
 	}
 
 	private validateAndPrintMissingTestCases(missing: TestCaseResult[]) {
+		if (!missing.length) {
+			return
+		}
+
+		if (this.args.ignoreUnmatched) {
+			this.printMissingTestCaseSummary(missing.length)
+			return
+		}
+
+		this.printMissingTestCaseErrors(missing)
+		this.printMissingTestCaseGuidance(missing)
+
+		if (!this.args.force) {
+			process.exit(1)
+		}
+	}
+
+	private printMissingTestCaseErrors(missing: TestCaseResult[]) {
 		missing.forEach((item) => {
 			const folderMessage = item.folder ? ` "${item.folder}" ->` : ''
 			const header = this.args.force ? chalk.yellow('Warning:') : chalk.red('Error:')
@@ -46,10 +64,23 @@ export class ResultUploader {
 				`${header}${chalk.blue(`${folderMessage} "${item.name}"`)} does not match any test cases`
 			)
 		})
+	}
 
-		if (missing.length) {
-			if (this.type === 'junit-upload') {
-                console.error(`
+	private printMissingTestCaseSummary(count: number) {
+		console.log(chalk.dim(`\nSkipped ${count} unmatched test${count === 1 ? '' : 's'}`))
+	}
+
+	private printMissingTestCaseGuidance(missing: TestCaseResult[]) {
+		if (this.type === 'junit-upload') {
+			this.printJUnitGuidance()
+		} else if (this.type === 'playwright-json-upload') {
+			this.printPlaywrightGuidance(missing[0]?.name || 'your test name')
+		}
+		console.error(chalk.yellow('Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'))
+	}
+
+	private printJUnitGuidance() {
+		console.error(`
 ${chalk.yellow('To fix this issue, include the test case marker in your test names:')}
 
   Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
@@ -58,14 +89,16 @@ ${chalk.yellow('To fix this issue, include the test case marker in your test nam
 
   ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
 `)
-			} else {
-				console.error(`
+	}
+
+	private printPlaywrightGuidance(exampleTestName: string) {
+		console.error(`
 ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
   ${chalk.bold('Option 1: Use Test Annotations (Recommended)')}
   Add a test annotation to your Playwright test:
 
-  ${chalk.green(`test('${missing[0]?.name || 'your test name'}', {
+  ${chalk.green(`test('${exampleTestName}', {
     annotation: {
       type: 'test case',
       description: 'https://your-qas-instance.com/project/${this.project}/tcase/123'
@@ -83,14 +116,6 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
   Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}
   ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
 `)
-			}
-
-			console.error(chalk.yellow('Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'))
-		}
-
-		if (missing.length && !this.args.force) {
-			process.exit(1)
-		}
 	}
 
 	private validateAndPrintMissingAttachments = (results: TCaseWithResult[]) => {

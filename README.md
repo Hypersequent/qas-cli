@@ -68,6 +68,7 @@ The `junit-upload` and `playwright-json-upload` commands upload test results fro
 - `--run-name` - Optional name template for creating new test run when run url is not specified (supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders). If not specified, `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}` is used as default
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
+- `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
 - `-h, --help` - Show command help
 
 ### Run Name Template Placeholders
@@ -129,6 +130,12 @@ Ensure the required environment variables are defined before running these comma
     ```bash
     qasphere junit-upload --force ./test-results.xml
     ```
+
+8. Suppress unmatched test messages (useful during gradual test case linking):
+    ```bash
+    qasphere junit-upload --ignore-unmatched ./test-results.xml
+    ```
+    This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
 
 ## Test Report Requirements
 
