@@ -10,7 +10,10 @@ describe('Playwright JSON parsing', () => {
 		const jsonContent = await readFile(jsonPath, 'utf8')
 
 		// This should not throw any exceptions
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 
 		// Verify that we got the expected number of test cases
 		expect(testcases).toHaveLength(12)
@@ -46,7 +49,10 @@ describe('Playwright JSON parsing', () => {
 		const jsonPath = `${playwrightJsonBasePath}/empty-tsuite.json`
 		const jsonContent = await readFile(jsonPath, 'utf8')
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 
 		// Should only have the one test from ui.cart.spec.ts, not the empty ui.contents.spec.ts
 		expect(testcases).toHaveLength(1)
@@ -95,7 +101,10 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 		expect(testcases).toHaveLength(1)
 
 		// Should use the last result (passed on retry)
@@ -166,7 +175,10 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 		expect(testcases).toHaveLength(2)
 
 		// Verify folder is set to top-level suite title
@@ -225,7 +237,10 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 		expect(testcases).toHaveLength(1)
 
 		// Verify ANSI codes are stripped from message
@@ -330,7 +345,10 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 		expect(testcases).toHaveLength(3)
 
 		// Test with annotation should have marker prefixed
@@ -451,12 +469,242 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '')
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
 		expect(testcases).toHaveLength(4)
 
 		expect(testcases[0].status).toBe('passed') // expected
 		expect(testcases[1].status).toBe('failed') // unexpected
 		expect(testcases[2].status).toBe('passed') // flaky (passed on retry)
 		expect(testcases[3].status).toBe('skipped') // skipped
+	})
+
+	test('Should include stdout/stderr when skipStdout and skipStderr are set to "never"', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Passed test with output',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [{ text: 'stdout content' }],
+											stderr: [{ text: 'stderr content' }],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].message).toContain('stdout content')
+		expect(testcases[0].message).toContain('stderr content')
+	})
+
+	test('Should skip stdout for passed tests when skipStdout is set to "on-success"', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Passed test with output',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [{ text: 'stdout content' }],
+											stderr: [{ text: 'stderr content' }],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'on-success',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].message).not.toContain('stdout content')
+		expect(testcases[0].message).toContain('stderr content')
+	})
+
+	test('Should skip stderr for passed tests when skipStderr is set to "on-success"', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Passed test with output',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [{ text: 'stdout content' }],
+											stderr: [{ text: 'stderr content' }],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'on-success',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].message).toContain('stdout content')
+		expect(testcases[0].message).not.toContain('stderr content')
+	})
+
+	test('Should include stdout/stderr for failed tests even when skip options are set to "on-success"', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Failed test with output',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'failed',
+											errors: [{ message: 'Test failed' }],
+											stdout: [{ text: 'stdout from failed test' }],
+											stderr: [{ text: 'stderr from failed test' }],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'unexpected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'on-success',
+			skipStderr: 'on-success',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].status).toBe('failed')
+		expect(testcases[0].message).toContain('Test failed')
+		expect(testcases[0].message).toContain('stdout from failed test')
+		expect(testcases[0].message).toContain('stderr from failed test')
+	})
+
+	test('Should skip both stdout and stderr for passed tests when both skip options are set to "on-success"', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Passed test with output',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [{ text: 'stdout content' }],
+											stderr: [{ text: 'stderr content' }],
+											retry: 0,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const testcases = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'on-success',
+			skipStderr: 'on-success',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].message).not.toContain('stdout content')
+		expect(testcases[0].message).not.toContain('stderr content')
+		expect(testcases[0].message).toBe('')
 	})
 })

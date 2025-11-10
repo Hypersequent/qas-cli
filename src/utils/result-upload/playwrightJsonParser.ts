@@ -2,7 +2,7 @@ import z from 'zod'
 import escapeHtml from 'escape-html'
 import stripAnsi from 'strip-ansi'
 import { Attachment, TestCaseResult } from './types'
-import { Parser } from './ResultUploadCommandHandler'
+import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
 import { parseTCaseUrl } from '../misc'
 import { getAttachments } from './utils'
@@ -80,7 +80,8 @@ const playwrightJsonSchema = z.object({
 
 export const parsePlaywrightJson: Parser = async (
 	jsonString: string,
-	attachmentBaseDirectory: string
+	attachmentBaseDirectory: string,
+	options
 ): Promise<TestCaseResult[]> => {
 	const jsonData = JSON.parse(jsonString)
 	const validated = playwrightJsonSchema.parse(jsonData)
@@ -101,6 +102,7 @@ export const parsePlaywrightJson: Parser = async (
 			}
 
 			const markerFromAnnotations = getTCaseMarkerFromAnnotations(test.annotations) // What about result.annotations?
+			const status = mapPlaywrightStatus(test.status)
 			const numTestcases = testcases.push({
 				// Use markerFromAnnotations as name prefix, so that it takes precedence over any
 				// other marker present. Prefixing it to name also helps in detectProjectCode
@@ -108,8 +110,8 @@ export const parsePlaywrightJson: Parser = async (
 					? `${markerFromAnnotations}: ${titlePrefix}${spec.title}`
 					: `${titlePrefix}${spec.title}`,
 				folder: topLevelSuite,
-				status: mapPlaywrightStatus(test.status),
-				message: buildMessage(result),
+				status,
+				message: buildMessage(result, status, options),
 				attachments: [],
 			})
 
@@ -177,7 +179,7 @@ const mapPlaywrightStatus = (status: Status): ResultStatus => {
 	}
 }
 
-const buildMessage = (result: Result) => {
+const buildMessage = (result: Result, status: ResultStatus, options: ParserOptions) => {
 	let message = ''
 
 	if (result.retry) {
@@ -194,7 +196,9 @@ const buildMessage = (result: Result) => {
 		})
 	}
 
-	if (result.stdout.length > 0) {
+	// Conditionally include stdout based on status and options
+	const includeStdout = !(status === 'passed' && options.skipStdout === 'on-success')
+	if (includeStdout && result.stdout.length > 0) {
 		message += '<h4>Output:</h4>'
 		result.stdout.forEach((out) => {
 			const content = 'text' in out ? out.text : out.buffer
@@ -205,7 +209,9 @@ const buildMessage = (result: Result) => {
 		})
 	}
 
-	if (result.stderr.length > 0) {
+	// Conditionally include stderr based on status and options
+	const includeStderr = !(status === 'passed' && options.skipStderr === 'on-success')
+	if (includeStderr && result.stderr.length > 0) {
 		message += '<h4>Errors (stderr):</h4>'
 		result.stderr.forEach((err) => {
 			const content = 'text' in err ? err.text : err.buffer

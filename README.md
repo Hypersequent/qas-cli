@@ -69,6 +69,8 @@ The `junit-upload` and `playwright-json-upload` commands upload test results fro
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
 - `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
+- `--skip-stdout` - Control when to skip stdout from test results (choices: `on-success`, `never`; default: `never`)
+- `--skip-stderr` - Control when to skip stderr from test results (choices: `on-success`, `never`; default: `never`)
 - `-h, --help` - Show command help
 
 ### Run Name Template Placeholders
@@ -136,6 +138,18 @@ Ensure the required environment variables are defined before running these comma
     qasphere junit-upload --ignore-unmatched ./test-results.xml
     ```
     This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
+
+9. Skip stdout/stderr for passed tests to reduce result payload size:
+    ```bash
+    qasphere junit-upload --skip-stdout on-success ./test-results.xml
+    ```
+    This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
+
+10. Skip both stdout and stderr for passed tests:
+    ```bash
+    qasphere junit-upload --skip-stdout on-success --skip-stderr on-success ./test-results.xml
+    ```
+    This is useful when you have verbose logging in tests but only want to see output for failures.
 
 ## Test Report Requirements
 
