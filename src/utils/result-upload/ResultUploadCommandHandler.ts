@@ -33,8 +33,8 @@ export interface ResultUploadCommandArgs {
 	force: boolean
 	attachments: boolean
 	ignoreUnmatched: boolean
-	skipStdout: SkipOutputOption
-	skipStderr: SkipOutputOption
+	skipReportStdout: SkipOutputOption
+	skipReportStderr: SkipOutputOption
 }
 
 interface FileResults {
@@ -105,8 +105,8 @@ export class ResultUploadCommandHandler {
 		const results: FileResults[] = []
 
 		const parserOptions: ParserOptions = {
-			skipStdout: this.args.skipStdout,
-			skipStderr: this.args.skipStderr,
+			skipStdout: this.args.skipReportStdout,
+			skipStderr: this.args.skipReportStderr,
 		}
 
 		for (const file of this.args.files) {

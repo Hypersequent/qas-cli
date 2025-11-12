@@ -110,49 +110,28 @@ export const parseJUnitXml: Parser = async (
 				}
 			}
 
-			// Extract from failure elements (message attribute and text content)
-			for (const failure of tcase.failure || []) {
-				if (typeof failure === 'object') {
-					// Check message attribute
-					if (failure.$?.message) {
-						attachmentPaths.push(...extractAttachmentPaths(failure.$.message))
-					}
-					// Check text content
-					if (failure._) {
-						attachmentPaths.push(...extractAttachmentPaths(failure._))
-					}
-				}
-			}
-
-			// Extract from error elements (message attribute and text content)
-			for (const error of tcase.error || []) {
-				if (typeof error === 'object') {
-					// Check message attribute
-					if (error.$?.message) {
-						attachmentPaths.push(...extractAttachmentPaths(error.$.message))
-					}
-					// Check text content
-					if (error._) {
-						attachmentPaths.push(...extractAttachmentPaths(error._))
+			// Helper function to extract attachments from failure/error/skipped elements
+			const extractAttachmentsFromElements = (
+				elements: (string | { _?: string; $?: { message?: string } })[] | undefined
+			) => {
+				for (const element of elements || []) {
+					if (typeof element === 'string') {
+						attachmentPaths.push(...extractAttachmentPaths(element))
+					} else if (typeof element === 'object') {
+						if (element.$?.message) {
+							attachmentPaths.push(...extractAttachmentPaths(element.$.message))
+						}
+						if (element._) {
+							attachmentPaths.push(...extractAttachmentPaths(element._))
+						}
 					}
 				}
 			}
 
-			// Extract from skipped elements (message attribute and text content)
-			for (const skipped of tcase.skipped || []) {
-				if (typeof skipped === 'string') {
-					attachmentPaths.push(...extractAttachmentPaths(skipped))
-				} else if (typeof skipped === 'object') {
-					// Check message attribute
-					if (skipped.$?.message) {
-						attachmentPaths.push(...extractAttachmentPaths(skipped.$.message))
-					}
-					// Check text content
-					if (skipped._) {
-						attachmentPaths.push(...extractAttachmentPaths(skipped._))
-					}
-				}
-			}
+			// Extract attachments from failure, error, and skipped elements
+			extractAttachmentsFromElements(tcase.failure)
+			extractAttachmentsFromElements(tcase.error)
+			extractAttachmentsFromElements(tcase.skipped)
 
 			attachmentsPromises.push({
 				index,

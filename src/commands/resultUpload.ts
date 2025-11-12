@@ -53,13 +53,13 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 				describe: 'Suppress individual unmatched test messages, show summary only',
 				type: 'boolean',
 			},
-			'skip-stdout': {
+			'skip-report-stdout': {
 				describe: 'When to skip stdout from test results',
 				type: 'string',
 				choices: ['on-success', 'never'] as const,
 				default: 'never' as const,
 			},
-			'skip-stderr': {
+			'skip-report-stderr': {
 				describe: 'When to skip stderr from test results',
 				type: 'string',
 				choices: ['on-success', 'never'] as const,
