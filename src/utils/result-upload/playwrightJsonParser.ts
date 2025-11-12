@@ -81,7 +81,7 @@ const playwrightJsonSchema = z.object({
 export const parsePlaywrightJson: Parser = async (
 	jsonString: string,
 	attachmentBaseDirectory: string,
-	options
+	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
 	const jsonData = JSON.parse(jsonString)
 	const validated = playwrightJsonSchema.parse(jsonData)

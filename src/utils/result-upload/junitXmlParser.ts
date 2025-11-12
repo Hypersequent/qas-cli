@@ -76,7 +76,7 @@ const junitXmlSchema = z.object({
 export const parseJUnitXml: Parser = async (
 	xmlString: string,
 	attachmentBaseDirectory: string,
-	options
+	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
 	const xmlData = await xml.parseStringPromise(xmlString, {
 		explicitCharkey: true,
@@ -100,13 +100,13 @@ export const parseJUnitXml: Parser = async (
 					attachments: [],
 				}) - 1
 
-			const attachmentPaths = []
+			const attachmentPaths = new Set<string>()
 
 			// Extract from system-out
 			for (const out of tcase['system-out'] || []) {
 				const text = typeof out === 'string' ? out : out._ ?? ''
 				if (text) {
-					attachmentPaths.push(...extractAttachmentPaths(text))
+					extractAttachmentPaths(text).forEach((path) => attachmentPaths.add(path))
 				}
 			}
 
@@ -116,13 +116,13 @@ export const parseJUnitXml: Parser = async (
 			) => {
 				for (const element of elements || []) {
 					if (typeof element === 'string') {
-						attachmentPaths.push(...extractAttachmentPaths(element))
+						extractAttachmentPaths(element).forEach((path) => attachmentPaths.add(path))
 					} else if (typeof element === 'object') {
 						if (element.$?.message) {
-							attachmentPaths.push(...extractAttachmentPaths(element.$.message))
+							extractAttachmentPaths(element.$.message).forEach((path) => attachmentPaths.add(path))
 						}
 						if (element._) {
-							attachmentPaths.push(...extractAttachmentPaths(element._))
+							extractAttachmentPaths(element._).forEach((path) => attachmentPaths.add(path))
 						}
 					}
 				}
@@ -135,7 +135,7 @@ export const parseJUnitXml: Parser = async (
 
 			attachmentsPromises.push({
 				index,
-				promise: getAttachments(attachmentPaths, attachmentBaseDirectory),
+				promise: getAttachments(Array.from(attachmentPaths), attachmentBaseDirectory),
 			})
 		}
 	}
