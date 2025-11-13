@@ -12,7 +12,18 @@ import { parsePlaywrightJson } from './playwrightJsonParser'
 
 export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
 
-export type Parser = (data: string, attachmentBaseDirectory: string) => Promise<TestCaseResult[]>
+export type SkipOutputOption = 'on-success' | 'never'
+
+export interface ParserOptions {
+	skipStdout: SkipOutputOption
+	skipStderr: SkipOutputOption
+}
+
+export type Parser = (
+	data: string,
+	attachmentBaseDirectory: string,
+	options: ParserOptions
+) => Promise<TestCaseResult[]>
 
 export interface ResultUploadCommandArgs {
 	type: UploadCommandType
@@ -22,6 +33,8 @@ export interface ResultUploadCommandArgs {
 	force: boolean
 	attachments: boolean
 	ignoreUnmatched: boolean
+	skipReportStdout: SkipOutputOption
+	skipReportStderr: SkipOutputOption
 }
 
 interface FileResults {
@@ -91,9 +104,14 @@ export class ResultUploadCommandHandler {
 	protected async parseFiles(): Promise<FileResults[]> {
 		const results: FileResults[] = []
 
+		const parserOptions: ParserOptions = {
+			skipStdout: this.args.skipReportStdout,
+			skipStderr: this.args.skipReportStderr,
+		}
+
 		for (const file of this.args.files) {
 			const fileData = readFileSync(file).toString()
-			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file))
+			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file), parserOptions)
 			results.push({ file, results: fileResults })
 		}
 

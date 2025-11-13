@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="4" failures="1" errors="0" skipped="0">
+  <testsuite name="Content display" timestamp="2025-11-06T19:38:02" time="16.606" tests="4" failures="1" errors="0" skipped="0">
+    <properties>
+      <property name="specId" value="0"/>
+      <property name="suiteName" value="Content display"/>
+      <property name="capabilities" value="chrome.142_0_7444_60.mac"/>
+      <property name="file" value="file://./test/specs/contents.e2e.ts"/>
+    </properties>
+    <testcase classname="chrome.142_0_7444_60.mac.Content_display" name="BD-055: User should see the content according to the About Us information" time="1.34" file="file://./test/specs/contents.e2e.ts">
+      <failure message="expect(received).toBe(expected) // Object.is equality&#xA;&#xA;Expected: &quot;Welcome to Bistro Delivery1&quot;&#xA;Received: &quot;Welcome to Bistro Delivery&quot;&#xA;&#xA;[[ATTACHMENT|./screenshots/BD_055_User_should_see_the_content_according_to_th_2025-11-06T15-38-03-728Z.png]]"><![CDATA[Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "Welcome to Bistro Delivery1"
+Received: "Welcome to Bistro Delivery"
+    at Context.<anonymous> (/Users/a/Developer/Hypersequent/bistro-e2e-webdriver/test/specs/contents.e2e.ts:12:21)]]></failure>
+      <system-out><![CDATA[
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+]]></system-out>
+      <system-err><![CDATA[
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "Welcome to Bistro Delivery1"
+Received: "Welcome to Bistro Delivery"
+    at Context.<anonymous> (/Users/a/Developer/Hypersequent/bistro-e2e-webdriver/test/specs/contents.e2e.ts:12:21)
+]]></system-err>
+    </testcase>
+    <testcase classname="chrome.142_0_7444_60.mac.Content_display" name="BD-026: Correct display of blocks and buttons in the navbar" time="9.26" file="file://./test/specs/contents.e2e.ts">
+      <system-out><![CDATA[
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.12/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.12/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.13/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.13/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.14/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.F12651217887B7218F02B630A2CE5981.e.14/attribute/class - {}
+RESULT: {}
+COMMAND: POST /session/aeb3cc104d7c990baa142d47e9a07e78/refresh - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+RESULT: {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.27/css/display - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.28/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.28/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.29/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.29/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.30/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.A070D46FB18647D0A8B43910587F4FC5.e.30/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.33/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.33/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.34/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.34/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.35/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.427C0127B97BD750ED14AC6CF8453C40.e.35/attribute/class - {}
+RESULT: {}
+]]></system-out>
+    </testcase>
+    <testcase classname="chrome.142_0_7444_60.mac.Content_display" name="BD-038: User should see the Pizzas list by default on the Todays Menu block" time="5.3" file="file://./test/specs/contents.e2e.ts">
+      <system-out><![CDATA[
+COMMAND: POST /session/aeb3cc104d7c990baa142d47e9a07e78/refresh - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+RESULT: {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.48/css/display - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.51/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.49/attribute/class - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/text - {}
+RESULT: {}
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/element/f.E3584DA9C1D58D38C87AA03B59F633BD.d.2EAD87E4F34ECC43B3DD3AE08892BAA5.e.52/attribute/class - {}
+RESULT: {}
+]]></system-out>
+    </testcase>
+    <testcase classname="chrome.142_0_7444_60.mac.Content_display" name="BD-052: User should see the Todays Menu block after clicking the Todays Menu button in the Welcome banner" time="0.701" file="file://./test/specs/contents.e2e.ts">
+      <system-out><![CDATA[
+COMMAND: GET /session/aeb3cc104d7c990baa142d47e9a07e78/window - {}
+COMMAND: DELETE /session/aeb3cc104d7c990baa142d47e9a07e78 - {}
+RESULT: {}
+RESULT: {}
+]]></system-out>
+    </testcase>
+  </testsuite>
+</testsuites>
