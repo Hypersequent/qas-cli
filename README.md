@@ -145,7 +145,7 @@ Ensure the required environment variables are defined before running these comma
     ```
     This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
 
-10. Skip both stdout and stderr for passed tests:
+   Skip both stdout and stderr for passed tests:
     ```bash
     qasphere junit-upload --skip-report-stdout on-success --skip-report-stderr on-success ./test-results.xml
     ```
