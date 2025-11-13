@@ -154,7 +154,9 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 							attachmentUrls.push({ url, name: attachment.filename })
 						}
 					}
-					comment += `\n<h4>Attachments:</h4>\n${makeListHtml(attachmentUrls)}`
+					if (attachmentUrls.length > 0) {
+						comment += `\n<h4>Attachments:</h4>\n${makeListHtml(attachmentUrls)}`
+					}
 				}
 
 				await this.api.runs.createResultStatus(this.project, this.run, tcase.id, {
