@@ -12,7 +12,18 @@ import { parsePlaywrightJson } from './playwrightJsonParser'
 
 export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
 
-export type Parser = (data: string, attachmentBaseDirectory: string) => Promise<TestCaseResult[]>
+export type SkipOutputOption = 'on-success' | 'never'
+
+export interface ParserOptions {
+	skipStdout: SkipOutputOption
+	skipStderr: SkipOutputOption
+}
+
+export type Parser = (
+	data: string,
+	attachmentBaseDirectory: string,
+	options: ParserOptions
+) => Promise<TestCaseResult[]>
 
 export interface ResultUploadCommandArgs {
 	type: UploadCommandType
@@ -21,6 +32,9 @@ export interface ResultUploadCommandArgs {
 	files: string[]
 	force: boolean
 	attachments: boolean
+	ignoreUnmatched: boolean
+	skipReportStdout: SkipOutputOption
+	skipReportStderr: SkipOutputOption
 }
 
 interface FileResults {
@@ -90,9 +104,14 @@ export class ResultUploadCommandHandler {
 	protected async parseFiles(): Promise<FileResults[]> {
 		const results: FileResults[] = []
 
+		const parserOptions: ParserOptions = {
+			skipStdout: this.args.skipReportStdout,
+			skipStderr: this.args.skipReportStderr,
+		}
+
 		for (const file of this.args.files) {
 			const fileData = readFileSync(file).toString()
-			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file))
+			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file), parserOptions)
 			results.push({ file, results: fileResults })
 		}
 
@@ -117,11 +136,12 @@ export class ResultUploadCommandHandler {
 
 	protected extractTestCaseRefs(projectCode: string, fileResults: FileResults[]): Set<string> {
 		const tcaseRefs = new Set<string>()
+		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
 
 		for (const { file, results } of fileResults) {
 			for (const result of results) {
 				if (!result.name) {
-					if (!this.args.force) {
+					if (shouldFailOnInvalid) {
 						return printErrorThenExit(`Test case in ${file} has no name`)
 					}
 					continue
@@ -130,7 +150,10 @@ export class ResultUploadCommandHandler {
 				const match = new RegExp(`${projectCode}-(\\d{3,})`).exec(result.name)
 				if (match) {
 					tcaseRefs.add(`${projectCode}-${match[1]}`)
-				} else if (!this.args.force) {
+					continue
+				}
+
+				if (shouldFailOnInvalid) {
 					return printErrorThenExit(
 						`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
 					)

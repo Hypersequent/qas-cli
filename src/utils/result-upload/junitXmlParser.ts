@@ -2,7 +2,7 @@ import escapeHtml from 'escape-html'
 import xml from 'xml2js'
 import z from 'zod'
 import { Attachment, TestCaseResult } from './types'
-import { Parser } from './ResultUploadCommandHandler'
+import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
 import { getAttachments } from './utils'
 
@@ -75,7 +75,8 @@ const junitXmlSchema = z.object({
 
 export const parseJUnitXml: Parser = async (
 	xmlString: string,
-	attachmentBaseDirectory: string
+	attachmentBaseDirectory: string,
+	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
 	const xmlData = await xml.parseStringPromise(xmlString, {
 		explicitCharkey: true,
@@ -90,7 +91,7 @@ export const parseJUnitXml: Parser = async (
 
 	for (const suite of validated.testsuites.testsuite) {
 		for (const tcase of suite.testcase ?? []) {
-			const result = getResult(tcase)
+			const result = getResult(tcase, options)
 			const index =
 				testcases.push({
 					folder: suite.$.name ?? '',
@@ -99,17 +100,42 @@ export const parseJUnitXml: Parser = async (
 					attachments: [],
 				}) - 1
 
-			const attachmentPaths = []
+			const attachmentPaths = new Set<string>()
+
+			// Extract from system-out
 			for (const out of tcase['system-out'] || []) {
 				const text = typeof out === 'string' ? out : out._ ?? ''
 				if (text) {
-					attachmentPaths.push(...extractAttachmentPaths(text))
+					extractAttachmentPaths(text).forEach((path) => attachmentPaths.add(path))
 				}
 			}
 
+			// Helper function to extract attachments from failure/error/skipped elements
+			const extractAttachmentsFromElements = (
+				elements: (string | { _?: string; $?: { message?: string } })[] | undefined
+			) => {
+				for (const element of elements || []) {
+					if (typeof element === 'string') {
+						extractAttachmentPaths(element).forEach((path) => attachmentPaths.add(path))
+					} else if (typeof element === 'object') {
+						if (element.$?.message) {
+							extractAttachmentPaths(element.$.message).forEach((path) => attachmentPaths.add(path))
+						}
+						if (element._) {
+							extractAttachmentPaths(element._).forEach((path) => attachmentPaths.add(path))
+						}
+					}
+				}
+			}
+
+			// Extract attachments from failure, error, and skipped elements
+			extractAttachmentsFromElements(tcase.failure)
+			extractAttachmentsFromElements(tcase.error)
+			extractAttachmentsFromElements(tcase.skipped)
+
 			attachmentsPromises.push({
 				index,
-				promise: getAttachments(attachmentPaths, attachmentBaseDirectory),
+				promise: getAttachments(Array.from(attachmentPaths), attachmentBaseDirectory),
 			})
 		}
 	}
@@ -124,40 +150,47 @@ export const parseJUnitXml: Parser = async (
 }
 
 const getResult = (
-	tcase: z.infer<typeof testCaseSchema>
+	tcase: z.infer<typeof testCaseSchema>,
+	options: ParserOptions
 ): { status: ResultStatus; message: string } => {
 	const err = tcase['system-err'] || []
 	const out = tcase['system-out'] || []
-	if (tcase.error)
-		return {
-			status: 'blocked',
-			message: getResultMessage(
-				{ result: tcase.error, type: 'code' },
-				{ result: out, type: 'code' },
-				{ result: err, type: 'code' }
-			),
-		}
-	if (tcase.failure)
-		return {
-			status: 'failed',
-			message: getResultMessage(
-				{ result: tcase.failure, type: 'code' },
-				{ result: out, type: 'code' },
-				{ result: err, type: 'code' }
-			),
-		}
-	if (tcase.skipped)
-		return {
-			status: 'skipped',
-			message: getResultMessage(
-				{ result: tcase.skipped, type: 'code' },
-				{ result: out, type: 'code' },
-				{ result: err, type: 'code' }
-			),
-		}
+
+	// Determine test status first
+	let status: ResultStatus
+	let mainResult: GetResultMessageOption | undefined
+
+	if (tcase.error) {
+		status = 'blocked'
+		mainResult = { result: tcase.error, type: 'code' }
+	} else if (tcase.failure) {
+		status = 'failed'
+		mainResult = { result: tcase.failure, type: 'code' }
+	} else if (tcase.skipped) {
+		status = 'skipped'
+		mainResult = { result: tcase.skipped, type: 'code' }
+	} else {
+		status = 'passed'
+	}
+
+	// Conditionally include stdout/stderr based on status and options
+	const includeStdout = !(status === 'passed' && options.skipStdout === 'on-success')
+	const includeStderr = !(status === 'passed' && options.skipStderr === 'on-success')
+
+	const messageOptions: GetResultMessageOption[] = []
+	if (mainResult) {
+		messageOptions.push(mainResult)
+	}
+	if (includeStdout) {
+		messageOptions.push({ result: out, type: 'code' })
+	}
+	if (includeStderr) {
+		messageOptions.push({ result: err, type: 'code' })
+	}
+
 	return {
-		status: 'passed',
-		message: getResultMessage({ result: out, type: 'code' }, { result: err, type: 'code' }),
+		status,
+		message: getResultMessage(...messageOptions),
 	}
 }
 

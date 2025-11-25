@@ -118,23 +118,23 @@ fileTypes.forEach((fileType) => {
 				]
 
 				for (const pattern of patterns) {
-					const fileUploadCount = countFileUploadApiCalls()
-					const tcaseUploadCount = countResultUploadApiCalls()
+					const numFileUploadCalls = countFileUploadApiCalls()
+					const numResultUploadCalls = countResultUploadApiCalls()
 					await run(pattern)
-					expect(fileUploadCount()).toBe(0)
-					expect(tcaseUploadCount()).toBe(1) // 5 results total
+					expect(numFileUploadCalls()).toBe(0)
+					expect(numResultUploadCalls()).toBe(1) // 5 results total
 				}
 			})
 
 			test('Passing correct Run URL pattern without https, should result in success', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(1)
 				await run(
 					`${fileType.command} -r ${qasHost}/project/${projectCode}/run/${runId} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(5) // 5 results total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 
 			test('Passing incorrect Run URL pattern should result in failure', async () => {
@@ -144,8 +144,8 @@ fileTypes.forEach((fileType) => {
 				]
 
 				for (const pattern of patterns) {
-					const fileUploadCount = countFileUploadApiCalls()
-					const tcaseUploadCount = countResultUploadApiCalls()
+					const numFileUploadCalls = countFileUploadApiCalls()
+					const numResultUploadCalls = countResultUploadApiCalls()
 					let isError = false
 
 					try {
@@ -154,100 +154,110 @@ fileTypes.forEach((fileType) => {
 						isError = true
 					}
 					expect(isError).toBeTruthy()
-					expect(fileUploadCount()).toBe(0)
-					expect(tcaseUploadCount()).toBe(0)
+					expect(numFileUploadCalls()).toBe(0)
+					expect(numResultUploadCalls()).toBe(0)
 				}
 			})
 		})
 
 		describe('Uploading test results', () => {
 			test('Test cases on reports with all matching test cases on QAS should be successful', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(2)
 				await run(
 					`${fileType.command} -r ${runURL} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(3) // 5 results total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(3) // 5 results total
 			})
 
 			test('Test cases on reports with a missing test case on QAS should throw an error', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				await expect(
 					run(
 						`${fileType.command} -r ${runURL} ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
 					)
 				).rejects.toThrowError()
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(0)
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(0)
 			})
 
 			test('Test cases on reports with a missing test case on QAS should be successful when forced', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(3)
 				await run(
 					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(2) // 4 results total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(2) // 4 results total
+			})
+
+			test('Test cases on reports with missing test cases should be successful with --ignore-unmatched', async () => {
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
+				await run(
+					`${fileType.command} -r ${runURL} --ignore-unmatched ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
+				)
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(1) // 4 results total
 			})
 
 			test('Test cases from multiple reports should be processed successfully', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(2)
 				await run(
 					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension} ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(4) // 8 results total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(4) // 8 results total
 			})
 
 			test('Test suite with empty tcases should not result in error and be skipped', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				await run(
 					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/empty-tsuite.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(1) // 1 result total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(1) // 1 result total
 			})
 		})
 
 		describe('Uploading with attachments', () => {
 			test('Attachments should be uploaded', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(3)
 				await run(
 					`${fileType.command} -r ${runURL} --attachments ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(5)
-				expect(tcaseUploadCount()).toBe(2) // 5 results total
+				expect(numFileUploadCalls()).toBe(5)
+				expect(numResultUploadCalls()).toBe(2) // 5 results total
 			})
 			test('Missing attachments should throw an error', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				await expect(
 					run(
 						`${fileType.command} -r ${runURL} --attachments ${fileType.dataBasePath}/missing-attachments.${fileType.fileExtension}`
 					)
 				).rejects.toThrow()
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(0)
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(0)
 			})
 			test('Missing attachments should be successful when forced', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(1)
 				await run(
 					`${fileType.command} -r ${runURL} --attachments --force ${fileType.dataBasePath}/missing-attachments.${fileType.fileExtension}`
 				)
-				expect(fileUploadCount()).toBe(4)
-				expect(tcaseUploadCount()).toBe(5) // 5 results total
+				expect(numFileUploadCalls()).toBe(4)
+				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
 
@@ -316,8 +326,8 @@ fileTypes.forEach((fileType) => {
 			})
 
 			test('Should reuse existing run when run title is already used', async () => {
-				const fileUploadCount = countFileUploadApiCalls()
-				const tcaseUploadCount = countResultUploadApiCalls()
+				const numFileUploadCalls = countFileUploadApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
 
 				createRunTitleConflict = true
 				await run(
@@ -325,8 +335,8 @@ fileTypes.forEach((fileType) => {
 				)
 
 				expect(lastCreatedRunTitle).toBe('duplicate run title')
-				expect(fileUploadCount()).toBe(0)
-				expect(tcaseUploadCount()).toBe(1) // 5 results total
+				expect(numFileUploadCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(1) // 5 results total
 			})
 
 			test('Should use default name template when --run-name is not specified', async () => {

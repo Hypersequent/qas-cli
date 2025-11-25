@@ -68,6 +68,9 @@ The `junit-upload` and `playwright-json-upload` commands upload test results fro
 - `--run-name` - Optional name template for creating new test run when run url is not specified (supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders). If not specified, `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}` is used as default
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
+- `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
+- `--skip-report-stdout` - Control when to skip stdout blocks from test report (choices: `on-success`, `never`; default: `never`)
+- `--skip-report-stderr` - Control when to skip stderr blocks from test report (choices: `on-success`, `never`; default: `never`)
 - `-h, --help` - Show command help
 
 ### Run Name Template Placeholders
@@ -129,6 +132,24 @@ Ensure the required environment variables are defined before running these comma
     ```bash
     qasphere junit-upload --force ./test-results.xml
     ```
+
+8. Suppress unmatched test messages (useful during gradual test case linking):
+    ```bash
+    qasphere junit-upload --ignore-unmatched ./test-results.xml
+    ```
+    This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
+
+9. Skip stdout/stderr for passed tests to reduce result payload size:
+    ```bash
+    qasphere junit-upload --skip-report-stdout on-success ./test-results.xml
+    ```
+    This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
+
+   Skip both stdout and stderr for passed tests:
+    ```bash
+    qasphere junit-upload --skip-report-stdout on-success --skip-report-stderr on-success ./test-results.xml
+    ```
+    This is useful when you have verbose logging in tests but only want to see output for failures.
 
 ## Test Report Requirements
 
