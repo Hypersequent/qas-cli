@@ -40,7 +40,7 @@ export type ResultUploadCommandArgs = {
 	  }
 	| {
 			projectCode?: string
-			runName: string
+			runName?: string
 			createTcases: boolean
 	  }
 )
@@ -79,7 +79,7 @@ export class ResultUploadCommandHandler {
 		let projectCode = ''
 		let runId = 0
 
-		if ('runUrl' in this.args) {
+		if ('runUrl' in this.args && this.args.runUrl) {
 			// Handle existing run URL
 			console.log(chalk.blue(`Using existing test run: ${this.args.runUrl}`))
 
@@ -94,7 +94,7 @@ export class ResultUploadCommandHandler {
 			projectCode = urlParsed.project
 		} else {
 			if (this.args.projectCode) {
-				projectCode = this.args.projectCode
+				projectCode = this.args.projectCode as string
 			} else {
 				// Try to auto-detect project code from results. This is not fully reliable, but
 				// is kept for backward compatibility. Better to specify project code explicitly
@@ -278,7 +278,7 @@ export class ResultUploadCommandHandler {
 
 	private async createNewRun(projectCode: string, tcaseIds: string[]) {
 		const title = processTemplate(
-			'runName' in this.args
+			'runName' in this.args && this.args.runName
 				? (this.args.runName as string)
 				: 'Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}'
 		)
