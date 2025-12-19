@@ -1,34 +1,25 @@
-import { ResourceId } from './schemas'
-import { jsonResponse, withJson } from './utils'
-export interface PaginatedResponse<T> {
-    data: T[]
-    total: number
-    page: number
-    limit: number
-}
-
-export interface TCaseBySeq {
-    id: string
-    legacyId?: string
-    seq: number
-    version: number
-    projectId: string
-    folderId: number
-}
-
-export interface GetTCasesBySeqRequest {
-    seqIds: string[]
-    page?: number
-    limit?: number
-}
+import {
+    CreateTCasesRequest,
+    CreateTCasesResponse,
+    PaginatedRequest,
+    PaginatedResponse,
+    ResourceId,
+    TCase,
+} from './schemas'
+import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export const createTCaseApi = (fetcher: typeof fetch) => {
-    fetcher = withJson(fetcher)
-    return {
-        getTCasesBySeq: (projectCode: ResourceId, request: GetTCasesBySeqRequest) =>
-            fetcher(`/api/public/v0/project/${projectCode}/tcase/seq`, {
-                method: 'POST',
-                body: JSON.stringify(request),
-            }).then((r) => jsonResponse<PaginatedResponse<TCaseBySeq>>(r)),
-    }
+	fetcher = withJson(fetcher)
+	return {
+		getTCasesPaginated: (projectCode: ResourceId, request: PaginatedRequest) =>
+			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/tcase`, request)).then(
+				(r) => jsonResponse<PaginatedResponse<TCase>>(r)
+			),
+
+		createTCases: (projectCode: ResourceId, request: CreateTCasesRequest) =>
+			fetcher(`/api/public/v0/project/${projectCode}/tcase/bulk`, {
+				method: 'POST',
+				body: JSON.stringify(request),
+			}).then((r) => jsonResponse<CreateTCasesResponse>(r)),
+	}
 }

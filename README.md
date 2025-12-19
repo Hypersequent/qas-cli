@@ -60,12 +60,19 @@ QAS_URL=https://qas.eu1.qasphere.com
 
 ## Commands: `junit-upload`, `playwright-json-upload`
 
-The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively. Both commands can either create a new test run within a QA Sphere project or upload results to an existing run, and they share the same set of options.
+The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively.
+
+There are two modes for uploading results using the commands:
+1. Upload to an existing test run by specifying its URL via `--run-url` flag
+2. Create a new test run and upload results to it (when `--run-url` flag is not specified)
 
 ### Options
 
-- `-r, --run-url` - Optional URL of an existing run for uploading results (a new run is created if not specified)
-- `--run-name` - Optional name template for creating new test run when run url is not specified (supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders). If not specified, `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}` is used as default
+- `-r`/`--run-url` - Upload results to an existing test run
+- `--project-code`, `--run-name`, `--create-tcases` - Create a new test run and upload results to it
+  - `--project-code` - Project code for creating new test run. It can also be auto detected from test case markers in the results, but this is not fully reliable, so it is recommended to specify the project code explicitly
+  - `--run-name` - Optional name template for creating new test run. It supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders (default: `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`)
+  - `--create-tcases` - Automatically create test cases in QA Sphere for results that don't have valid test case markers. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each new test case (default: `false`)
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
 - `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
@@ -96,32 +103,33 @@ Ensure the required environment variables are defined before running these comma
 
 **Note:** The following examples use `junit-upload`, but you can replace it with `playwright-json-upload` and adjust the file extension from `.xml` to `.json` to upload Playwright JSON reports instead.
 
-1. Create a new test run with default name template (`Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`) and upload results:
-    ```bash
-    qasphere junit-upload ./test-results.xml
-    ```
-
-2. Upload to an existing test run:
+1. Upload to an existing test run:
     ```bash
     qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
     ```
 
+2. Create a new test run with default name template and upload results:
+    ```bash
+    qasphere junit-upload ./test-results.xml
+    ```
+    Project code is detected from test case markers in the results.
+
 3. Create a new test run with name template without any placeholders and upload results:
     ```bash
-    qasphere junit-upload --run-name "v1.4.4-rc5" ./test-results.xml
+    qasphere junit-upload --project-code P1 --run-name "v1.4.4-rc5" ./test-results.xml
     ```
 
 4. Create a new test run with name template using environment variables and date placeholders and upload results:
     ```bash
-    qasphere junit-upload --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
+    qasphere junit-upload --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
     ```
     If `BUILD_NUMBER` environment variable is set to `v1.4.4-rc5` and today's date is January 1, 2025, the run would be named "CI Build v1.4.4-rc5 - 2025-01-01".
 
-5. Create a new test run with name template using date/time placeholders and upload results:
+5. Create a new test run with name template using date/time placeholders and create test cases for results without valid markers and upload results:
     ```bash
-    qasphere junit-upload --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" ./test-results.xml
+    qasphere junit-upload --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ./test-results.xml
     ```
-    If the current time is 10:34 PM on January 1, 2025, the run would be named "Nightly Tests 2025/01/01 22:34".
+    If the current time is 10:34 PM on January 1, 2025, the run would be named "Nightly Tests 2025/01/01 22:34". This also creates new test cases in QA Sphere for any results that doesn't have a valid test case marker. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each newly created test case. Update your test cases to include the markers in the name, for future uploads.
 
 6. Upload results with attachments:
     ```bash
@@ -139,13 +147,13 @@ Ensure the required environment variables are defined before running these comma
     ```
     This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
 
-9. Skip stdout/stderr for passed tests to reduce result payload size:
+9.  Skip stdout for passed tests to reduce result payload size:
     ```bash
     qasphere junit-upload --skip-report-stdout on-success ./test-results.xml
     ```
     This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
 
-   Skip both stdout and stderr for passed tests:
+10. Skip both stdout and stderr for passed tests:
     ```bash
     qasphere junit-upload --skip-report-stdout on-success --skip-report-stderr on-success ./test-results.xml
     ```
@@ -153,7 +161,7 @@ Ensure the required environment variables are defined before running these comma
 
 ## Test Report Requirements
 
-The QAS CLI requires test cases in your reports (JUnit XML or Playwright JSON) to reference corresponding test cases in QA Sphere. These references are used to map test results from your automation to the appropriate test cases in QA Sphere. If a report lacks these references or the referenced test case doesn't exist in QA Sphere, the tool will display an error message.
+The QAS CLI maps test results from your reports (JUnit XML or Playwright JSON) to corresponding test cases in QA Sphere using test case markers. If a test result lacks a valid marker, the CLI will display an error unless you use `--create-tcases` to automatically create test cases, or `--ignore-unmatched`/`--force` to skip unmatched results.
 
 ### JUnit XML
 

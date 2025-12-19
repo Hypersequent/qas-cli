@@ -1,10 +1,12 @@
-import { afterAll, beforeAll, expect, test, describe, afterEach } from 'vitest'
+import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach } from 'vitest'
 import { run } from '../commands/main'
 import { setupServer } from 'msw/node'
 import { HttpResponse, http } from 'msw'
 import { runTestCases } from './fixtures/testcases'
 import { countMockedApiCalls } from './utils'
 import { setMaxResultsInRequest } from '../utils/result-upload/ResultUploader'
+import { CreateTCasesResponse } from '../api/schemas'
+import { unlinkSync, readdirSync } from 'node:fs'
 
 const projectCode = 'TEST'
 const runId = '1'
@@ -16,6 +18,7 @@ process.env['QAS_TOKEN'] = 'QAS_TOKEN'
 process.env['QAS_URL'] = baseURL
 
 let lastCreatedRunTitle = ''
+let createTCasesResponse: CreateTCasesResponse | null = null
 let createRunTitleConflict = false
 
 const server = setupServer(
@@ -23,7 +26,7 @@ const server = setupServer(
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		return HttpResponse.json({ exists: true })
 	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, ({ request }) => {
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		return HttpResponse.json({
 			data: runTestCases,
@@ -72,6 +75,10 @@ const server = setupServer(
 			id: 'TEST',
 			url: 'http://example.com',
 		})
+	}),
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/bulk`, ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		return HttpResponse.json<CreateTCasesResponse>(createTCasesResponse)
 	})
 )
 
@@ -91,6 +98,22 @@ const countFileUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => req.url.endsWith('/file'))
 const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result/batch'))
+const countCreateTCasesApiCalls = () =>
+	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/bulk'))
+
+const getMappingFiles = () =>
+	new Set(
+		readdirSync('.').filter((f) => f.startsWith('qasphere-automapping-') && f.endsWith('.txt'))
+	)
+
+const cleanupMappingFiles = (existingMappingFiles?: Set<string>) => {
+	const currentFiles = getMappingFiles()
+	currentFiles.forEach((f) => {
+		if (!existingMappingFiles?.has(f)) {
+			unlinkSync(f)
+		}
+	})
+}
 
 const fileTypes = [
 	{
@@ -160,7 +183,7 @@ fileTypes.forEach((fileType) => {
 			})
 		})
 
-		describe('Uploading test results', () => {
+		describe('Uploading test results with run URL', () => {
 			test('Test cases on reports with all matching test cases on QAS should be successful', async () => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
@@ -349,6 +372,48 @@ fileTypes.forEach((fileType) => {
 				expect(lastCreatedRunTitle).toMatch(
 					/Automated test run - \w{3} \d{2}, \d{4}, \d{1,2}:\d{2}:\d{2} (AM|PM)/
 				)
+			})
+		})
+
+		describe('Uploading test results with new run', () => {
+			let existingMappingFiles: Set<string> | undefined = undefined
+
+			beforeEach(() => {
+				existingMappingFiles = getMappingFiles()
+			})
+
+			afterEach(() => {
+				cleanupMappingFiles(existingMappingFiles)
+				createTCasesResponse = null
+				existingMappingFiles = undefined
+			})
+
+			test('Should create new test cases for results without valid markers', async () => {
+				const numCreateTCasesCalls = countCreateTCasesApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
+
+				createTCasesResponse = {
+					tcases: [
+						{ id: '6', seq: 6 },
+						{ id: '7', seq: 7 },
+					],
+				}
+
+				await run(
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/without-markers.${fileType.fileExtension}`
+				)
+				expect(numCreateTCasesCalls()).toBe(1)
+				expect(numResultUploadCalls()).toBe(1) // 3 results total
+			})
+
+			test('Should not create new test cases if all results have valid markers', async () => {
+				const numCreateTCasesCalls = countCreateTCasesApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
+				await run(
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+				)
+				expect(numCreateTCasesCalls()).toBe(0)
+				expect(numResultUploadCalls()).toBe(1) // 5 results total
 			})
 		})
 	})

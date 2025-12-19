@@ -48,3 +48,39 @@ export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	}
 	throw new Error(response.statusText)
 }
+
+const updateSearchParams = <T extends object>(searchParams: URLSearchParams, obj?: T) => {
+	const isValidValue = (value: unknown) => {
+		return value || value === false || value === ''
+	}
+
+	if (!obj) return
+
+	Object.entries(obj).forEach(([key, value]) => {
+		if (isValidValue(value)) {
+			if (Array.isArray(value)) {
+				value.forEach((param) => {
+					if (isValidValue(param)) {
+						searchParams.append(key, String(param))
+					}
+				})
+			} else if (value instanceof Date) {
+				searchParams.set(key, value.toISOString())
+			} else if (typeof value === 'object') {
+				updateSearchParams(searchParams, value)
+			} else {
+				searchParams.set(key, String(value))
+			}
+		}
+	})
+}
+
+export const appendSearchParams = <T extends object>(pathname: string, obj: T): string => {
+	const searchParams = new URLSearchParams()
+	updateSearchParams(searchParams, obj)
+
+	if (searchParams.size > 0) {
+		return `${pathname}?${searchParams.toString()}`
+	}
+	return pathname
+}
