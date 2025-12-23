@@ -4,7 +4,11 @@ import { RunTCase } from '../../api/schemas'
 import { getTCaseMarker, parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { Attachment, TestCaseResult } from './types'
-import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
+import {
+    commandTypePrintMissingMarkerGuidance,
+    ResultUploadCommandArgs,
+    UploadCommandType,
+} from './ResultUploadCommandHandler'
 
 const MAX_CONCURRENT_FILE_UPLOADS = 10
 let MAX_RESULTS_IN_REQUEST = 50 // Only updated from tests, otherwise it's a constant
@@ -74,55 +78,17 @@ export class ResultUploader {
 	}
 
 	private printMissingTestCaseGuidance(missing: TestCaseResult[]) {
-		if (this.type === 'junit-upload') {
-			this.printJUnitGuidance()
-		} else if (this.type === 'playwright-json-upload') {
-			this.printPlaywrightGuidance(missing[0]?.name || 'your test name')
-		}
-		console.error(
-			chalk.yellow(
-				'Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'
+		commandTypePrintMissingMarkerGuidance[this.type](this.project, missing[0]?.name)
+
+		if (!this.args.createTcases) {
+			console.error(
+				chalk.yellow(
+					`Also ensure that the test cases exist in the QA Sphere project${
+						this.args.runUrl ? ' and the provided test run' : ''
+					}.`
+				)
 			)
-		)
-	}
-
-	private printJUnitGuidance() {
-		console.error(`
-${chalk.yellow('To fix this issue, include the test case marker in your test names:')}
-
-  Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
-  Example: ${chalk.green(`${this.project}-002: Login with valid credentials`)}
-           ${chalk.green(`Login with invalid credentials: ${this.project}-1312`)}
-
-  ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
-`)
-	}
-
-	private printPlaywrightGuidance(exampleTestName: string) {
-		console.error(`
-${chalk.yellow('To fix this issue, choose one of the following options:')}
-
-  ${chalk.bold('Option 1: Use Test Annotations (Recommended)')}
-  Add a test annotation to your Playwright test:
-
-  ${chalk.green(`test('${exampleTestName}', {
-    annotation: {
-      type: 'test case',
-      description: 'https://your-qas-instance.com/project/${this.project}/tcase/123'
-    }
-  }, async ({ page }) => {
-    // your test code
-  });`)}
-
-  ${chalk.dim('Note: The "type" field is case-insensitive')}
-
-  ${chalk.bold('Option 2: Include Test Case Marker in Name')}
-  Rename your test to include the marker ${chalk.green(`${this.project}-<sequence>`)}:
-
-  Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
-  Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}
-  ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
-`)
+		}
 	}
 
 	private validateAndPrintMissingAttachments = (results: TCaseWithResult[]) => {
@@ -288,7 +254,9 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			if (result.name) {
 				const tcase = testcases.find((tcase) => {
 					const tcaseMarker = getTCaseMarker(this.project, tcase.seq)
-					return result.name.includes(tcaseMarker)
+					return (
+						result.name.includes(tcaseMarker) || result.name.includes(tcaseMarker.replace('-', '_'))
+					)
 				})
 
 				if (tcase) {

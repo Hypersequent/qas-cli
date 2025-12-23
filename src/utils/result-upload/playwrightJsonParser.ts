@@ -1,6 +1,8 @@
-import z from 'zod'
+import chalk from 'chalk'
 import escapeHtml from 'escape-html'
+import { readFileSync } from 'node:fs'
 import stripAnsi from 'strip-ansi'
+import z from 'zod'
 import { Attachment, TestCaseResult } from './types'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
@@ -78,11 +80,44 @@ const playwrightJsonSchema = z.object({
 	suites: suiteSchema.array(),
 })
 
+export const printPlaywrightMissingMarkerGuidance = (
+	projectCode: string,
+	exampleTestName = 'your test name'
+) => {
+	console.error(`
+${chalk.yellow('To fix this issue, choose one of the following options:')}
+
+  ${chalk.bold('Option 1: Use Test Annotations (Recommended)')}
+  Add a "test case" annotation to your Playwright test with the QA Sphere test case URL:
+
+  ${chalk.green(`test('${exampleTestName}', {
+    annotation: {
+      type: 'test case',
+      description: 'https://your-qas-instance.com/project/${projectCode}/tcase/123'
+    }
+  }, async ({ page }) => {
+    // your test code
+  });`)}
+
+  ${chalk.dim('Note: The "type" field is case-insensitive')}
+
+  ${chalk.bold('Option 2: Include Test Case Marker in Name')}
+  Rename your test to include the test case marker:
+
+  Format: ${chalk.green(`${projectCode}-<sequence>`)}, ${chalk.dim(
+		'where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)'
+	)}
+  Example: ${chalk.green(`${projectCode}-002: ${exampleTestName}`)}
+           ${chalk.green(`${exampleTestName}: ${projectCode}-1312`)}
+`)
+}
+
 export const parsePlaywrightJson: Parser = async (
-	jsonString: string,
+	filePath: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
+	const jsonString = readFileSync(filePath).toString()
 	const jsonData = JSON.parse(jsonString)
 	const validated = playwrightJsonSchema.parse(jsonData)
 	const testcases: TestCaseResult[] = []
@@ -183,7 +218,7 @@ const buildMessage = (result: Result, status: ResultStatus, options: ParserOptio
 	let message = ''
 
 	if (result.retry) {
-		message += `<p><b>Test passed in ${result.retry + 1} attempts</b></p>`
+		message += `<p><strong>Test passed in ${result.retry + 1} attempts</strong></p>`
 	}
 
 	if (result.errors.length > 0) {

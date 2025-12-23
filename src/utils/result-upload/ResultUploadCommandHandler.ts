@@ -1,16 +1,23 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { getTCaseMarker, parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
+import {
+    getTCaseMarker,
+    parseRunUrl,
+    printError,
+    printErrorThenExit,
+    processTemplate,
+} from '../misc'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
 import { TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
-import { parseJUnitXml } from './junitXmlParser'
-import { parsePlaywrightJson } from './playwrightJsonParser'
+import { parseJUnitXml, printJUnitMissingMarkerGuidance } from './junitXmlParser'
+import { parsePlaywrightJson, printPlaywrightMissingMarkerGuidance } from './playwrightJsonParser'
+import { parseXCResult, printXCResultMissingMarkerGuidance } from './xcresultSqliteParser'
 
-export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
+export type UploadCommandType = 'junit-upload' | 'playwright-json-upload' | 'xcresult-upload'
 
 export type SkipOutputOption = 'on-success' | 'never'
 
@@ -20,7 +27,7 @@ export interface ParserOptions {
 }
 
 export type Parser = (
-	data: string,
+	filePath: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
 ) => Promise<TestCaseResult[]>
@@ -59,9 +66,20 @@ const DEFAULT_PAGE_SIZE = 5000
 export const DEFAULT_FOLDER_TITLE = 'cli-import'
 const DEFAULT_TCASE_TAGS = ['cli-import']
 const DEFAULT_MAPPING_FILENAME_TEMPLATE = 'qasphere-automapping-{YYYY}{MM}{DD}-{HH}{mm}{ss}.txt'
+
 const commandTypeParsers: Record<UploadCommandType, Parser> = {
 	'junit-upload': parseJUnitXml,
 	'playwright-json-upload': parsePlaywrightJson,
+	'xcresult-upload': parseXCResult,
+}
+
+export const commandTypePrintMissingMarkerGuidance: Record<
+	UploadCommandType,
+	(projectCode: string, testCaseName: string) => void
+> = {
+	'junit-upload': printJUnitMissingMarkerGuidance,
+	'playwright-json-upload': printPlaywrightMissingMarkerGuidance,
+	'xcresult-upload': printXCResultMissingMarkerGuidance,
 }
 
 export class ResultUploadCommandHandler {
@@ -129,12 +147,7 @@ export class ResultUploadCommandHandler {
 		}
 
 		for (const file of this.args.files) {
-			const fileData = readFileSync(file).toString()
-			const fileResults = await commandTypeParsers[this.type](
-				fileData,
-				dirname(file),
-				parserOptions
-			)
+			const fileResults = await commandTypeParsers[this.type](file, dirname(file), parserOptions)
 			results.push({ file, results: fileResults })
 		}
 
@@ -142,8 +155,8 @@ export class ResultUploadCommandHandler {
 	}
 
 	protected detectProjectCodeFromTCaseNames(fileResults: FileResults[]) {
-		// Look for pattern like PRJ-123 or TEST-456
-		const tcaseSeqRegex = new RegExp(/([A-Za-z0-9]{1,5})-\d{3,}/)
+		// Look for pattern like PRJ-123 or TEST-456 (_ is also allowed as separator)
+		const tcaseSeqRegex = new RegExp(/([A-Za-z0-9]{1,5})[-_]\d{3,}/)
 		for (const { results } of fileResults) {
 			for (const result of results) {
 				if (result.name) {
@@ -162,7 +175,7 @@ export class ResultUploadCommandHandler {
 
 	protected async getTCaseIds(projectCode: string, fileResults: FileResults[]) {
 		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
-		const tcaseSeqRegex = new RegExp(`${projectCode}-(\\d{3,})`)
+		const tcaseSeqRegex = new RegExp(`${projectCode}[-_](\\d{3,})`)
 
 		const seqIdsSet: Set<number> = new Set()
 		const resultsWithSeqAndFile: TestCaseResultWithSeqAndFile[] = []
@@ -229,9 +242,14 @@ export class ResultUploadCommandHandler {
 			}
 
 			if (shouldFailOnInvalid) {
-				return printErrorThenExit(
-					`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
+				printError(
+					`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code`
 				)
+				commandTypePrintMissingMarkerGuidance[this.type](projectCode, result.name)
+				console.error(
+					chalk.yellow('Also ensure that the test cases exist in the QA Sphere project.')
+				)
+				return process.exit(1)
 			}
 		}
 
