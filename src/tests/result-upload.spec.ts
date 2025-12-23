@@ -504,3 +504,17 @@ fileTypes.forEach((fileType) => {
 		})
 	})
 })
+
+describe('Uploading XCode reports', () => {
+	const xcresultBasePath = './src/tests/fixtures/xcresult'
+
+	test('Should successfully upload xcresult bundle with matching test cases', async () => {
+		const numFileUploadCalls = countFileUploadApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+
+		await run(`xcresult-upload -r ${runURL} ${xcresultBasePath}/Variety.xcresult`)
+
+		expect(numFileUploadCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(1) // 5 results total
+	})
+})

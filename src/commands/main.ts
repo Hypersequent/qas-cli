@@ -13,7 +13,8 @@ Required variables: ${qasEnvs.join(', ')}
 		)
 		.command(new ResultUploadCommandModule('junit-upload'))
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
-		.demandCommand(1, "")
+		.command(new ResultUploadCommandModule('xcresult-upload'))
+		.demandCommand(1, '')
 		.help('h')
 		.alias('h', 'help')
 		.version(getVersion())
@@ -29,23 +30,26 @@ Required variables: ${qasEnvs.join(', ')}
 		.fail((msg, err, yi) => {
 			// if no command is provided, show help and exit
 			if (args.length === 0) {
-				yi.showHelp();
-				process.exit(0);
+				yi.showHelp()
+				process.exit(0)
 			} else {
 				if (msg) {
-					console.error(msg);
-					if (msg.startsWith('Unknown argument') || msg.startsWith('Not enough non-option arguments')) {
-						yi.showHelp();
-						process.exit(0);
+					console.error(msg)
+					if (
+						msg.startsWith('Unknown argument') ||
+						msg.startsWith('Not enough non-option arguments')
+					) {
+						yi.showHelp()
+						process.exit(0)
 					}
 				} else if (err && err.message) {
-					console.error(err.message);
+					console.error(err.message)
 				} else if (err) {
-					console.error(String(err));
+					console.error(String(err))
 				} else {
-					console.error('An unexpected error occurred.');
+					console.error('An unexpected error occurred.')
 				}
-				process.exit(1);
+				process.exit(1)
 			}
 		})
 		.parse()
