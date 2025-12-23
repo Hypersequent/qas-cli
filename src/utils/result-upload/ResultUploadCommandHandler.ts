@@ -243,7 +243,7 @@ export class ResultUploadCommandHandler {
 
 			if (shouldFailOnInvalid) {
 				printError(
-					`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code`
+					`Test case name "${result.name}" in ${file} does not contain valid test case marker`
 				)
 				commandTypePrintMissingMarkerGuidance[this.type](projectCode, result.name)
 				console.error(
