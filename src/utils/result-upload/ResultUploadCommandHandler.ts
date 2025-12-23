@@ -1,15 +1,14 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
+import { getTCaseMarker, parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
 import { TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
 import { parseJUnitXml } from './junitXmlParser'
 import { parsePlaywrightJson } from './playwrightJsonParser'
-import { writeFileSync } from 'node:fs'
 
 export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
 
@@ -50,8 +49,14 @@ interface FileResults {
 	results: TestCaseResult[]
 }
 
-const GET_TCASES_PAGE_SIZE = 5000
-const DEFAULT_FOLDER_TITLE = 'cli-import'
+interface TestCaseResultWithSeqAndFile {
+	seq: number | null
+	file: string
+	result: TestCaseResult
+}
+
+const DEFAULT_PAGE_SIZE = 5000
+export const DEFAULT_FOLDER_TITLE = 'cli-import'
 const DEFAULT_TCASE_TAGS = ['cli-import']
 const DEFAULT_MAPPING_FILENAME_TEMPLATE = 'qasphere-automapping-{YYYY}{MM}{DD}-{HH}{mm}{ss}.txt'
 const commandTypeParsers: Record<UploadCommandType, Parser> = {
@@ -98,7 +103,7 @@ export class ResultUploadCommandHandler {
 			} else {
 				// Try to auto-detect project code from results. This is not fully reliable, but
 				// is kept for backward compatibility. Better to specify project code explicitly
-				projectCode = this.detectProjectCode(fileResults)
+				projectCode = this.detectProjectCodeFromTCaseNames(fileResults)
 				console.log(chalk.blue(`Detected project code: ${projectCode}`))
 			}
 
@@ -136,12 +141,13 @@ export class ResultUploadCommandHandler {
 		return results
 	}
 
-	protected detectProjectCode(fileResults: FileResults[]) {
+	protected detectProjectCodeFromTCaseNames(fileResults: FileResults[]) {
+		// Look for pattern like PRJ-123 or TEST-456
+		const tcaseSeqRegex = new RegExp(/([A-Za-z0-9]{1,5})-\d{3,}/)
 		for (const { results } of fileResults) {
 			for (const result of results) {
 				if (result.name) {
-					// Look for pattern like PRJ-123 or TEST-456
-					const match = result.name.match(/([A-Za-z0-9]{1,5})-\d{3,}/)
+					const match = tcaseSeqRegex.exec(result.name)
 					if (match) {
 						return match[1]
 					}
@@ -156,27 +162,12 @@ export class ResultUploadCommandHandler {
 
 	protected async getTCaseIds(projectCode: string, fileResults: FileResults[]) {
 		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
-		const tcaseMapBySeq: Record<number, TCase> = {}
-		const tcaseMapByTitle: Record<string, TCase> = {}
+		const tcaseSeqRegex = new RegExp(`${projectCode}-(\\d{3,})`)
 
-		for (let page = 1; ; page++) {
-			const response = await this.api.testcases.getTCasesPaginated(projectCode, {
-				page,
-				limit: GET_TCASES_PAGE_SIZE,
-			})
+		const seqIdsSet: Set<number> = new Set()
+		const resultsWithSeqAndFile: TestCaseResultWithSeqAndFile[] = []
 
-			for (const tcase of response.data) {
-				tcaseMapBySeq[tcase.seq] = tcase
-				tcaseMapByTitle[tcase.title] = tcase // If there are multiple tcases with the same title, it will be overwritten
-			}
-
-			if (response.data.length < GET_TCASES_PAGE_SIZE) {
-				break
-			}
-		}
-
-		const tcaseIds: string[] = []
-		const tcasesToCreate: Map<string, TestCaseResult[]> = new Map()
+		// First extract the sequence numbers from the test case names
 		for (const { file, results } of fileResults) {
 			for (const result of results) {
 				if (!result.name) {
@@ -186,49 +177,77 @@ export class ResultUploadCommandHandler {
 					continue
 				}
 
-				const match = new RegExp(`${projectCode}-(\\d{3,})`).exec(result.name)
+				const match = tcaseSeqRegex.exec(result.name)
+				resultsWithSeqAndFile.push({
+					seq: match ? Number(match[1]) : null,
+					file,
+					result,
+				})
+
 				if (match) {
-					const tcase = tcaseMapBySeq[Number(match[1])]
-					if (tcase) {
-						tcaseIds.push(tcase.id)
-						continue
-					}
-				}
-
-				const tcase = tcaseMapByTitle[result.name]
-				if (tcase) {
-					// Prefix the test case markers for use in ResultUploader
-					result.name = `${projectCode}-${tcase.seq.toString().padStart(3, '0')}: ${result.name}`
-					tcaseIds.push(tcase.id)
-					continue
-				}
-
-				if (this.args.createTcases) {
-					const tcaseResults = tcasesToCreate.get(result.name) || []
-					tcaseResults.push(result)
-					tcasesToCreate.set(result.name, tcaseResults)
-					continue
-				}
-
-				if (shouldFailOnInvalid) {
-					return printErrorThenExit(
-						`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
-					)
+					seqIdsSet.add(Number(match[1]))
 				}
 			}
 		}
 
-		if (tcasesToCreate.size > 0) {
-			const keys = Array.from(tcasesToCreate.keys())
-			const newTcases = await this.createNewTCases(projectCode, keys)
+		// Now fetch the test cases by their sequence numbers
+		const apiTCasesMap: Record<number, TCase> = {}
+		if (seqIdsSet.size > 0) {
+			const tcaseMarkers = Array.from(seqIdsSet).map((v) => getTCaseMarker(projectCode, v))
+
+			for (let page = 1; ; page++) {
+				const response = await this.api.testcases.getTCasesBySeq(projectCode, {
+					seqIds: tcaseMarkers,
+					page,
+					limit: DEFAULT_PAGE_SIZE,
+				})
+
+				for (const tcase of response.data) {
+					apiTCasesMap[tcase.seq] = tcase
+				}
+
+				if (response.data.length < DEFAULT_PAGE_SIZE) {
+					break
+				}
+			}
+		}
+
+		// Now validate that the test cases with found sequence numbers actually exist
+		const tcaseIds: string[] = []
+		const tcasesToCreateMap: Record<string, TestCaseResult[]> = {}
+		for (const { seq, file, result } of resultsWithSeqAndFile) {
+			if (seq && apiTCasesMap[seq]) {
+				tcaseIds.push(apiTCasesMap[seq].id)
+				continue
+			}
+
+			if (this.args.createTcases) {
+				const tcaseResults = tcasesToCreateMap[result.name] || []
+				tcaseResults.push(result)
+				tcasesToCreateMap[result.name] = tcaseResults
+				continue
+			}
+
+			if (shouldFailOnInvalid) {
+				return printErrorThenExit(
+					`Test case name "${result.name}" in ${file} does not contain valid sequence number with project code (e.g., ${projectCode}-123)`
+				)
+			}
+		}
+
+		// Create new test cases, if same is requested
+		if (Object.keys(tcasesToCreateMap).length > 0) {
+			const keys = Object.keys(tcasesToCreateMap)
+			const newTCases = await this.createNewTCases(projectCode, keys)
 
 			for (let i = 0; i < keys.length; i++) {
-				const marker = `${projectCode}-${newTcases[i].seq.toString().padStart(3, '0')}`
-				for (const result of tcasesToCreate.get(keys[i]) || []) {
-					// Prefix the test case markers for use in ResultUploader
+				const marker = getTCaseMarker(projectCode, newTCases[i].seq)
+				for (const result of tcasesToCreateMap[keys[i]] || []) {
+					// Prefix the test case markers for use in ResultUploader. The fileResults array
+					// containing the updated name is returned to the caller
 					result.name = `${marker}: ${result.name}`
 				}
-				tcaseIds.push(newTcases[i].id)
+				tcaseIds.push(newTCases[i].id)
 			}
 		}
 
@@ -240,27 +259,105 @@ export class ResultUploadCommandHandler {
 	}
 
 	private async createNewTCases(projectCode: string, tcasesToCreate: string[]) {
-		console.log(chalk.blue(`Creating new test cases for results with no test case markers`))
+		console.log(chalk.blue(`Creating test cases for results with no test case markers`))
 
+		// First fetch the default folder ID where we are creating new test cases
+		let defaultFolderId = null
+		for (let page = 1; ; page++) {
+			const response = await this.api.folders.getFoldersPaginated(projectCode, {
+				page,
+				limit: DEFAULT_PAGE_SIZE,
+			})
+
+			for (const folder of response.data) {
+				if (folder.title === DEFAULT_FOLDER_TITLE && !folder.parentId) {
+					defaultFolderId = folder.id
+					break
+				}
+			}
+
+			if (defaultFolderId || response.data.length < DEFAULT_PAGE_SIZE) {
+				break
+			}
+		}
+
+		// If the default folder exists, fetch the test cases in it
+		const apiTCasesMap: Record<string, TCase> = {}
+		if (defaultFolderId) {
+			for (let page = 1; ; page++) {
+				const response = await this.api.testcases.getTCasesPaginated(projectCode, {
+					folders: [defaultFolderId],
+					page,
+					limit: DEFAULT_PAGE_SIZE,
+				})
+
+				for (const tcase of response.data) {
+					apiTCasesMap[tcase.title] = tcase
+				}
+
+				if (response.data.length < DEFAULT_PAGE_SIZE) {
+					break
+				}
+			}
+		}
+
+		// Reuse existing test cases with the same title from the default folder
+		const ret: { id: string; seq: number }[] = []
+		const idxToFill: number[] = []
+		const finalTCasesToCreate: string[] = []
+		for (let i = 0; i < tcasesToCreate.length; i++) {
+			const existingTcase = apiTCasesMap[tcasesToCreate[i]]
+			if (existingTcase) {
+				// TCase with this title already exists, reuse it
+				ret.push({ id: existingTcase.id, seq: existingTcase.seq })
+				continue
+			}
+
+			// Add a placeholder for the new test case. Will be updated later
+			ret.push({ id: '', seq: 0 })
+			finalTCasesToCreate.push(tcasesToCreate[i])
+			idxToFill.push(i)
+		}
+
+		if (!finalTCasesToCreate.length) {
+			console.log(
+				chalk.blue(
+					`Reusing ${ret.length} test cases with same title from "${DEFAULT_FOLDER_TITLE}" folder, no new test cases created`
+				)
+			)
+			return ret
+		}
+
+		// Create new test cases and update the placeholders with the actual test case IDs
 		const { tcases } = await this.api.testcases.createTCases(projectCode, {
 			folderPath: [DEFAULT_FOLDER_TITLE],
-			tcases: tcasesToCreate.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
+			tcases: finalTCasesToCreate.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
 		})
 
 		console.log(
-			chalk.green(`Created ${tcases.length} new test cases in folder "${DEFAULT_FOLDER_TITLE}"`)
+			chalk.green(
+				`Created ${tcases.length} new test cases in folder "${DEFAULT_FOLDER_TITLE}"${
+					ret.length > tcases.length
+						? ` and reused ${ret.length - tcases.length} test cases with same title`
+						: ''
+				}`
+			)
 		)
+
+		for (let i = 0; i < idxToFill.length; i++) {
+			ret[idxToFill[i]] = tcases[i]
+		}
 
 		try {
 			const mappingFilename = processTemplate(DEFAULT_MAPPING_FILENAME_TEMPLATE)
-			const mappingLines = tcases.map((t, i) => `${t.seq}: ${tcasesToCreate[i]}`).join('\n')
+			const mappingLines = tcases
+				.map((t, i) => `${getTCaseMarker(projectCode, t.seq)}: ${tcasesToCreate[i]}`)
+				.join('\n')
+
 			writeFileSync(mappingFilename, mappingLines)
 			console.log(
-				chalk.green(`Created mapping file for newly created test cases: ${mappingFilename}`)
-			)
-			console.log(
 				chalk.yellow(
-					`Update your test cases to include the test case markers in the name, for future uploads`
+					`Created mapping file for newly created test cases: ${mappingFilename}\nUpdate your test cases to include the test case markers in the name, for future uploads`
 				)
 			)
 		} catch (err) {
@@ -273,7 +370,7 @@ export class ResultUploadCommandHandler {
 			)
 		}
 
-		return tcases
+		return ret
 	}
 
 	private async createNewRun(projectCode: string, tcaseIds: string[]) {

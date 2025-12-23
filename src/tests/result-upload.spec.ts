@@ -1,12 +1,19 @@
+import { HttpResponse, http } from 'msw'
+import { setupServer } from 'msw/node'
+import { unlinkSync, readdirSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach } from 'vitest'
 import { run } from '../commands/main'
-import { setupServer } from 'msw/node'
-import { HttpResponse, http } from 'msw'
+import {
+	CreateTCasesRequest,
+	CreateTCasesResponse,
+	Folder,
+	PaginatedResponse,
+	TCase,
+} from '../api/schemas'
+import { DEFAULT_FOLDER_TITLE } from '../utils/result-upload/ResultUploadCommandHandler'
+import { setMaxResultsInRequest } from '../utils/result-upload/ResultUploader'
 import { runTestCases } from './fixtures/testcases'
 import { countMockedApiCalls } from './utils'
-import { setMaxResultsInRequest } from '../utils/result-upload/ResultUploader'
-import { CreateTCasesResponse } from '../api/schemas'
-import { unlinkSync, readdirSync } from 'node:fs'
 
 const projectCode = 'TEST'
 const runId = '1'
@@ -17,21 +24,62 @@ const runURL = `${baseURL}/project/${projectCode}/run/${runId}`
 process.env['QAS_TOKEN'] = 'QAS_TOKEN'
 process.env['QAS_URL'] = baseURL
 
-let lastCreatedRunTitle = ''
-let createTCasesResponse: CreateTCasesResponse | null = null
-let createRunTitleConflict = false
+let lastCreatedRunTitle = '' // Stores title in the request, for the last create run API call
+let createRunTitleConflict = false // If true, the create run API returns a title conflict error
+let createTCasesResponse: CreateTCasesResponse | null = null // Stores mock response for the create tcases API call
+let overriddenGetPaginatedTCasesResponse: PaginatedResponse<TCase> | null = null // Stores overridden (non-default) response for the get tcases API call
+let overriddenGetFoldersResponse: PaginatedResponse<Folder> | null = null // Stores overridden (non-default) response for the get folders API call
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		return HttpResponse.json({ exists: true })
 	}),
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/folders`, ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		return HttpResponse.json(
+			overriddenGetFoldersResponse || { data: [], total: 0, page: 1, limit: 50 }
+		)
+	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		return HttpResponse.json(
+			overriddenGetPaginatedTCasesResponse || { data: [], total: 0, page: 1, limit: 50 }
+		)
+	}),
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		return HttpResponse.json({
 			data: runTestCases,
 			total: runTestCases.length,
 		})
+	}),
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/bulk`, async ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+
+		if (!createTCasesResponse) {
+			return HttpResponse.json(
+				{
+					message: 'No mock response set for create tcases API call',
+				},
+				{
+					status: 500,
+				}
+			)
+		}
+
+		const body = (await request.json()) as CreateTCasesRequest
+		if (body.tcases.length !== createTCasesResponse.tcases.length) {
+			return HttpResponse.json(
+				{
+					message: `${body.tcases.length} test cases in request does not match ${createTCasesResponse.tcases.length} in the mock response`,
+				},
+				{
+					status: 400,
+				}
+			)
+		}
+		return HttpResponse.json(createTCasesResponse)
 	}),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/run`, async ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
@@ -75,10 +123,6 @@ const server = setupServer(
 			id: 'TEST',
 			url: 'http://example.com',
 		})
-	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/bulk`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
-		return HttpResponse.json<CreateTCasesResponse>(createTCasesResponse)
 	})
 )
 
@@ -106,7 +150,7 @@ const getMappingFiles = () =>
 		readdirSync('.').filter((f) => f.startsWith('qasphere-automapping-') && f.endsWith('.txt'))
 	)
 
-const cleanupMappingFiles = (existingMappingFiles?: Set<string>) => {
+const cleanupGeneratedMappingFiles = (existingMappingFiles?: Set<string>) => {
 	const currentFiles = getMappingFiles()
 	currentFiles.forEach((f) => {
 		if (!existingMappingFiles?.has(f)) {
@@ -375,7 +419,7 @@ fileTypes.forEach((fileType) => {
 			})
 		})
 
-		describe('Uploading test results with new run', () => {
+		describe('Uploading test results with test case creation', () => {
 			let existingMappingFiles: Set<string> | undefined = undefined
 
 			beforeEach(() => {
@@ -383,15 +427,18 @@ fileTypes.forEach((fileType) => {
 			})
 
 			afterEach(() => {
-				cleanupMappingFiles(existingMappingFiles)
-				createTCasesResponse = null
+				cleanupGeneratedMappingFiles(existingMappingFiles)
 				existingMappingFiles = undefined
+				createTCasesResponse = null
+				overriddenGetPaginatedTCasesResponse = null
+				overriddenGetFoldersResponse = null
 			})
 
 			test('Should create new test cases for results without valid markers', async () => {
 				const numCreateTCasesCalls = countCreateTCasesApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
 
+				setMaxResultsInRequest(1)
 				createTCasesResponse = {
 					tcases: [
 						{ id: '6', seq: 6 },
@@ -403,17 +450,56 @@ fileTypes.forEach((fileType) => {
 					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/without-markers.${fileType.fileExtension}`
 				)
 				expect(numCreateTCasesCalls()).toBe(1)
-				expect(numResultUploadCalls()).toBe(1) // 3 results total
+				expect(numResultUploadCalls()).toBe(3) // 3 results total
+			})
+
+			test('Should not create new test case if one with same title already exists', async () => {
+				const numCreateTCasesCalls = countCreateTCasesApiCalls()
+				const numResultUploadCalls = countResultUploadApiCalls()
+
+				setMaxResultsInRequest(1)
+				overriddenGetFoldersResponse = {
+					data: [{ id: 1, title: DEFAULT_FOLDER_TITLE, parentId: 0, pos: 0 }],
+					total: 1,
+					page: 1,
+					limit: 50,
+				}
+				overriddenGetPaginatedTCasesResponse = {
+					data: [
+						{
+							id: '6',
+							seq: 6,
+							title: 'The cart is still filled after refreshing the page',
+							version: 1,
+							projectId: 'projectid',
+							folderId: 1,
+						},
+					],
+					total: 1,
+					page: 1,
+					limit: 50,
+				}
+				createTCasesResponse = {
+					tcases: [{ id: '7', seq: 7 }],
+				}
+
+				await run(
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/without-markers.${fileType.fileExtension}`
+				)
+				expect(numCreateTCasesCalls()).toBe(1)
+				expect(numResultUploadCalls()).toBe(3) // 3 results total
 			})
 
 			test('Should not create new test cases if all results have valid markers', async () => {
 				const numCreateTCasesCalls = countCreateTCasesApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
+
+				setMaxResultsInRequest(1)
 				await run(
 					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
 				)
 				expect(numCreateTCasesCalls()).toBe(0)
-				expect(numResultUploadCalls()).toBe(1) // 5 results total
+				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
 	})

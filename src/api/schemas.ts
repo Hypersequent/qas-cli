@@ -33,8 +33,20 @@ export interface CreateTCasesResponse {
 	tcases: { id: string; seq: number }[]
 }
 
+export interface GetTCasesRequest extends PaginatedRequest {
+	folders?: number[]
+}
+
+export interface GetTCasesBySeqRequest {
+	seqIds: string[]
+	page?: number
+	limit?: number
+}
+
 export interface Folder {
 	id: number
+	parentId: number
+	pos: number
 	title: string
 }
 
