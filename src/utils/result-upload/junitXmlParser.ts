@@ -104,7 +104,7 @@ export const parseJUnitXml: Parser = async (
 
 			// Extract from system-out
 			for (const out of tcase['system-out'] || []) {
-				const text = typeof out === 'string' ? out : out._ ?? ''
+				const text = typeof out === 'string' ? out : (out._ ?? '')
 				if (text) {
 					extractAttachmentPaths(text).forEach((path) => attachmentPaths.add(path))
 				}

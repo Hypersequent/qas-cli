@@ -14,7 +14,10 @@ export class ResultUploader {
 	private project: string
 	private run: number
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
@@ -79,7 +82,11 @@ export class ResultUploader {
 		} else if (this.type === 'playwright-json-upload') {
 			this.printPlaywrightGuidance(missing[0]?.name || 'your test name')
 		}
-		console.error(chalk.yellow('Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'))
+		console.error(
+			chalk.yellow(
+				'Also ensure that the test cases exist in the QA Sphere project and the test run (if run URL is provided).'
+			)
+		)
 	}
 
 	private printJUnitGuidance() {

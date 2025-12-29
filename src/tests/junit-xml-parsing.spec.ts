@@ -26,10 +26,13 @@ describe('Junit XML parsing', () => {
 		expect(testTypes).toContain('passed')
 
 		// Verify specific counts by type
-		const typeCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const typeCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(typeCounts.failed).toBe(3)
 		expect(typeCounts.blocked).toBe(3)
@@ -64,9 +67,7 @@ describe('Junit XML parsing', () => {
 		// Verify we have the expected failure scenarios
 		expect(failureTests.some((tc) => tc.name.includes('only type'))).toBe(true)
 		expect(failureTests.some((tc) => tc.name.includes('type and message'))).toBe(true)
-		expect(failureTests.some((tc) => tc.name.includes('type, message and text content'))).toBe(
-			true
-		)
+		expect(failureTests.some((tc) => tc.name.includes('type, message and text content'))).toBe(true)
 
 		// Verify we have the expected error scenarios
 		expect(errorTests.some((tc) => tc.name.includes('only type'))).toBe(true)
@@ -108,10 +109,13 @@ describe('Junit XML parsing', () => {
 		expect(testcases).toHaveLength(3)
 
 		// Verify test result types
-		const typeCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const typeCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(typeCounts.passed).toBe(2)
 		expect(typeCounts.failed).toBe(1)
