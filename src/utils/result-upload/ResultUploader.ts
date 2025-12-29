@@ -246,6 +246,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 					tcaseId: tcase.id,
 					status: result.status,
 					comment: result.message,
+					timeTaken: result.timeTaken,
 				})),
 			})
 
