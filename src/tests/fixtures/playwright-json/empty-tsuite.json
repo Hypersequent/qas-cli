@@ -18,6 +18,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 0,
                   "attachments": []
                 }
               ],

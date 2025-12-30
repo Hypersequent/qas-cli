@@ -92,11 +92,16 @@ export const parseJUnitXml: Parser = async (
 	for (const suite of validated.testsuites.testsuite) {
 		for (const tcase of suite.testcase ?? []) {
 			const result = getResult(tcase, options)
+			const timeTakenSeconds = Number.parseFloat(tcase.$.time ?? '')
 			const index =
 				testcases.push({
+					...result,
 					folder: suite.$.name ?? '',
 					name: tcase.$.name ?? '',
-					...result,
+					timeTaken:
+						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0
+							? timeTakenSeconds * 1000
+							: null,
 					attachments: [],
 				}) - 1
 

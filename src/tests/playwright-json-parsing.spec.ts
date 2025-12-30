@@ -44,6 +44,7 @@ describe('Playwright JSON parsing', () => {
 			expect(tc).toHaveProperty('status')
 			expect(tc).toHaveProperty('message')
 			expect(tc).toHaveProperty('attachments')
+			expect(tc).toHaveProperty('timeTaken')
 			expect(Array.isArray(tc.attachments)).toBe(true)
 		})
 	})
@@ -60,6 +61,7 @@ describe('Playwright JSON parsing', () => {
 		// Should only have the one test from ui.cart.spec.ts, not the empty ui.contents.spec.ts
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toContain('Test cart TEST-002')
+		expect(testcases[0].timeTaken).toBe(0)
 	})
 
 	test('Should use last result when there are retries', async () => {
@@ -83,6 +85,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1300,
 											attachments: [],
 										},
 										{
@@ -91,6 +94,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 1,
+											duration: 1200,
 											attachments: [],
 										},
 									],
@@ -111,6 +115,7 @@ describe('Playwright JSON parsing', () => {
 		expect(testcases).toHaveLength(1)
 
 		// Should use the last result (passed on retry)
+		expect(testcases[0].timeTaken).toBe(1200)
 		expect(testcases[0].status).toBe('passed')
 		expect(testcases[0].message).toContain('Test passed in 2 attempts')
 	})
@@ -136,6 +141,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -163,6 +169,7 @@ describe('Playwright JSON parsing', () => {
 													stdout: [],
 													stderr: [],
 													retry: 0,
+													duration: 5100,
 													attachments: [],
 												},
 											],
@@ -191,6 +198,10 @@ describe('Playwright JSON parsing', () => {
 		// Verify nested test has suite title as prefix
 		expect(testcases[1].name).toContain('Nested Suite')
 		expect(testcases[1].name).toContain('Nested test')
+
+		// Verify time taken is set to duration of the test
+		expect(testcases[0].timeTaken).toBe(1000)
+		expect(testcases[1].timeTaken).toBe(5100)
 	})
 
 	test('Should strip ANSI escape codes from errors and output', async () => {
@@ -227,6 +238,7 @@ describe('Playwright JSON parsing', () => {
 												},
 											],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -286,6 +298,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -308,6 +321,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -335,6 +349,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -385,6 +400,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -407,7 +423,14 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
-											attachments: [],
+											duration: 1000,
+											attachments: [
+												{
+													name: 'screenshot',
+													contentType: 'image/png',
+													path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+												},
+											],
 										},
 									],
 									status: 'unexpected',
@@ -429,6 +452,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 										{
@@ -437,6 +461,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 1,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -459,6 +484,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [],
 											stderr: [],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -505,6 +531,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [{ text: 'stdout content' }],
 											stderr: [{ text: 'stderr content' }],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -550,7 +577,14 @@ describe('Playwright JSON parsing', () => {
 											stdout: [{ text: 'stdout content' }],
 											stderr: [{ text: 'stderr content' }],
 											retry: 0,
-											attachments: [],
+											duration: 1000,
+											attachments: [
+												{
+													name: 'screenshot',
+													contentType: 'image/png',
+													path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+												},
+											],
 										},
 									],
 									status: 'expected',
@@ -595,6 +629,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [{ text: 'stdout content' }],
 											stderr: [{ text: 'stderr content' }],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -640,6 +675,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [{ text: 'stdout from failed test' }],
 											stderr: [{ text: 'stderr from failed test' }],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],
@@ -686,6 +722,7 @@ describe('Playwright JSON parsing', () => {
 											stdout: [{ text: 'stdout content' }],
 											stderr: [{ text: 'stderr content' }],
 											retry: 0,
+											duration: 1000,
 											attachments: [],
 										},
 									],

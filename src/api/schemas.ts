@@ -23,6 +23,7 @@ export interface CreateResultsRequestItem {
 	tcaseId: string
 	status: ResultStatus
 	comment?: string
+	timeTaken: number | null // In milliseconds
 }
 
 export interface CreateResultsRequest {
