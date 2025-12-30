@@ -51,7 +51,10 @@ export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 
 		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
@@ -111,7 +114,11 @@ export class ResultUploadCommandHandler {
 
 		for (const file of this.args.files) {
 			const fileData = readFileSync(file).toString()
-			const fileResults = await commandTypeParsers[this.type](fileData, dirname(file), parserOptions)
+			const fileResults = await commandTypeParsers[this.type](
+				fileData,
+				dirname(file),
+				parserOptions
+			)
 			results.push({ file, results: fileResults })
 		}
 

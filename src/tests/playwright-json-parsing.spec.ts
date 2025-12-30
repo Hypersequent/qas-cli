@@ -25,10 +25,13 @@ describe('Playwright JSON parsing', () => {
 		expect(testStatuses).toContain('passed')
 
 		// Verify specific counts by status
-		const statusCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const statusCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(statusCounts.failed).toBe(6) // 3 failures + 3 errors
 		expect(statusCounts.skipped).toBe(4)
