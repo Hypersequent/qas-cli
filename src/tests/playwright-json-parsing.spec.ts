@@ -61,7 +61,7 @@ describe('Playwright JSON parsing', () => {
 		// Should only have the one test from ui.cart.spec.ts, not the empty ui.contents.spec.ts
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toContain('Test cart TEST-002')
-		expect(testcases[0].timeTaken).toBe(null)
+		expect(testcases[0].timeTaken).toBe(0)
 	})
 
 	test('Should use last result when there are retries', async () => {

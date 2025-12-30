@@ -113,7 +113,7 @@ export const parsePlaywrightJson: Parser = async (
 				folder: topLevelSuite,
 				status,
 				message: buildMessage(result, status, options),
-				timeTaken: result.duration ? result.duration : null,
+				timeTaken: result.duration,
 				attachments: [],
 			})
 

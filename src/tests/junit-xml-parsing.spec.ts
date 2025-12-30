@@ -224,7 +224,7 @@ describe('Junit XML parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].status).toBe('failed')
-		expect(testcases[0].timeTaken).toBe(null)
+		expect(testcases[0].timeTaken).toBe(0)
 		// Should include both stdout and stderr for failed tests
 		expect(testcases[0].message).toContain('Failure details')
 		expect(testcases[0].message).toContain('stdout from failed test')
@@ -235,7 +235,7 @@ describe('Junit XML parsing', () => {
 		const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
-    <testcase name="Passed test with output" time="1">
+    <testcase name="Passed test with output" time="">
       <system-out>stdout content</system-out>
       <system-err>stderr content</system-err>
     </testcase>
@@ -249,7 +249,7 @@ describe('Junit XML parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].status).toBe('passed')
-		expect(testcases[0].timeTaken).toBe(1000)
+		expect(testcases[0].timeTaken).toBe(null)
 		// Should not include stdout or stderr for passed tests
 		expect(testcases[0].message).toBe('')
 	})
