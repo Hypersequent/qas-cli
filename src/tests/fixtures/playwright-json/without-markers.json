@@ -18,6 +18,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1000,
                   "attachments": []
                 }
               ],
@@ -40,6 +41,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1000,
                   "attachments": []
                 }
               ],
@@ -62,6 +64,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1000,
                   "attachments": []
                 }
               ],
@@ -74,4 +77,3 @@
     }
   ]
 }
-

@@ -92,11 +92,16 @@ export const parseJUnitXml: Parser = async (
 	for (const suite of validated.testsuites.testsuite) {
 		for (const tcase of suite.testcase ?? []) {
 			const result = getResult(tcase, options)
+			const timeTakenSeconds = Number.parseFloat(tcase.$.time ?? '')
 			const index =
 				testcases.push({
+					...result,
 					folder: suite.$.name ?? '',
 					name: tcase.$.name ?? '',
-					...result,
+					timeTaken:
+						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0
+							? timeTakenSeconds * 1000
+							: null,
 					attachments: [],
 				}) - 1
 
@@ -104,7 +109,7 @@ export const parseJUnitXml: Parser = async (
 
 			// Extract from system-out
 			for (const out of tcase['system-out'] || []) {
-				const text = typeof out === 'string' ? out : out._ ?? ''
+				const text = typeof out === 'string' ? out : (out._ ?? '')
 				if (text) {
 					extractAttachmentPaths(text).forEach((path) => attachmentPaths.add(path))
 				}

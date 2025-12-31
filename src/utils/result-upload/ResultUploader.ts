@@ -14,7 +14,10 @@ export class ResultUploader {
 	private project: string
 	private run: number
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
@@ -243,6 +246,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 					tcaseId: tcase.id,
 					status: result.status,
 					comment: result.message,
+					timeTaken: result.timeTaken,
 				})),
 			})
 

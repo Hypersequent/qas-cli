@@ -2,9 +2,9 @@ import { Arguments, Argv, CommandModule } from 'yargs'
 import chalk from 'chalk'
 import { loadEnvs, qasEnvFile } from '../utils/env'
 import {
-    ResultUploadCommandArgs,
-    ResultUploadCommandHandler,
-    UploadCommandType,
+	ResultUploadCommandArgs,
+	ResultUploadCommandHandler,
+	UploadCommandType,
 } from '../utils/result-upload/ResultUploadCommandHandler'
 
 const commandTypeDisplayStrings: Record<UploadCommandType, string> = {

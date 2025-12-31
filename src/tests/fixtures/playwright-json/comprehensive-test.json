@@ -22,6 +22,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1000,
                   "attachments": []
                 }
               ],
@@ -48,6 +49,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 6200,
                   "attachments": []
                 }
               ],
@@ -74,6 +76,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 2000,
                   "attachments": []
                 }
               ],
@@ -106,6 +109,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1400,
                   "attachments": []
                 }
               ],
@@ -132,6 +136,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 500,
                   "attachments": []
                 }
               ],
@@ -158,6 +163,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 5050,
                   "attachments": []
                 }
               ],
@@ -186,6 +192,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 0,
                   "attachments": []
                 }
               ],
@@ -213,6 +220,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 0,
                   "attachments": []
                 }
               ],
@@ -239,6 +247,7 @@
                   ],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 0,
                   "attachments": []
                 }
               ],
@@ -270,6 +279,7 @@
                   ],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 0,
                   "attachments": []
                 }
               ],
@@ -296,6 +306,7 @@
                   ],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 10000,
                   "attachments": []
                 }
               ],
@@ -318,6 +329,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
+                  "duration": 1000,
                   "attachments": [
                     {
                       "name": "screenshot",

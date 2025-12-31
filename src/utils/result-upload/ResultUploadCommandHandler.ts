@@ -68,7 +68,10 @@ export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 
 		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')

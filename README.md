@@ -42,11 +42,13 @@ The CLI requires the following variables to be defined:
 - `QAS_URL` - Base URL of your QA Sphere instance (e.g., https://qas.eu2.qasphere.com)
 
 These variables could be defined:
+
 - as environment variables
 - in .env of a current working directory
 - in a special `.qaspherecli` configuration file in your project directory (or any parent directory)
 
 Example: .qaspherecli
+
 ```sh
 # .qaspherecli
 QAS_TOKEN=your_token
@@ -57,12 +59,12 @@ QAS_URL=https://qas.eu1.qasphere.com
 # QAS_URL=https://qas.eu1.qasphere.com
 ```
 
-
 ## Commands: `junit-upload`, `playwright-json-upload`
 
 The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively.
 
 There are two modes for uploading results using the commands:
+
 1. Upload to an existing test run by specifying its URL via `--run-url` flag
 2. Create a new test run and upload results to it (when `--run-url` flag is not specified)
 
@@ -104,54 +106,68 @@ Ensure the required environment variables are defined before running these comma
 **Note:** The following examples use `junit-upload`, but you can replace it with `playwright-json-upload` and adjust the file extension from `.xml` to `.json` to upload Playwright JSON reports instead.
 
 1. Upload to an existing test run:
-    ```bash
-    qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
-    ```
+
+   ```bash
+   qasphere junit-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.xml
+   ```
 
 2. Create a new test run with default name template and upload results:
-    ```bash
-    qasphere junit-upload ./test-results.xml
-    ```
-    Project code is detected from test case markers in the results.
+
+   ```bash
+   qasphere junit-upload ./test-results.xml
+   ```
+
+   Project code is detected from test case markers in the results.
 
 3. Create a new test run with name template without any placeholders and upload results:
-    ```bash
-    qasphere junit-upload --project-code P1 --run-name "v1.4.4-rc5" ./test-results.xml
-    ```
+
+   ```bash
+   qasphere junit-upload --project-code P1 --run-name "v1.4.4-rc5" ./test-results.xml
+   ```
 
 4. Create a new test run with name template using environment variables and date placeholders and upload results:
-    ```bash
-    qasphere junit-upload --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
-    ```
-    If `BUILD_NUMBER` environment variable is set to `v1.4.4-rc5` and today's date is January 1, 2025, the run would be named "CI Build v1.4.4-rc5 - 2025-01-01".
+
+   ```bash
+   qasphere junit-upload --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.xml
+   ```
+
+   If `BUILD_NUMBER` environment variable is set to `v1.4.4-rc5` and today's date is January 1, 2025, the run would be named "CI Build v1.4.4-rc5 - 2025-01-01".
 
 5. Create a new test run with name template using date/time placeholders and create test cases for results without valid markers and upload results:
-    ```bash
-    qasphere junit-upload --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ./test-results.xml
-    ```
-    If the current time is 10:34 PM on January 1, 2025, the run would be named "Nightly Tests 2025/01/01 22:34". This also creates new test cases in QA Sphere for any results that doesn't have a valid test case marker. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each newly created test case. Update your test cases to include the markers in the name, for future uploads.
+
+   ```bash
+   qasphere junit-upload --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ./test-results.xml
+   ```
+
+   If the current time is 10:34 PM on January 1, 2025, the run would be named "Nightly Tests 2025/01/01 22:34". This also creates new test cases in QA Sphere for any results that doesn't have a valid test case marker. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each newly created test case. Update your test cases to include the markers in the name, for future uploads.
 
 6. Upload results with attachments:
-    ```bash
-    qasphere junit-upload --attachments ./test1.xml
-    ```
+
+   ```bash
+   qasphere junit-upload --attachments ./test1.xml
+   ```
 
 7. Force upload even with missing test cases or attachments:
-    ```bash
-    qasphere junit-upload --force ./test-results.xml
-    ```
+
+   ```bash
+   qasphere junit-upload --force ./test-results.xml
+   ```
 
 8. Suppress unmatched test messages (useful during gradual test case linking):
-    ```bash
-    qasphere junit-upload --ignore-unmatched ./test-results.xml
-    ```
-    This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
 
-9.  Skip stdout for passed tests to reduce result payload size:
-    ```bash
-    qasphere junit-upload --skip-report-stdout on-success ./test-results.xml
-    ```
-    This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
+   ```bash
+   qasphere junit-upload --ignore-unmatched ./test-results.xml
+   ```
+
+   This will show only a summary like "Skipped 5 unmatched tests" instead of individual error messages for each unmatched test.
+
+9. Skip stdout for passed tests to reduce result payload size:
+
+   ```bash
+   qasphere junit-upload --skip-report-stdout on-success ./test-results.xml
+   ```
+
+   This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
 
 10. Skip both stdout and stderr for passed tests:
     ```bash
@@ -171,6 +187,7 @@ Test case names in JUnit XML reports must include a QA Sphere test case marker i
 - **SEQUENCE** - Test case sequence number (minimum 3 digits, zero-padded if needed)
 
 **Examples:**
+
 - `PRJ-002: Login with valid credentials`
 - `Login with invalid credentials: PRJ-1312`
 
@@ -185,11 +202,18 @@ Playwright JSON reports support two methods for referencing test cases (checked 
    - `description`: Full QA Sphere test case URL
 
    ```typescript
-   test('user login', {
-     annotation: { type: 'test case', description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123' }
-   }, async ({ page }) => {
-     // test code
-   });
+   test(
+     'user login',
+     {
+       annotation: {
+         type: 'test case',
+         description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123',
+       },
+     },
+     async ({ page }) => {
+       // test code
+     }
+   )
    ```
 
 2. **Test Case Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML)
