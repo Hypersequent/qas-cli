@@ -38,7 +38,7 @@ Verify installation: `qasphere --version`
 
 The CLI requires the following variables to be defined:
 
-- `QAS_TOKEN` - QA Sphere API token
+- `QAS_TOKEN` - QA Sphere API token (see [docs](https://docs.qasphere.com/api/authentication) if you need help generating one)
 - `QAS_URL` - Base URL of your QA Sphere instance (e.g., https://qas.eu2.qasphere.com)
 
 These variables could be defined:
@@ -226,5 +226,3 @@ Playwright JSON reports support two methods for referencing test cases (checked 
 4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
 Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
-
-Publishing: Add `publish` label to PR for auto-release to NPM (maintainers only)
