@@ -96,6 +96,10 @@ export const parseTCaseUrl = (url: string) => {
 	}
 }
 
+export const getTCaseMarker = (projectCode: string, seq: number) => {
+	return `${projectCode}-${seq.toString().padStart(3, '0')}`
+}
+
 export const printErrorThenExit = (e: unknown): never => {
 	printError(e)
 	process.exit(1)

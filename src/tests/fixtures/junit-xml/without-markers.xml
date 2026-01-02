@@ -1,0 +1,16 @@
+<testsuites id="" name="" tests="3" failures="0" skipped="0" errors="0" time="17.629">
+    <testsuite name="ui.cart.spec.ts" timestamp="2024-04-22T09:25:16.777Z" hostname="chromium"
+        tests="3" failures="0" skipped="0" time="17.629" errors="0">
+        <!-- Valid test case marker -->
+        <testcase name="Test cart TEST-002" classname="ui.cart.spec.ts" time="10.686">
+        </testcase>
+        <!-- No test case marker -->
+        <testcase name="The cart is still filled after refreshing the page"
+            classname="ui.cart.spec.ts" time="5.712">
+        </testcase>
+        <!-- Invalid test case marker -->
+        <testcase name="TEST-010: Cart should be cleared after making the checkout"
+            classname="ui.cart.spec.ts" time="1.231">
+        </testcase>
+    </testsuite>
+</testsuites>

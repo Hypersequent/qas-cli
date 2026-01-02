@@ -1,7 +1,7 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
 import { RunTCase } from '../../api/schemas'
-import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
+import { getTCaseMarker, parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
@@ -188,7 +188,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 		const uploadedAttachments = await this.processConcurrently(
 			allAttachments,
 			async ({ attachment, tcaseIndex }) => {
-				const { url } = await this.api.file.uploadFile(
+				const { url } = await this.api.files.uploadFile(
 					new Blob([attachment.buffer! as BlobPart]),
 					attachment.filename
 				)
@@ -291,8 +291,8 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 		testcaseResults.forEach((result) => {
 			if (result.name) {
 				const tcase = testcases.find((tcase) => {
-					const tcaseCode = `${this.project}-${tcase.seq.toString().padStart(3, '0')}`
-					return result.name.includes(tcaseCode)
+					const tcaseMarker = getTCaseMarker(this.project, tcase.seq)
+					return result.name.includes(tcaseMarker)
 				})
 
 				if (tcase) {
