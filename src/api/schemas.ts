@@ -43,6 +43,10 @@ export interface GetTCasesBySeqRequest {
 	limit?: number
 }
 
+export interface GetFoldersRequest extends PaginatedRequest {
+	search?: string
+}
+
 export interface Folder {
 	id: number
 	parentId: number
