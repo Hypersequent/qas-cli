@@ -5,9 +5,9 @@ import { getTCaseMarker, parseRunUrl, printError, printErrorThenExit, twirlLoade
 import { Api, createApi } from '../../api'
 import { Attachment, TestCaseResult } from './types'
 import {
-    commandTypePrintMissingMarkerGuidance,
-    ResultUploadCommandArgs,
-    UploadCommandType,
+	commandTypePrintMissingMarkerGuidance,
+	ResultUploadCommandArgs,
+	UploadCommandType,
 } from './ResultUploadCommandHandler'
 
 const MAX_CONCURRENT_FILE_UPLOADS = 10
@@ -18,7 +18,10 @@ export class ResultUploader {
 	private project: string
 	private run: number
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
@@ -209,6 +212,7 @@ export class ResultUploader {
 					tcaseId: tcase.id,
 					status: result.status,
 					comment: result.message,
+					timeTaken: result.timeTaken,
 				})),
 			})
 

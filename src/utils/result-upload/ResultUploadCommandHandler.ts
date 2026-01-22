@@ -3,11 +3,11 @@ import chalk from 'chalk'
 import { writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import {
-    getTCaseMarker,
-    parseRunUrl,
-    printError,
-    printErrorThenExit,
-    processTemplate,
+	getTCaseMarker,
+	parseRunUrl,
+	printError,
+	printErrorThenExit,
+	processTemplate,
 } from '../misc'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
@@ -86,7 +86,10 @@ export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
 
-	constructor(private type: UploadCommandType, private args: Arguments<ResultUploadCommandArgs>) {
+	constructor(
+		private type: UploadCommandType,
+		private args: Arguments<ResultUploadCommandArgs>
+	) {
 		const apiToken = process.env.QAS_TOKEN!
 
 		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
@@ -156,11 +159,11 @@ export class ResultUploadCommandHandler {
 
 	protected detectProjectCodeFromTCaseNames(fileResults: FileResults[]) {
 		// Look for pattern like PRJ-123 or TEST-456 (_ is also allowed as separator)
-		const tcaseSeqRegex = new RegExp(/([A-Za-z0-9]{1,5})[-_]\d{3,}/)
+		const tcaseSeqPattern = String.raw`([A-Za-z0-9]{1,5})[-_]\d{3,}`
 		for (const { results } of fileResults) {
 			for (const result of results) {
 				if (result.name) {
-					const match = tcaseSeqRegex.exec(result.name)
+					const match = this.execRegexWithPriority(tcaseSeqPattern, result.name)
 					if (match) {
 						return match[1]
 					}
@@ -173,9 +176,25 @@ export class ResultUploadCommandHandler {
 		)
 	}
 
+	private execRegexWithPriority(pattern: string, str: string): RegExpExecArray | null {
+		// Try matching at start first
+		const startRegex = new RegExp(`^${pattern}`)
+		let match = startRegex.exec(str)
+		if (match) return match
+
+		// Try matching at end
+		const endRegex = new RegExp(`${pattern}$`)
+		match = endRegex.exec(str)
+		if (match) return match
+
+		// Fall back to matching anywhere
+		const anywhereRegex = new RegExp(pattern)
+		return anywhereRegex.exec(str)
+	}
+
 	protected async getTCaseIds(projectCode: string, fileResults: FileResults[]) {
 		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
-		const tcaseSeqRegex = new RegExp(`${projectCode}[-_](\\d{3,})`)
+		const tcaseSeqPattern = String.raw`${projectCode}-(\d{3,})`
 
 		const seqIdsSet: Set<number> = new Set()
 		const resultsWithSeqAndFile: TestCaseResultWithSeqAndFile[] = []
@@ -190,7 +209,7 @@ export class ResultUploadCommandHandler {
 					continue
 				}
 
-				const match = tcaseSeqRegex.exec(result.name)
+				const match = this.execRegexWithPriority(tcaseSeqPattern, result.name)
 				resultsWithSeqAndFile.push({
 					seq: match ? Number(match[1]) : null,
 					file,
@@ -279,10 +298,12 @@ export class ResultUploadCommandHandler {
 	private async createNewTCases(projectCode: string, tcasesToCreate: string[]) {
 		console.log(chalk.blue(`Creating test cases for results with no test case markers`))
 
-		// First fetch the default folder ID where we are creating new test cases
+		// First fetch the default folder ID where we are creating new test cases.
+		// Ideally, there shouldn't be the need to fetch more than one page.
 		let defaultFolderId = null
 		for (let page = 1; ; page++) {
 			const response = await this.api.folders.getFoldersPaginated(projectCode, {
+				search: DEFAULT_FOLDER_TITLE,
 				page,
 				limit: DEFAULT_PAGE_SIZE,
 			})

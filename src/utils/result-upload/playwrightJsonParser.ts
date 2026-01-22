@@ -41,6 +41,7 @@ const resultSchema = z.object({
 	stdout: stdioEntrySchema.array(),
 	stderr: stdioEntrySchema.array(),
 	retry: z.number(),
+	duration: z.number(),
 	attachments: attachmentSchema.array().optional(),
 	annotations: annotationSchema.array().optional(),
 })
@@ -147,6 +148,7 @@ export const parsePlaywrightJson: Parser = async (
 				folder: topLevelSuite,
 				status,
 				message: buildMessage(result, status, options),
+				timeTaken: result.duration,
 				attachments: [],
 			})
 

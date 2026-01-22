@@ -51,7 +51,7 @@ export const jsonResponse = async <T>(response: Response): Promise<T> => {
 
 const updateSearchParams = <T extends object>(searchParams: URLSearchParams, obj?: T) => {
 	const isValidValue = (value: unknown) => {
-		return value || value === false || value === ''
+		return value !== undefined && value !== null
 	}
 
 	if (!obj) return

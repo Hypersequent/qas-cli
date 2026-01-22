@@ -5,14 +5,14 @@ import { createTempFile, deleteTempFile } from './utils'
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 
 describe('Junit XML parsing', () => {
-    let tempXmlFile: string | null = null
+	let tempXmlFile: string | null = null
 
-    afterEach(() => {
-        if (tempXmlFile) {
-            deleteTempFile(tempXmlFile)
-            tempXmlFile = null
-        }
-    })
+	afterEach(() => {
+		if (tempXmlFile) {
+			deleteTempFile(tempXmlFile)
+			tempXmlFile = null
+		}
+	})
 
 	test('Should parse comprehensive test XML without exceptions', async () => {
 		// This should not throw any exceptions
@@ -32,10 +32,13 @@ describe('Junit XML parsing', () => {
 		expect(testTypes).toContain('passed')
 
 		// Verify specific counts by type
-		const typeCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const typeCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(typeCounts.failed).toBe(3)
 		expect(typeCounts.blocked).toBe(3)
@@ -49,6 +52,7 @@ describe('Junit XML parsing', () => {
 			expect(tc).toHaveProperty('status')
 			expect(tc).toHaveProperty('message')
 			expect(tc).toHaveProperty('attachments')
+			expect(tc).toHaveProperty('timeTaken')
 			expect(Array.isArray(tc.attachments)).toBe(true)
 		})
 	})
@@ -96,17 +100,24 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should handle Jest failure without type attribute', async () => {
-		const testcases = await parseJUnitXml(`${xmlBasePath}/jest-failure-type-missing.xml`, xmlBasePath, {
-			skipStdout: 'never',
-			skipStderr: 'never',
-		})
+		const testcases = await parseJUnitXml(
+			`${xmlBasePath}/jest-failure-type-missing.xml`,
+			xmlBasePath,
+			{
+				skipStdout: 'never',
+				skipStderr: 'never',
+			}
+		)
 		expect(testcases).toHaveLength(3)
 
 		// Verify test result types
-		const typeCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const typeCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(typeCounts.passed).toBe(2)
 		expect(typeCounts.failed).toBe(1)
@@ -163,15 +174,18 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should skip stderr for passed tests when skipStderr is set to "on-success"', async () => {
-		tempXmlFile = createTempFile(`<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
-    <testcase name="Test with stderr">
+    <testcase name="Test with stderr" time="10.5">
       <system-out>stdout content</system-out>
       <system-err>stderr content</system-err>
     </testcase>
   </testsuite>
-</testsuites>`, 'xml')
+</testsuites>`,
+			'xml'
+		)
 
 		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'never',
@@ -180,22 +194,26 @@ describe('Junit XML parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].timeTaken).toBe(10500)
 		// Should include stdout but not stderr for passed tests
 		expect(testcases[0].message).toContain('stdout content')
 		expect(testcases[0].message).not.toContain('stderr content')
 	})
 
 	test('Should include stdout/stderr for failed tests even when skip options are set to "on-success"', async () => {
-		tempXmlFile = createTempFile(`<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
-    <testcase name="Failed test with output">
+    <testcase name="Failed test with output" time="0">
       <failure message="Test failed">Failure details</failure>
       <system-out>stdout from failed test</system-out>
       <system-err>stderr from failed test</system-err>
     </testcase>
   </testsuite>
-</testsuites>`, 'xml')
+</testsuites>`,
+			'xml'
+		)
 
 		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'on-success',
@@ -204,6 +222,7 @@ describe('Junit XML parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].status).toBe('failed')
+		expect(testcases[0].timeTaken).toBe(0)
 		// Should include both stdout and stderr for failed tests
 		expect(testcases[0].message).toContain('Failure details')
 		expect(testcases[0].message).toContain('stdout from failed test')
@@ -211,15 +230,18 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should skip both stdout and stderr for passed tests when both skip options are set to "on-success"', async () => {
-		tempXmlFile = createTempFile(`<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
-    <testcase name="Passed test with output">
+    <testcase name="Passed test with output" time="">
       <system-out>stdout content</system-out>
       <system-err>stderr content</system-err>
     </testcase>
   </testsuite>
-</testsuites>`, 'xml')
+</testsuites>`,
+			'xml'
+		)
 
 		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'on-success',
@@ -228,6 +250,7 @@ describe('Junit XML parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].timeTaken).toBe(null)
 		// Should not include stdout or stderr for passed tests
 		expect(testcases[0].message).toBe('')
 	})

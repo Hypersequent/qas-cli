@@ -43,6 +43,10 @@ export interface GetTCasesBySeqRequest {
 	limit?: number
 }
 
+export interface GetFoldersRequest extends PaginatedRequest {
+	search?: string
+}
+
 export interface Folder {
 	id: number
 	parentId: number
@@ -66,6 +70,7 @@ export interface CreateResultsRequestItem {
 	tcaseId: string
 	status: ResultStatus
 	comment?: string
+	timeTaken: number | null // In milliseconds
 }
 
 export interface CreateResultsRequest {

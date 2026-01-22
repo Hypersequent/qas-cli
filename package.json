@@ -1,69 +1,84 @@
 {
-	"name": "qas-cli",
-	"version": "0.4.4",
-	"description": "QAS CLI is a command line tool for submitting your automation test results to QA Sphere at https://qasphere.com/",
-	"type": "module",
-	"main": "./build/bin/qasphere.js",
-	"types": "./build/bin/qasphere.d.ts",
-	"scripts": {
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"build": "npm run clean && tsc && ts-add-js-extension --dir=./build && chmod +x build/bin/qasphere.js",
-		"clean": "rm -rf ./build",
-		"prepare": "husky",
-		"prepublishOnly": "npm run build",
-		"check": "npm run typecheck && npm run lint",
-		"typecheck": "tsc --noEmit true",
-		"lint": "eslint --quiet --fix ."
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Hypersequent/qas-cli.git"
-	},
-	"author": "Hypersequent",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/Hypersequent/qas-cli/issues"
-	},
-	"homepage": "https://github.com/Hypersequent/qas-cli#readme",
-	"devDependencies": {
-		"@eslint/js": "^9.25.1",
-		"@types/better-sqlite3": "^7.6.13",
-		"@types/escape-html": "^1.0.4",
-		"@types/node": "^20.17.32",
-		"@types/semver": "^7.7.0",
-		"@types/xml2js": "^0.4.14",
-		"@types/yargs": "^17.0.33",
-		"eslint": "^9.25.1",
-		"globals": "^16.0.0",
-		"husky": "^9.1.7",
-		"msw": "^2.7.5",
-		"ts-add-js-extension": "^1.6.6",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.31.1",
-		"vitest": "^3.1.2"
-	},
-	"dependencies": {
-		"better-sqlite3": "^12.5.0",
-		"chalk": "^5.4.1",
-		"dotenv": "^16.5.0",
-		"escape-html": "^1.0.3",
-		"fzstd": "^0.1.1",
-		"semver": "^7.7.1",
-		"strip-ansi": "^7.1.2",
-		"xml2js": "^0.6.2",
-		"yargs": "^17.7.2",
-		"zod": "^3.24.3"
-	},
-	"bin": {
-		"qasphere": "build/bin/qasphere.js"
-	},
-	"files": [
-		"build/**/*.js",
-		"build/**/*.d.ts",
-		"build/**/*.js.map",
-		"build/**/*.d.ts.map",
-		"README.md",
-		"LICENSE"
-	]
+  "name": "qas-cli",
+  "version": "0.4.4",
+  "description": "QAS CLI is a command line tool for submitting your automation test results to QA Sphere at https://qasphere.com/",
+  "type": "module",
+  "main": "./build/bin/qasphere.js",
+  "types": "./build/bin/qasphere.d.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run clean && tsc && ts-add-js-extension --dir=./build && chmod +x build/bin/qasphere.js",
+    "clean": "rm -rf ./build",
+    "prepare": "husky",
+    "prepublishOnly": "npm run build",
+    "check": "npm run typecheck && npm run lint && npm run format:check",
+    "typecheck": "tsc --noEmit true",
+    "lint": "eslint --quiet .",
+    "lint:fix": "eslint --quiet --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs}": [
+      "eslint --quiet --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hypersequent/qas-cli.git"
+  },
+  "author": "Hypersequent",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Hypersequent/qas-cli/issues"
+  },
+  "homepage": "https://github.com/Hypersequent/qas-cli#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.25.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/escape-html": "^1.0.4",
+    "@types/node": "^20.17.32",
+    "@types/semver": "^7.7.0",
+    "@types/xml2js": "^0.4.14",
+    "@types/yargs": "^17.0.33",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "msw": "^2.7.5",
+    "prettier": "^3.4.2",
+    "ts-add-js-extension": "^1.6.6",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.1",
+    "vitest": "^3.1.2"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "chalk": "^5.4.1",
+    "dotenv": "^16.5.0",
+    "escape-html": "^1.0.3",
+    "fzstd": "^0.1.1",
+    "semver": "^7.7.1",
+    "strip-ansi": "^7.1.2",
+    "xml2js": "^0.6.2",
+    "yargs": "^17.7.2",
+    "zod": "^3.24.3"
+  },
+  "bin": {
+    "qasphere": "build/bin/qasphere.js"
+  },
+  "files": [
+    "build/**/*.js",
+    "build/**/*.d.ts",
+    "build/**/*.js.map",
+    "build/**/*.d.ts.map",
+    "README.md",
+    "LICENSE"
+  ]
 }

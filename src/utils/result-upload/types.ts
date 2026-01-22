@@ -14,5 +14,6 @@ export interface TestCaseResult {
 	folder: string
 	status: ResultStatus
 	message: string
+	timeTaken: number | null // In milliseconds
 	attachments: Attachment[]
 }

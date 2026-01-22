@@ -25,11 +25,7 @@ export const createRunApi = (fetcher: typeof fetch) => {
 				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
 				.then((r) => r.tcases),
 
-		createResults: (
-			projectCode: ResourceId,
-			runId: ResourceId,
-			req: CreateResultsRequest
-		) =>
+		createResults: (projectCode: ResourceId, runId: ResourceId, req: CreateResultsRequest) =>
 			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/result/batch`, {
 				body: JSON.stringify(req),
 				method: 'POST',

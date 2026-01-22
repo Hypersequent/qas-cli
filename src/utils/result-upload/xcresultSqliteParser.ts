@@ -33,6 +33,7 @@ interface TestCaseRunRow {
 	rowid: number
 	testCase_fk: number | null
 	result: string | null
+	duration: number | null // In seconds
 	skipNotice_fk: number | null
 }
 
@@ -123,7 +124,7 @@ export const parseXCResult: Parser = async (bundlePath: string): Promise<TestCas
 		const testCaseRunIdToAttachmentsMap = getTestCaseRunIdToAttachmentsMap(db, bundlePath)
 
 		const testCaseRuns = db
-			.prepare('SELECT rowid, testCase_fk, result, skipNotice_fk FROM TestCaseRuns')
+			.prepare('SELECT rowid, testCase_fk, result, duration, skipNotice_fk FROM TestCaseRuns')
 			.all() as TestCaseRunRow[]
 
 		const results: TestCaseResult[] = []
@@ -134,14 +135,14 @@ export const parseXCResult: Parser = async (bundlePath: string): Promise<TestCas
 			}
 
 			const folder = testCase.testSuite_fk
-				? testSuitesIdToPathMap[testCase.testSuite_fk] ?? null
+				? (testSuitesIdToPathMap[testCase.testSuite_fk] ?? null)
 				: null
 			const status = mapResultStatus(testCaseRun.result)
 			const message = buildMessage(
 				testCaseRun.rowid,
 				status,
 				testCaseRun.skipNotice_fk
-					? skipNoticesIdToMessageMap[testCaseRun.skipNotice_fk] ?? null
+					? (skipNoticesIdToMessageMap[testCaseRun.skipNotice_fk] ?? null)
 					: null,
 				testCaseRunIdToExpectedFailuresMap[testCaseRun.rowid],
 				testIssues,
@@ -153,6 +154,7 @@ export const parseXCResult: Parser = async (bundlePath: string): Promise<TestCas
 				folder: folder ?? 'Unknown Suite',
 				status,
 				message,
+				timeTaken: testCaseRun.duration ? testCaseRun.duration * 1000 : null,
 				attachments: testCaseRunIdToAttachmentsMap[testCaseRun.rowid] ?? [],
 			})
 		}

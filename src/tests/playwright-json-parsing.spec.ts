@@ -36,10 +36,13 @@ describe('Playwright JSON parsing', () => {
 		expect(testStatuses).toContain('passed')
 
 		// Verify specific counts by status
-		const statusCounts = testcases.reduce((acc, tc) => {
-			acc[tc.status] = (acc[tc.status] || 0) + 1
-			return acc
-		}, {} as Record<string, number>)
+		const statusCounts = testcases.reduce(
+			(acc, tc) => {
+				acc[tc.status] = (acc[tc.status] || 0) + 1
+				return acc
+			},
+			{} as Record<string, number>
+		)
 
 		expect(statusCounts.failed).toBe(6) // 3 failures + 3 errors
 		expect(statusCounts.skipped).toBe(4)
@@ -52,6 +55,7 @@ describe('Playwright JSON parsing', () => {
 			expect(tc).toHaveProperty('status')
 			expect(tc).toHaveProperty('message')
 			expect(tc).toHaveProperty('attachments')
+			expect(tc).toHaveProperty('timeTaken')
 			expect(Array.isArray(tc.attachments)).toBe(true)
 		})
 	})
@@ -65,10 +69,11 @@ describe('Playwright JSON parsing', () => {
 		// Should only have the one test from ui.cart.spec.ts, not the empty ui.contents.spec.ts
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toContain('Test cart TEST-002')
+		expect(testcases[0].timeTaken).toBe(0)
 	})
 
 	test('Should use last result when there are retries', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -89,6 +94,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1300,
 												attachments: [],
 											},
 											{
@@ -97,6 +103,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 1,
+												duration: 1200,
 												attachments: [],
 											},
 										],
@@ -119,12 +126,13 @@ describe('Playwright JSON parsing', () => {
 		expect(testcases).toHaveLength(1)
 
 		// Should use the last result (passed on retry)
+		expect(testcases[0].timeTaken).toBe(1200)
 		expect(testcases[0].status).toBe('passed')
 		expect(testcases[0].message).toContain('Test passed in 2 attempts')
 	})
 
 	test('Should handle nested suites correctly', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -145,6 +153,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -172,6 +181,7 @@ describe('Playwright JSON parsing', () => {
 														stdout: [],
 														stderr: [],
 														retry: 0,
+														duration: 5100,
 														attachments: [],
 													},
 												],
@@ -202,10 +212,14 @@ describe('Playwright JSON parsing', () => {
 		// Verify nested test has suite title as prefix
 		expect(testcases[1].name).toContain('Nested Suite')
 		expect(testcases[1].name).toContain('Nested test')
+
+		// Verify time taken is set to duration of the test
+		expect(testcases[0].timeTaken).toBe(1000)
+		expect(testcases[1].timeTaken).toBe(5100)
 	})
 
 	test('Should strip ANSI escape codes from errors and output', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -239,6 +253,7 @@ describe('Playwright JSON parsing', () => {
 													},
 												],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -275,7 +290,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should prefix test case marker from annotations to test name', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -301,6 +316,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -323,6 +339,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -350,6 +367,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -382,7 +400,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should map test status correctly', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -403,6 +421,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -425,7 +444,14 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
-												attachments: [],
+												duration: 1000,
+												attachments: [
+													{
+														name: 'screenshot',
+														contentType: 'image/png',
+														path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+													},
+												],
 											},
 										],
 										status: 'unexpected',
@@ -447,6 +473,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 											{
@@ -455,6 +482,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 1,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -477,6 +505,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [],
 												stderr: [],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -505,7 +534,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should include stdout/stderr when skipStdout and skipStderr are set to "never"', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -526,6 +555,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [{ text: 'stdout content' }],
 												stderr: [{ text: 'stderr content' }],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -553,7 +583,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip stdout for passed tests when skipStdout is set to "on-success"', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -574,7 +604,14 @@ describe('Playwright JSON parsing', () => {
 												stdout: [{ text: 'stdout content' }],
 												stderr: [{ text: 'stderr content' }],
 												retry: 0,
-												attachments: [],
+												duration: 1000,
+												attachments: [
+													{
+														name: 'screenshot',
+														contentType: 'image/png',
+														path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+													},
+												],
 											},
 										],
 										status: 'expected',
@@ -601,7 +638,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip stderr for passed tests when skipStderr is set to "on-success"', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -622,6 +659,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [{ text: 'stdout content' }],
 												stderr: [{ text: 'stderr content' }],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -649,7 +687,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should include stdout/stderr for failed tests even when skip options are set to "on-success"', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -670,6 +708,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [{ text: 'stdout from failed test' }],
 												stderr: [{ text: 'stderr from failed test' }],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
@@ -698,7 +737,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip both stdout and stderr for passed tests when both skip options are set to "on-success"', async () => {
-		tempJsonFile = createTempFile(
+		const tempJsonFile = createTempFile(
 			JSON.stringify({
 				suites: [
 					{
@@ -719,6 +758,7 @@ describe('Playwright JSON parsing', () => {
 												stdout: [{ text: 'stdout content' }],
 												stderr: [{ text: 'stderr content' }],
 												retry: 0,
+												duration: 1000,
 												attachments: [],
 											},
 										],
