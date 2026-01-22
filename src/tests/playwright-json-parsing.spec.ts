@@ -1,19 +1,30 @@
+import { afterEach } from 'node:test'
 import { expect, test, describe } from 'vitest'
 import { parsePlaywrightJson } from '../utils/result-upload/playwrightJsonParser'
-import { readFile } from 'fs/promises'
+import { createTempFile, deleteTempFile } from './utils'
 
 const playwrightJsonBasePath = './src/tests/fixtures/playwright-json'
 
 describe('Playwright JSON parsing', () => {
-	test('Should parse comprehensive test JSON without exceptions', async () => {
-		const jsonPath = `${playwrightJsonBasePath}/comprehensive-test.json`
-		const jsonContent = await readFile(jsonPath, 'utf8')
+	let tempJsonFile: string | null = null
 
+	afterEach(() => {
+		if (tempJsonFile) {
+			deleteTempFile(tempJsonFile)
+			tempJsonFile = null
+		}
+	})
+
+	test('Should parse comprehensive test JSON without exceptions', async () => {
 		// This should not throw any exceptions
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
-			skipStdout: 'never',
-			skipStderr: 'never',
-		})
+		const testcases = await parsePlaywrightJson(
+			`${playwrightJsonBasePath}/comprehensive-test.json`,
+			'',
+			{
+				skipStdout: 'never',
+				skipStderr: 'never',
+			}
+		)
 
 		// Verify that we got the expected number of test cases
 		expect(testcases).toHaveLength(12)
@@ -50,10 +61,7 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should handle empty test suite', async () => {
-		const jsonPath = `${playwrightJsonBasePath}/empty-tsuite.json`
-		const jsonContent = await readFile(jsonPath, 'utf8')
-
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(`${playwrightJsonBasePath}/empty-tsuite.json`, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -65,50 +73,53 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should use last result when there are retries', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'retry.spec.ts',
-					specs: [
-						{
-							title: 'Flaky test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'failed',
-											errors: [{ message: 'First attempt failed' }],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1300,
-											attachments: [],
-										},
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 1,
-											duration: 1200,
-											attachments: [],
-										},
-									],
-									status: 'flaky',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'retry.spec.ts',
+						specs: [
+							{
+								title: 'Flaky test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'failed',
+												errors: [{ message: 'First attempt failed' }],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1300,
+												attachments: [],
+											},
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 1,
+												duration: 1200,
+												attachments: [],
+											},
+										],
+										status: 'flaky',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -121,71 +132,74 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should handle nested suites correctly', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'parent.spec.ts',
-					specs: [
-						{
-							title: 'Parent test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [
-						{
-							title: 'Nested Suite',
-							specs: [
-								{
-									title: 'Nested test',
-									tags: [],
-									tests: [
-										{
-											annotations: [],
-											expectedStatus: 'passed',
-											projectName: 'chromium',
-											results: [
-												{
-													status: 'passed',
-													errors: [],
-													stdout: [],
-													stderr: [],
-													retry: 0,
-													duration: 5100,
-													attachments: [],
-												},
-											],
-											status: 'expected',
-										},
-									],
-								},
-							],
-							suites: [],
-						},
-					],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'parent.spec.ts',
+						specs: [
+							{
+								title: 'Parent test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [
+							{
+								title: 'Nested Suite',
+								specs: [
+									{
+										title: 'Nested test',
+										tags: [],
+										tests: [
+											{
+												annotations: [],
+												expectedStatus: 'passed',
+												projectName: 'chromium',
+												results: [
+													{
+														status: 'passed',
+														errors: [],
+														stdout: [],
+														stderr: [],
+														retry: 0,
+														duration: 5100,
+														attachments: [],
+													},
+												],
+												status: 'expected',
+											},
+										],
+									},
+								],
+								suites: [],
+							},
+						],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -205,54 +219,57 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should strip ANSI escape codes from errors and output', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'ansi.spec.ts',
-					specs: [
-						{
-							title: 'Test with ANSI colors in error',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'failed',
-											errors: [
-												{
-													message:
-														'\x1b[31mError: Test failed\x1b[0m\n\x1b[90m  at Object.test\x1b[0m',
-												},
-											],
-											stdout: [
-												{
-													text: '\x1b[32m✓\x1b[0m Test started\n\x1b[33mWarning:\x1b[0m Something happened',
-												},
-											],
-											stderr: [
-												{
-													text: '\x1b[31mError output\x1b[0m\n\x1b[90mStack trace\x1b[0m',
-												},
-											],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'unexpected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'ansi.spec.ts',
+						specs: [
+							{
+								title: 'Test with ANSI colors in error',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'failed',
+												errors: [
+													{
+														message:
+															'\x1b[31mError: Test failed\x1b[0m\n\x1b[90m  at Object.test\x1b[0m',
+													},
+												],
+												stdout: [
+													{
+														text: '\x1b[32m✓\x1b[0m Test started\n\x1b[33mWarning:\x1b[0m Something happened',
+													},
+												],
+												stderr: [
+													{
+														text: '\x1b[31mError output\x1b[0m\n\x1b[90mStack trace\x1b[0m',
+													},
+												],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'unexpected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -273,97 +290,100 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should prefix test case marker from annotations to test name', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'annotation.spec.ts',
-					specs: [
-						{
-							title: 'User login test',
-							tags: [],
-							tests: [
-								{
-									annotations: [
-										{
-											type: 'test case',
-											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123',
-										},
-									],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-						{
-							title: 'Test without annotation',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-						{
-							title: 'PRJ-456: Test with marker in name and annotation',
-							tags: [],
-							tests: [
-								{
-									annotations: [
-										{
-											type: 'Test Case',
-											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/789',
-										},
-									],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'annotation.spec.ts',
+						specs: [
+							{
+								title: 'User login test',
+								tags: [],
+								tests: [
+									{
+										annotations: [
+											{
+												type: 'test case',
+												description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/123',
+											},
+										],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+							{
+								title: 'Test without annotation',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+							{
+								title: 'PRJ-456: Test with marker in name and annotation',
+								tags: [],
+								tests: [
+									{
+										annotations: [
+											{
+												type: 'Test Case',
+												description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/789',
+											},
+										],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -380,125 +400,128 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should map test status correctly', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'status.spec.ts',
-					specs: [
-						{
-							title: 'Expected test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-						{
-							title: 'Unexpected test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'failed',
-											errors: [{ message: 'Test failed' }],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [
-												{
-													name: 'screenshot',
-													contentType: 'image/png',
-													path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
-												},
-											],
-										},
-									],
-									status: 'unexpected',
-								},
-							],
-						},
-						{
-							title: 'Flaky test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'failed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 1,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'flaky',
-								},
-							],
-						},
-						{
-							title: 'Skipped test',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'skipped',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'skipped',
-											errors: [],
-											stdout: [],
-											stderr: [],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'skipped',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'status.spec.ts',
+						specs: [
+							{
+								title: 'Expected test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+							{
+								title: 'Unexpected test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'failed',
+												errors: [{ message: 'Test failed' }],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [
+													{
+														name: 'screenshot',
+														contentType: 'image/png',
+														path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+													},
+												],
+											},
+										],
+										status: 'unexpected',
+									},
+								],
+							},
+							{
+								title: 'Flaky test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'failed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 1,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'flaky',
+									},
+								],
+							},
+							{
+								title: 'Skipped test',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'skipped',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'skipped',
+												errors: [],
+												stdout: [],
+												stderr: [],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'skipped',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -511,41 +534,44 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should include stdout/stderr when skipStdout and skipStderr are set to "never"', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'test.spec.ts',
-					specs: [
-						{
-							title: 'Passed test with output',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [{ text: 'stdout content' }],
-											stderr: [{ text: 'stderr content' }],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'test.spec.ts',
+						specs: [
+							{
+								title: 'Passed test with output',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [{ text: 'stdout content' }],
+												stderr: [{ text: 'stderr content' }],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -557,47 +583,50 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip stdout for passed tests when skipStdout is set to "on-success"', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'test.spec.ts',
-					specs: [
-						{
-							title: 'Passed test with output',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [{ text: 'stdout content' }],
-											stderr: [{ text: 'stderr content' }],
-											retry: 0,
-											duration: 1000,
-											attachments: [
-												{
-													name: 'screenshot',
-													contentType: 'image/png',
-													path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
-												},
-											],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'test.spec.ts',
+						specs: [
+							{
+								title: 'Passed test with output',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [{ text: 'stdout content' }],
+												stderr: [{ text: 'stderr content' }],
+												retry: 0,
+												duration: 1000,
+												attachments: [
+													{
+														name: 'screenshot',
+														contentType: 'image/png',
+														path: '../test-results/ui.cart-Test-cart-chromium/test-finished-1.png',
+													},
+												],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'never',
 		})
@@ -609,41 +638,44 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip stderr for passed tests when skipStderr is set to "on-success"', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'test.spec.ts',
-					specs: [
-						{
-							title: 'Passed test with output',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [{ text: 'stdout content' }],
-											stderr: [{ text: 'stderr content' }],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'test.spec.ts',
+						specs: [
+							{
+								title: 'Passed test with output',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [{ text: 'stdout content' }],
+												stderr: [{ text: 'stderr content' }],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'never',
 			skipStderr: 'on-success',
 		})
@@ -655,41 +687,44 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should include stdout/stderr for failed tests even when skip options are set to "on-success"', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'test.spec.ts',
-					specs: [
-						{
-							title: 'Failed test with output',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'failed',
-											errors: [{ message: 'Test failed' }],
-											stdout: [{ text: 'stdout from failed test' }],
-											stderr: [{ text: 'stderr from failed test' }],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'unexpected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'test.spec.ts',
+						specs: [
+							{
+								title: 'Failed test with output',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'failed',
+												errors: [{ message: 'Test failed' }],
+												stdout: [{ text: 'stdout from failed test' }],
+												stderr: [{ text: 'stderr from failed test' }],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'unexpected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -702,41 +737,44 @@ describe('Playwright JSON parsing', () => {
 	})
 
 	test('Should skip both stdout and stderr for passed tests when both skip options are set to "on-success"', async () => {
-		const jsonContent = JSON.stringify({
-			suites: [
-				{
-					title: 'test.spec.ts',
-					specs: [
-						{
-							title: 'Passed test with output',
-							tags: [],
-							tests: [
-								{
-									annotations: [],
-									expectedStatus: 'passed',
-									projectName: 'chromium',
-									results: [
-										{
-											status: 'passed',
-											errors: [],
-											stdout: [{ text: 'stdout content' }],
-											stderr: [{ text: 'stderr content' }],
-											retry: 0,
-											duration: 1000,
-											attachments: [],
-										},
-									],
-									status: 'expected',
-								},
-							],
-						},
-					],
-					suites: [],
-				},
-			],
-		})
+		const tempJsonFile = createTempFile(
+			JSON.stringify({
+				suites: [
+					{
+						title: 'test.spec.ts',
+						specs: [
+							{
+								title: 'Passed test with output',
+								tags: [],
+								tests: [
+									{
+										annotations: [],
+										expectedStatus: 'passed',
+										projectName: 'chromium',
+										results: [
+											{
+												status: 'passed',
+												errors: [],
+												stdout: [{ text: 'stdout content' }],
+												stderr: [{ text: 'stderr content' }],
+												retry: 0,
+												duration: 1000,
+												attachments: [],
+											},
+										],
+										status: 'expected',
+									},
+								],
+							},
+						],
+						suites: [],
+					},
+				],
+			}),
+			'json'
+		)
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const testcases = await parsePlaywrightJson(tempJsonFile, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})

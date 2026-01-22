@@ -1,16 +1,22 @@
-import { expect, test, describe } from 'vitest'
-import { readFile } from 'node:fs/promises'
+import { expect, test, describe, afterEach } from 'vitest'
 import { parseJUnitXml } from '../utils/result-upload/junitXmlParser'
+import { createTempFile, deleteTempFile } from './utils'
 
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 
 describe('Junit XML parsing', () => {
-	test('Should parse comprehensive test XML without exceptions', async () => {
-		const xmlPath = `${xmlBasePath}/comprehensive-test.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
+	let tempXmlFile: string | null = null
 
+	afterEach(() => {
+		if (tempXmlFile) {
+			deleteTempFile(tempXmlFile)
+			tempXmlFile = null
+		}
+	})
+
+	test('Should parse comprehensive test XML without exceptions', async () => {
 		// This should not throw any exceptions
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/comprehensive-test.xml`, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -52,10 +58,7 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should handle all failure/error/skipped element variations', async () => {
-		const xmlPath = `${xmlBasePath}/comprehensive-test.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/comprehensive-test.xml`, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -83,10 +86,7 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should handle empty <system-err> and similar empty tags', async () => {
-		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/empty-system-err.xml`, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -100,13 +100,14 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should handle Jest failure without type attribute', async () => {
-		const xmlPath = `${xmlBasePath}/jest-failure-type-missing.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
-			skipStdout: 'never',
-			skipStderr: 'never',
-		})
+		const testcases = await parseJUnitXml(
+			`${xmlBasePath}/jest-failure-type-missing.xml`,
+			xmlBasePath,
+			{
+				skipStdout: 'never',
+				skipStderr: 'never',
+			}
+		)
 		expect(testcases).toHaveLength(3)
 
 		// Verify test result types
@@ -129,10 +130,7 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should extract attachments from failure/error message attributes (WebDriverIO style)', async () => {
-		const xmlPath = `${xmlBasePath}/webdriverio-real.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/webdriverio-real.xml`, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -151,10 +149,7 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should include stdout/stderr when skipStdout and skipStderr are set to "never"', async () => {
-		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/empty-system-err.xml`, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -166,10 +161,7 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should skip stdout for passed tests when skipStdout is set to "on-success"', async () => {
-		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const testcases = await parseJUnitXml(`${xmlBasePath}/empty-system-err.xml`, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'never',
 		})
@@ -182,7 +174,8 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should skip stderr for passed tests when skipStderr is set to "on-success"', async () => {
-		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
     <testcase name="Test with stderr" time="10.5">
@@ -190,9 +183,11 @@ describe('Junit XML parsing', () => {
       <system-err>stderr content</system-err>
     </testcase>
   </testsuite>
-</testsuites>`
+</testsuites>`,
+			'xml'
+		)
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'on-success',
 		})
@@ -206,7 +201,8 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should include stdout/stderr for failed tests even when skip options are set to "on-success"', async () => {
-		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
     <testcase name="Failed test with output" time="0">
@@ -215,9 +211,11 @@ describe('Junit XML parsing', () => {
       <system-err>stderr from failed test</system-err>
     </testcase>
   </testsuite>
-</testsuites>`
+</testsuites>`,
+			'xml'
+		)
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -232,7 +230,8 @@ describe('Junit XML parsing', () => {
 	})
 
 	test('Should skip both stdout and stderr for passed tests when both skip options are set to "on-success"', async () => {
-		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+		tempXmlFile = createTempFile(
+			`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Test Suite">
   <testsuite name="Sample Suite">
     <testcase name="Passed test with output" time="">
@@ -240,9 +239,11 @@ describe('Junit XML parsing', () => {
       <system-err>stderr content</system-err>
     </testcase>
   </testsuite>
-</testsuites>`
+</testsuites>`,
+			'xml'
+		)
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const testcases = await parseJUnitXml(tempXmlFile, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
