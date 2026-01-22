@@ -38,6 +38,9 @@
     "url": "https://github.com/Hypersequent/qas-cli/issues"
   },
   "homepage": "https://github.com/Hypersequent/qas-cli#readme",
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@types/better-sqlite3": "^7.6.13",

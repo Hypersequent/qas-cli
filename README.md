@@ -14,7 +14,7 @@ The tool can upload test case results from JUnit XML and Playwright JSON files t
 
 ### Requirements
 
-Node.js version 18.0.0 or higher.
+Node.js version 20.0.0 or higher.
 
 ### Via NPX
 
@@ -239,4 +239,4 @@ The `xcresult-upload` command will automatically invoke `xcrun xcresulttool`, if
 3. Configure `.qaspherecli` with credentials
 4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
-Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
+Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 20+ compatibility)
