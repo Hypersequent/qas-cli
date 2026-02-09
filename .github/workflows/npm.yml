@@ -56,7 +56,7 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
+
       - name: Notify success
         if: steps.compare.outputs.publish == 'true' && success()
         run: |

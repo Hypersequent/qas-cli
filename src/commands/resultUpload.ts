@@ -4,7 +4,7 @@ import { loadEnvs } from '../utils/env'
 import {
 	ResultUploadCommandArgs,
 	ResultUploadCommandHandler,
-	UploadCommandType
+	UploadCommandType,
 } from '../utils/result-upload/ResultUploadCommandHandler'
 
 const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
