@@ -42,6 +42,7 @@ const skippedSchema = z.union([
 const testCaseSchema = z.object({
 	$: z.object({
 		name: z.string().optional(),
+		classname: z.string().optional(),
 		time: z.string().optional(),
 	}),
 	// Some JUnit producers emit empty tags like <system-err></system-err> which
@@ -93,10 +94,15 @@ export const parseJUnitXml: Parser = async (
 		for (const tcase of suite.testcase ?? []) {
 			const result = getResult(tcase, options)
 			const timeTakenSeconds = Number.parseFloat(tcase.$.time ?? '')
+			// Use classname as folder when available, as it provides more meaningful
+			// grouping for test runners like pytest that put all tests in a single
+			// generic suite (e.g., "pytest"). For runners where classname matches the
+			// suite name (e.g., Playwright), this produces the same result.
+			const folder = tcase.$.classname ?? suite.$.name ?? ''
 			const index =
 				testcases.push({
 					...result,
-					folder: suite.$.name ?? '',
+					folder,
 					name: tcase.$.name ?? '',
 					timeTaken:
 						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0

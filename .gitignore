@@ -3,3 +3,4 @@ build
 .qaspherecli
 .DS_Store
 .env
+.idea
