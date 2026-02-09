@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="pytest tests">
+  <testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="3.5" timestamp="2026-02-09T12:00:00.000000+00:00" hostname="test-host">
+    <testcase classname="tests.login_test.TestLogin" name="TEST-002 test_valid_login[chromium]" time="0.649">
+    </testcase>
+    <testcase classname="tests.login_test.TestLogin" name="TEST-003 test_login_error[chromium-invalid_password]" time="0.625">
+    </testcase>
+    <testcase classname="tests.checkout_test.TestCheckout" name="TEST-004 test_checkout_counter[chromium-standard_user]" time="0.988">
+    </testcase>
+    <testcase classname="tests.inventory_test.TestInventory" name="TEST-006 test_inventory_page[chromium-standard_user]" time="0.584">
+      <failure message="AssertionError: expected True but got False">self = &lt;tests.inventory_test.TestInventory object&gt;
+
+    def test_inventory_page(self, page) -&gt; None:
+&gt;       assert page.title() == "Expected Title"
+E       AssertionError: expected True but got False
+
+tests/inventory_test.py:12: AssertionError</failure>
+    </testcase>
+    <testcase classname="tests.inventory_test.TestInventory" name="TEST-007 test_inventory_sort[chromium-standard_user]" time="0.734">
+    </testcase>
+  </testsuite>
+</testsuites>
