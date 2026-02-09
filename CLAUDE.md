@@ -11,11 +11,13 @@ QAS CLI (`qas-cli`) is a Node.js CLI tool for uploading test automation results 
 ```bash
 npm install              # Install dependencies
 npm run build            # Clean, compile TS, add .js extensions, chmod entry point
-npm run check            # Typecheck + lint (runs on pre-commit hook via Husky)
+npm run check            # Typecheck + lint
 npm test                 # Run all tests (Vitest)
 npx vitest run src/tests/junit-xml-parsing.spec.ts   # Run a single test file
 npx vitest run -t "test name"                        # Run a specific test by name
-npm run lint             # ESLint with --quiet --fix
+npm run lint             # oxlint (linter)
+npm run fmt              # oxfmt (formatter) — auto-fix
+npm run fmt:check        # oxfmt — check only
 npm run typecheck        # tsc --noEmit
 ```
 
@@ -81,3 +83,9 @@ The `tsconfig.json` excludes `src/tests` from compilation output.
 ## Build
 
 ESM project (`"type": "module"`). TypeScript compiles to `build/`, then `ts-add-js-extension` adds `.js` extensions to imports (required for ESM). The CLI binary is `build/bin/qasphere.js`.
+
+## Linting & Formatting
+
+- **Linter**: oxlint (config: defaults, scoped to `src/`)
+- **Formatter**: oxfmt (config: `.oxfmtrc.json`, migrated from Prettier — tabs, single quotes, no semicolons, 100 print width)
+- **Pre-commit hook** (Husky): runs `typecheck` then `lint-staged` (oxfmt + oxlint on staged files)
