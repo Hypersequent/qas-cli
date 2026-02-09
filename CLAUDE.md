@@ -1,10 +1,12 @@
 # CLAUDE.md
 
+Note: `AGENTS.md` is a symlink to this file for tooling that looks for that filename.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-QAS CLI (`qas-cli`) is a Node.js CLI tool for uploading test automation results (JUnit XML / Playwright JSON) to [QA Sphere](https://qasphere.com/). It matches test case markers (e.g., `PRJ-123`) in report files to QA Sphere test cases, creates or reuses test runs, and uploads results with optional attachments.
+QAS CLI (`qas-cli`) is a Node.js CLI tool for uploading test automation results (JUnit XML / Playwright JSON / Allure) to [QA Sphere](https://qasphere.com/). It matches test case markers (e.g., `PRJ-123`) in report files to QA Sphere test cases, creates or reuses test runs, and uploads results with optional attachments.
 
 ## Commands
 
@@ -29,7 +31,7 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 ### Entry Point & CLI Framework
 
 - `src/bin/qasphere.ts` — Entry point (`#!/usr/bin/env node`). Validates Node version, delegates to `run()`.
-- `src/commands/main.ts` — Yargs setup. Registers two commands (`junit-upload`, `playwright-json-upload`) as instances of the same `ResultUploadCommandModule` class.
+- `src/commands/main.ts` — Yargs setup. Registers three commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of the same `ResultUploadCommandModule` class.
 - `src/commands/resultUpload.ts` — `ResultUploadCommandModule` defines CLI options shared by both commands. Loads env vars, then delegates to `ResultUploadCommandHandler`.
 
 ### Core Upload Pipeline (src/utils/result-upload/)
@@ -37,7 +39,7 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 The upload flow has two stages handled by two classes:
 
 1. **`ResultUploadCommandHandler`** — Orchestrates the overall flow:
-   - Parses report files using the appropriate parser (JUnit XML or Playwright JSON)
+   - Parses report files using the appropriate parser (JUnit XML, Playwright JSON, or Allure)
    - Detects project code from test case names (or from `--run-url`)
    - Creates a new test run (or reuses an existing one if title conflicts)
    - Delegates actual result uploading to `ResultUploader`
@@ -51,6 +53,7 @@ The upload flow has two stages handled by two classes:
 
 - `junitXmlParser.ts` — Parses JUnit XML via `xml2js` + Zod validation. Extracts attachments from `[[ATTACHMENT|path]]` markers in system-out/failure/error/skipped elements.
 - `playwrightJsonParser.ts` — Parses Playwright JSON report. Supports two test case linking methods: (1) test annotations with `type: "test case"` and URL description, (2) marker in test name. Handles nested suites recursively.
+- `allureParser.ts` — Parses Allure results directories (Allure 2 JSON). Supports status mapping, attachments, and TMS link-based test case markers.
 - `types.ts` — Shared `TestCaseResult` and `Attachment` interfaces used by both parsers.
 
 ### API Layer (src/api/)
@@ -72,9 +75,10 @@ Composable fetch wrappers using higher-order functions:
 
 Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`:
 
-- `result-upload.spec.ts` — Integration tests for the full upload flow (both JUnit and Playwright), with MSW intercepting all API calls
+- `result-upload.spec.ts` — Integration tests for the full upload flow (JUnit, Playwright, Allure), with MSW intercepting all API calls
 - `junit-xml-parsing.spec.ts` — Unit tests for JUnit XML parser
 - `playwright-json-parsing.spec.ts` — Unit tests for Playwright JSON parser
+- `allure-parsing.spec.ts` — Unit tests for Allure results parser
 - `template-string-processing.spec.ts` — Unit tests for run name template processing
 
 Test fixtures live in `src/tests/fixtures/` (XML files, JSON files, and mock test case data).

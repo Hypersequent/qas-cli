@@ -1,0 +1,15 @@
+{
+  "name": "TMS URL linked test",
+  "status": "passed",
+  "uuid": "tu-1",
+  "start": 6000,
+  "stop": 6400,
+  "labels": [{ "name": "suite", "value": "SuiteB" }],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://qas.eu1.qasphere.com/project/ALR/tcase/123",
+      "name": "ALR-123"
+    }
+  ]
+}

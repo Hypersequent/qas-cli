@@ -1,0 +1,8 @@
+{
+  "name": "Test cart TEST-002",
+  "status": "passed",
+  "uuid": "et-2",
+  "start": 1700000200000,
+  "stop": 1700000200300,
+  "labels": [{ "name": "suite", "value": "ui.cart.spec.ts" }]
+}

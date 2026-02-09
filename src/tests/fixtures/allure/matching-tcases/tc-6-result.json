@@ -1,0 +1,15 @@
+{
+  "name": "Navigation bar items TEST-006",
+  "status": "failed",
+  "uuid": "tc-6",
+  "start": 1700000004000,
+  "stop": 1700000004800,
+  "attachments": [
+    {
+      "name": "Attachment",
+      "source": "attachment.txt",
+      "type": "text/plain"
+    }
+  ],
+  "labels": [{ "name": "suite", "value": "ui.contents.spec.ts" }]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Broken flow",
+  "status": "broken",
+  "uuid": "bf-1",
+  "start": 3000,
+  "stop": 3100,
+  "statusDetails": {
+    "message": "NullPointerException"
+  },
+  "attachments": [],
+  "labels": [{ "name": "feature", "value": "FeatureOnly" }]
+}

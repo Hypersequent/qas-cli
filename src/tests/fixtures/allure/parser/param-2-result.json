@@ -1,0 +1,10 @@
+{
+  "name": "Param test [firefox]",
+  "fullName": "tests.param.test",
+  "status": "passed",
+  "uuid": "pr-2",
+  "start": 7300,
+  "stop": 7600,
+  "parameters": [{ "name": "browser", "value": "firefox" }],
+  "labels": [{ "name": "suite", "value": "ParamSuite" }]
+}

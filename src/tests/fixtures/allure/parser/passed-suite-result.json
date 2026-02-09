@@ -1,0 +1,13 @@
+{
+  "name": "Login happy path TEST-002",
+  "status": "passed",
+  "uuid": "ps-1",
+  "start": 1000,
+  "stop": 2500,
+  "statusDetails": null,
+  "attachments": null,
+  "labels": [
+    { "name": "suite", "value": "SuiteA" },
+    { "name": "parentSuite", "value": "ParentA" }
+  ]
+}
