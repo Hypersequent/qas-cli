@@ -10,11 +10,13 @@ import {
 const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
 	'junit-upload': 'JUnit XML',
 	'playwright-json-upload': 'Playwright JSON',
+	'xcresult-upload': 'Xcode Result Bundle',
 }
 
 const commandTypeFileExtensions: Record<UploadCommandType, string> = {
 	'junit-upload': 'xml',
 	'playwright-json-upload': 'json',
+	'xcresult-upload': 'xcresult',
 }
 
 export class ResultUploadCommandModule implements CommandModule<unknown, ResultUploadCommandArgs> {
@@ -25,7 +27,7 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 	}
 
 	get describe() {
-		return `Upload ${commandTypeDisplayStrings[this.type]} files to a new or existing test run`
+		return `Upload ${commandTypeDisplayStrings[this.type]}s to a new or existing test run`
 	}
 
 	builder = (argv: Argv) => {
@@ -48,7 +50,7 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 			},
 			'create-tcases': {
 				describe:
-					'Create new test cases for results without valid markers (when run url is not specified)',
+					'Create new test cases for results without valid markers (when run url is not specified). This also creates a mapping file ("qasphere-automapping-YYYYMMDD-HHmmss.txt") showing the markers corresponding to each new test case, use it to update your test cases to include the markers in the name, for future uploads',
 				type: 'boolean',
 				default: false,
 			},

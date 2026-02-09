@@ -14,7 +14,7 @@ The tool can upload test case results from JUnit XML and Playwright JSON files t
 
 ### Requirements
 
-Node.js version 18.0.0 or higher.
+Node.js version 20.0.0 or higher.
 
 ### Via NPX
 
@@ -59,9 +59,9 @@ QAS_URL=https://qas.eu1.qasphere.com
 # QAS_URL=https://qas.eu1.qasphere.com
 ```
 
-## Commands: `junit-upload`, `playwright-json-upload`
+## Commands: `junit-upload`, `playwright-json-upload`, `xcresult-upload`
 
-The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively.
+The `junit-upload`, `playwright-json-upload` and `xcresult-upload` commands upload test results from JUnit XML, Playwright JSON and Xcode reports to QA Sphere respectively.
 
 There are two modes for uploading results using the commands:
 
@@ -71,10 +71,10 @@ There are two modes for uploading results using the commands:
 ### Options
 
 - `-r`/`--run-url` - Upload results to an existing test run
-- `--project-code`, `--run-name`, `--create-tcases` - Create a new test run and upload results to it
+- `--project-code`, `--run-name`, `--create-tcases` - Create a new test run and upload results to it (if `-r`/`--run-url` is not specified)
   - `--project-code` - Project code for creating new test run. It can also be auto detected from test case markers in the results, but this is not fully reliable, so it is recommended to specify the project code explicitly
   - `--run-name` - Optional name template for creating new test run. It supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders (default: `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`)
-  - `--create-tcases` - Automatically create test cases in QA Sphere for results that don't have valid test case markers. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each new test case (default: `false`)
+  - `--create-tcases` - Automatically create test cases in QA Sphere for results that don't have valid test case markers. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each new test case, use it to update your test cases to include the markers in the name, for future uploads (default: `false`)
 - `--attachments` - Try to detect and upload any attachments with the test result
 - `--force` - Ignore API request errors, invalid test cases, or attachments
 - `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
@@ -97,13 +97,11 @@ The `--run-name` option supports the following placeholders:
 - `{mm}` - 2-digit minute
 - `{ss}` - 2-digit second
 
-**Note:** The `--run-name` option is only used when creating new test runs (i.e., when `--run-url` is not specified).
-
 ### Usage Examples
 
 Ensure the required environment variables are defined before running these commands.
 
-**Note:** The following examples use `junit-upload`, but you can replace it with `playwright-json-upload` and adjust the file extension from `.xml` to `.json` to upload Playwright JSON reports instead.
+**Note:** The following examples use `junit-upload`, but you can replace it with `playwright-json-upload` and `xcresult-upload` to upload Playwright JSON and Xcode reports.
 
 1. Upload to an existing test run:
 
@@ -218,6 +216,22 @@ Playwright JSON reports support two methods for referencing test cases (checked 
 
 2. **Test Case Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML)
 
+### XCode Reports
+
+Test case names in the XCode reports must include a QA Sphere test case marker in the format `PROJECT_SEQUENCE`:
+
+- **PROJECT** - Your QA Sphere project code
+- **SEQUENCE** - Test case sequence number (minimum 3 digits, zero-padded if needed)
+
+**Examples:**
+
+- `PRJ_002_login_with_valid_credentials`
+- `login_with_valid_credentials_PRJ_1312`
+
+## Other Requirements
+
+The `xcresult-upload` command will automatically invoke `xcrun xcresulttool`, if the SQLite database is not found inside the `.xcresult` bundle. This requires **Xcode Command Line Tools** to be installed. See [Apple Developer documentation](https://developer.apple.com/xcode/resources/) for installation instructions. Alternatively, having the full Xcode application installed also provides these tools.
+
 ## Development (for those who want to contribute to the tool)
 
 1. Install and build: `npm install && npm run build && npm link`
@@ -225,4 +239,4 @@ Playwright JSON reports support two methods for referencing test cases (checked 
 3. Configure `.qaspherecli` with credentials
 4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
-Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
+Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 20+ compatibility)

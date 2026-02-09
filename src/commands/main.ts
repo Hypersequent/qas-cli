@@ -13,6 +13,7 @@ Required variables: ${qasEnvs.join(', ')}
 		)
 		.command(new ResultUploadCommandModule('junit-upload'))
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
+		.command(new ResultUploadCommandModule('xcresult-upload'))
 		.demandCommand(1, '')
 		.help('h')
 		.alias('h', 'help')

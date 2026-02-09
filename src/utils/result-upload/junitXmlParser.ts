@@ -1,4 +1,6 @@
+import chalk from 'chalk'
 import escapeHtml from 'escape-html'
+import { readFileSync } from 'node:fs'
 import xml from 'xml2js'
 import z from 'zod'
 import { Attachment, TestCaseResult } from './types'
@@ -74,11 +76,27 @@ const junitXmlSchema = z.object({
 	}),
 })
 
+export const printJUnitMissingMarkerGuidance = (
+	projectCode: string,
+	testCaseName = 'your test name'
+) => {
+	console.error(`
+${chalk.yellow('To fix this issue, include the test case marker in your test names:')}
+
+  Format: ${chalk.green(`${projectCode}-<sequence>`)}, ${chalk.dim(
+		'where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)'
+	)}
+  Example: ${chalk.green(`${projectCode}-002: ${testCaseName}`)}
+           ${chalk.green(`${testCaseName}: ${projectCode}-1312`)}
+`)
+}
+
 export const parseJUnitXml: Parser = async (
-	xmlString: string,
+	filePath: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
+	const xmlString = readFileSync(filePath).toString()
 	const xmlData = await xml.parseStringPromise(xmlString, {
 		explicitCharkey: true,
 		includeWhiteChars: true,

@@ -52,7 +52,7 @@ EXPECTED_VERSION=$(node -p "require('${PROJECT_DIR}/package.json').version")
 echo "Expected version: ${EXPECTED_VERSION}"
 echo ""
 
-NODE_VERSIONS=("18" "20" "22" "24")
+NODE_VERSIONS=("20" "22" "24")
 
 # Get current user ID for fixing permissions on Linux
 FIX_PERMS="true"  # Default no-op command
@@ -73,16 +73,16 @@ for VERSION in "${NODE_VERSIONS[@]}"; do
             set -e
             echo '→ Installing qas-cli globally...'
             npm install -g ${PACKAGE_FILE}
-            
+
             echo '→ Testing qasphere --version'
             qasphere --version
-            
+
             VERSION_OUTPUT=\$(qasphere --version)
             if [ \"\$VERSION_OUTPUT\" != \"${EXPECTED_VERSION}\" ]; then
                 echo \"Error: Version mismatch! Expected ${EXPECTED_VERSION}, got \$VERSION_OUTPUT\"
                 exit 1
             fi
-            
+
             echo '✓ Global installation works correctly'
         "
 
@@ -94,22 +94,22 @@ for VERSION in "${NODE_VERSIONS[@]}"; do
         sh -c "
             set -e
             echo '→ Testing with npx...'
-            
+
             # Install the package locally to test npx
             npm init -y > /dev/null 2>&1
             npm install ${PACKAGE_FILE}
-            
+
             echo '→ Running npx qas-cli --version'
             npx qas-cli --version
-            
+
             VERSION_OUTPUT=\$(npx qas-cli --version)
             if [ \"\$VERSION_OUTPUT\" != \"${EXPECTED_VERSION}\" ]; then
                 echo \"Error: Version mismatch! Expected ${EXPECTED_VERSION}, got \$VERSION_OUTPUT\"
                 exit 1
             fi
-            
+
             echo '✓ npx execution works correctly'
-            
+
             # Fix ownership on Linux
             ${FIX_PERMS} || true
         "
