@@ -53,6 +53,7 @@ The upload flow has two stages handled by two classes:
 ### API Layer (src/api/)
 
 Composable fetch wrappers using higher-order functions:
+
 - `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson` decorators that wrap `fetch`
 - `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from sub-modules
 - Sub-modules: `projects.ts`, `run.ts`, `tcases.ts`, `file.ts`
@@ -67,6 +68,7 @@ Composable fetch wrappers using higher-order functions:
 ## Testing
 
 Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`:
+
 - `result-upload.spec.ts` — Integration tests for the full upload flow (both JUnit and Playwright), with MSW intercepting all API calls
 - `junit-xml-parsing.spec.ts` — Unit tests for JUnit XML parser
 - `playwright-json-parsing.spec.ts` — Unit tests for Playwright JSON parser

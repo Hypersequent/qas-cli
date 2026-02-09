@@ -3,15 +3,18 @@ Perform a comprehensive code review of this pull request using specialized subag
 Use the **Owner**, **Repository**, and **Pull Request Number** from the context provided by the caller for all API calls below.
 
 ## Step 1: Gather Context (avoid anchoring/bias from prior bot output)
+
 1. Use `gh pr view` to get the PR title, body, and linked issues
 2. If the PR body contains issue references (e.g., "Fixes #123", "Closes #123"), use `gh issue view <number>` to understand the requirements
 3. Use `mcp__github__get_pull_request_diff` to get the full diff (paginate if needed)
 4. Do NOT fetch/read existing review comments yet. Subagents should review the diff independently; we'll fetch comments later for deduplication and cleanup.
 
 ## Step 2: Launch Specialized Review Subagents
+
 Use the Task tool to launch these subagents IN PARALLEL. Each subagent should analyze the PR diff and return a list of specific issues with file paths and line numbers.
 
 **Subagent 1: Code Quality Reviewer**
+
 ```
 Review the PR for code quality issues:
 - Clean code principles: naming, function size, single responsibility
@@ -27,6 +30,7 @@ Return ONLY noteworthy issues with: file path, line number, issue description, s
 ```
 
 **Subagent 2: Security Reviewer**
+
 ```
 Review the PR for security vulnerabilities:
 - OWASP Top 10: injection, XSS, broken auth, sensitive data exposure
@@ -40,6 +44,7 @@ Return ONLY noteworthy issues with: file path, line number, severity (critical/h
 ```
 
 **Subagent 3: Performance Reviewer**
+
 ```
 Review the PR for performance issues:
 - Algorithmic complexity (O(n^2) or worse operations)
@@ -52,6 +57,7 @@ Return ONLY noteworthy issues with: file path, line number, issue description, p
 ```
 
 **Subagent 4: Test Coverage Reviewer**
+
 ```
 Review the PR for test coverage:
 - Are new functions/methods adequately tested?
@@ -63,6 +69,7 @@ Return ONLY noteworthy gaps with: file path, what's missing, suggested test case
 ```
 
 ## Step 3: Aggregate, Deduplicate, and Post a SINGLE Review (then clean up old bot noise)
+
 1. Collect all findings from subagents
 2. Filter to keep only genuinely noteworthy issues (skip minor style nitpicks)
 3. Fetch existing bot output ONLY AFTER subagents have finished (call both in parallel):
@@ -123,7 +130,9 @@ Return ONLY noteworthy gaps with: file path, what's missing, suggested test case
    - Never minimize human-authored reviews.
 
 ## Step 4: Clean up progress tracking comments
+
 After the review is submitted, delete any progress tracking comments left by the bot on this PR.
+
 1. Fetch issue comments (these are PR-level comments, not inline review comments):
    ```bash
    gh api repos/{owner}/{repo}/issues/{pr_number}/comments --paginate
@@ -138,6 +147,7 @@ After the review is submitted, delete any progress tracking comments left by the
 4. If no progress comments are found, skip silently. Do not fail if a deletion returns an error (the comment may have already been deleted).
 
 ## Guidelines
+
 - Be constructive and provide actionable suggestions
 - Focus on significant issues that could cause bugs, security vulnerabilities, or maintenance problems
 - Skip minor style issues that don't affect functionality
