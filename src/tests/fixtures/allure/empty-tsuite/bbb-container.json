@@ -1,0 +1,8 @@
+{
+  "uuid": "container-uuid-1",
+  "children": ["empty-uuid-1"],
+  "befores": [{ "name": "setup_fixture", "status": "passed" }],
+  "afters": [],
+  "start": 1700000000000,
+  "stop": 1700000001000
+}

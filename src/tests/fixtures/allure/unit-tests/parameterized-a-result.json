@@ -1,0 +1,10 @@
+{
+  "name": "Test login[chromium]",
+  "status": "passed",
+  "uuid": "ut-uuid-11a",
+  "start": 1700000018000,
+  "stop": 1700000019000,
+  "fullName": "tests.login_test#test_login",
+  "labels": [{ "name": "suite", "value": "login_test" }],
+  "parameters": [{ "name": "browser_name", "value": "chromium" }]
+}

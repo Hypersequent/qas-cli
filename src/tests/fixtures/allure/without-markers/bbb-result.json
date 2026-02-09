@@ -1,0 +1,8 @@
+{
+  "name": "The cart is still filled after refreshing the page",
+  "status": "passed",
+  "uuid": "wm-uuid-2",
+  "start": 1700000001000,
+  "stop": 1700000002000,
+  "labels": [{ "name": "suite", "value": "ui.cart" }]
+}

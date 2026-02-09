@@ -1,0 +1,11 @@
+{
+  "name": "Checkout test via TMS name",
+  "status": "passed",
+  "uuid": "ut-uuid-9",
+  "start": 1700000014000,
+  "stop": 1700000015000,
+  "labels": [{ "name": "suite", "value": "checkout" }],
+  "links": [
+    { "type": "tms", "url": "https://jira.example.com/browse/TESTCASE-456", "name": "TESTCASE-456" }
+  ]
+}

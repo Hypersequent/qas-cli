@@ -1,0 +1,11 @@
+{
+  "name": "User can register with valid email",
+  "status": "passed",
+  "uuid": "ut-uuid-5",
+  "start": 1700000006000,
+  "stop": 1700000007000,
+  "labels": [
+    { "name": "feature", "value": "Registration" },
+    { "name": "severity", "value": "critical" }
+  ]
+}
