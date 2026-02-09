@@ -1,0 +1,8 @@
+{
+  "uuid": "container-1",
+  "children": ["ps-1"],
+  "befores": [],
+  "afters": [],
+  "start": 1000,
+  "stop": 2000
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Skipped TEST-003",
+  "status": "skipped",
+  "uuid": "sp-1",
+  "start": 4000,
+  "stop": 4200,
+  "statusDetails": {},
+  "attachments": null,
+  "labels": [{ "name": "package", "value": "pkg.module" }]
+}

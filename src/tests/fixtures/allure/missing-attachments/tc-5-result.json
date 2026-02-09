@@ -1,0 +1,9 @@
+{
+  "name": "Menu page content TEST-005",
+  "status": "passed",
+  "uuid": "ma-5",
+  "start": 1700000303000,
+  "stop": 1700000303600,
+  "attachments": [{ "name": "Attachment", "source": "attachment.txt", "type": "text/plain" }],
+  "labels": [{ "name": "suite", "value": "ui.contents.spec.ts" }]
+}

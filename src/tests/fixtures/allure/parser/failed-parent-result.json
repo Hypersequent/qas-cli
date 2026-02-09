@@ -1,0 +1,13 @@
+{
+  "name": "Payment error",
+  "status": "failed",
+  "uuid": "fp-1",
+  "start": 2000,
+  "stop": 2600,
+  "statusDetails": {
+    "message": "AssertionError: expected true to be false",
+    "trace": "Trace line 1\nTrace line 2"
+  },
+  "attachments": [{ "name": "Failure log", "source": "failure-log.txt", "type": "text/plain" }],
+  "labels": [{ "name": "parentSuite", "value": "ParentOnly" }]
+}

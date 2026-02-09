@@ -1,0 +1,3 @@
+# Keep invalid JSON fixtures unformatted for parser tests
+src/tests/fixtures/allure/parser/malformed-result.json
+AGENTS.md

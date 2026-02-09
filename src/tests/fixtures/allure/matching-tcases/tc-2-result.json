@@ -1,0 +1,15 @@
+{
+  "name": "Test cart TEST-002",
+  "status": "passed",
+  "uuid": "tc-2",
+  "start": 1700000000000,
+  "stop": 1700000000500,
+  "attachments": [
+    {
+      "name": "Attachment",
+      "source": "attachment.txt",
+      "type": "text/plain"
+    }
+  ],
+  "labels": [{ "name": "suite", "value": "ui.cart.spec.ts" }]
+}

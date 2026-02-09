@@ -1,0 +1,15 @@
+{
+  "name": "TMS name linked test",
+  "status": "passed",
+  "uuid": "tn-1",
+  "start": 6500,
+  "stop": 6900,
+  "labels": [{ "name": "suite", "value": "SuiteB" }],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://example.com/tms/123",
+      "name": "TESTCASE-2"
+    }
+  ]
+}

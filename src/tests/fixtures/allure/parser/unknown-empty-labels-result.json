@@ -1,0 +1,10 @@
+{
+  "name": "Unknown status test",
+  "status": "unknown",
+  "uuid": "ul-1",
+  "start": 5000,
+  "stop": 5100,
+  "statusDetails": null,
+  "attachments": [],
+  "labels": []
+}
