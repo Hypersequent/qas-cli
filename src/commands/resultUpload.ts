@@ -10,11 +10,13 @@ import {
 const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
 	'junit-upload': 'JUnit XML',
 	'playwright-json-upload': 'Playwright JSON',
+	'allure-upload': 'Allure',
 }
 
 const commandTypeFileExtensions: Record<UploadCommandType, string> = {
 	'junit-upload': 'xml',
 	'playwright-json-upload': 'json',
+	'allure-upload': '',
 }
 
 export class ResultUploadCommandModule implements CommandModule<unknown, ResultUploadCommandArgs> {
@@ -25,7 +27,8 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 	}
 
 	get describe() {
-		return `Upload ${commandTypeDisplayStrings[this.type]} files to a new or existing test run`
+		const input = this.type === 'allure-upload' ? 'results directory' : 'files'
+		return `Upload ${commandTypeDisplayStrings[this.type]} ${input} to a new or existing test run`
 	}
 
 	builder = (argv: Argv) => {
@@ -82,40 +85,33 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 			},
 		})
 
+		const examplePath =
+			this.type === 'allure-upload'
+				? './allure-results'
+				: `./test-results.${commandTypeFileExtensions[this.type]}`
+
 		argv.example(
-			`$0 ${this.type} -r https://qas.eu1.qasphere.com/project/P1/run/23 ./test-results.${
-				commandTypeFileExtensions[this.type]
-			}`,
+			`$0 ${this.type} -r https://qas.eu1.qasphere.com/project/P1/run/23 ${examplePath}`,
 			'Upload results to existing run ID 23 of project P1'
 		)
 
 		argv.example(
-			`$0 ${this.type} ./test-results.${commandTypeFileExtensions[this.type]}`,
+			`$0 ${this.type} ${examplePath}`,
 			'Create a new test run with default name template and upload results. Project code is detected from test case markers in the results'
 		)
 
 		argv.example(
-			`$0 ${this.type} --project-code P1 --run-name "v1.4.4-rc5" ./test-results.${
-				commandTypeFileExtensions[this.type]
-			}`,
+			`$0 ${this.type} --project-code P1 --run-name "v1.4.4-rc5" ${examplePath}`,
 			'Create a new test run with name template without any placeholders and upload results'
 		)
 
 		argv.example(
-			`$0 ${
-				this.type
-			} --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ./test-results.${
-				commandTypeFileExtensions[this.type]
-			}`,
+			`$0 ${this.type} --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ${examplePath}`,
 			'Create a new test run with name template using environment variable and date placeholders and upload results'
 		)
 
 		argv.example(
-			`$0 ${
-				this.type
-			} --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ./test-results.${
-				commandTypeFileExtensions[this.type]
-			}`,
+			`$0 ${this.type} --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ${examplePath}`,
 			'Create a new test run with name template using date and time placeholders and create test cases for results without valid markers and upload results'
 		)
 

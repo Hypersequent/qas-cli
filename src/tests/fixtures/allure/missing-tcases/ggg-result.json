@@ -1,0 +1,8 @@
+{
+  "name": "Menu page content TEST-007",
+  "status": "passed",
+  "uuid": "miss-uuid-7",
+  "start": 1700000006000,
+  "stop": 1700000007000,
+  "labels": [{ "name": "suite", "value": "ui.contents" }]
+}

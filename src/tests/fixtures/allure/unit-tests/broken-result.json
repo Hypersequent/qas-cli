@@ -1,0 +1,11 @@
+{
+  "name": "Database connection test",
+  "status": "broken",
+  "uuid": "ut-uuid-3",
+  "start": 1700000004000,
+  "stop": 1700000004500,
+  "labels": [{ "name": "suite", "value": "db_tests" }],
+  "statusDetails": {
+    "message": "ConnectionRefusedError: [Errno 111] Connection refused"
+  }
+}

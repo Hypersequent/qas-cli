@@ -9,8 +9,9 @@ import { TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
 import { parseJUnitXml } from './junitXmlParser'
 import { parsePlaywrightJson } from './playwrightJsonParser'
+import { parseAllureResults } from './allureParser'
 
-export type UploadCommandType = 'junit-upload' | 'playwright-json-upload'
+export type UploadCommandType = 'junit-upload' | 'playwright-json-upload' | 'allure-upload'
 
 export type SkipOutputOption = 'on-success' | 'never'
 
@@ -20,6 +21,8 @@ export interface ParserOptions {
 }
 
 export type Parser = (
+	// Primary input string: file content for file-based parsers, directory path for
+	// directory-based parsers (e.g., Allure)
 	data: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
@@ -62,7 +65,10 @@ const DEFAULT_MAPPING_FILENAME_TEMPLATE = 'qasphere-automapping-{YYYY}{MM}{DD}-{
 const commandTypeParsers: Record<UploadCommandType, Parser> = {
 	'junit-upload': parseJUnitXml,
 	'playwright-json-upload': parsePlaywrightJson,
+	'allure-upload': parseAllureResults,
 }
+
+const directoryInputTypes: Set<UploadCommandType> = new Set(['allure-upload'])
 
 export class ResultUploadCommandHandler {
 	private api: Api
@@ -132,10 +138,21 @@ export class ResultUploadCommandHandler {
 		}
 
 		for (const file of this.args.files) {
-			const fileData = readFileSync(file).toString()
+			let fileData: string
+			let attachmentBaseDir: string
+
+			if (directoryInputTypes.has(this.type)) {
+				// For directory-based parsers (e.g., Allure), pass the directory path directly
+				fileData = file
+				attachmentBaseDir = file
+			} else {
+				fileData = readFileSync(file).toString()
+				attachmentBaseDir = dirname(file)
+			}
+
 			const fileResults = await commandTypeParsers[this.type](
 				fileData,
-				dirname(file),
+				attachmentBaseDir,
 				parserOptions
 			)
 			results.push({ file, results: fileResults })

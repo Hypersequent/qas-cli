@@ -1,0 +1,11 @@
+{
+  "name": "TEST-004 About page content",
+  "status": "passed",
+  "uuid": "ma-uuid-3",
+  "start": 1700000002000,
+  "stop": 1700000003000,
+  "labels": [{ "name": "suite", "value": "ui.contents" }],
+  "attachments": [
+    { "name": "screenshot", "source": "nonexistent-attachment.png", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "TEST-006 Navigation bar items",
+  "status": "failed",
+  "uuid": "ma-uuid-4",
+  "start": 1700000003000,
+  "stop": 1700000004000,
+  "statusDetails": { "message": "AssertionError" },
+  "labels": [{ "name": "suite", "value": "ui.contents" }],
+  "attachments": [
+    { "name": "result data", "source": "existing-attachment.json", "type": "application/json" }
+  ]
+}

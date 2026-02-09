@@ -1,0 +1,8 @@
+{
+  "name": "Test checkout TEST-003",
+  "status": "passed",
+  "uuid": "miss-uuid-2",
+  "start": 1700000001000,
+  "stop": 1700000002000,
+  "labels": [{ "name": "suite", "value": "ui.cart" }]
+}

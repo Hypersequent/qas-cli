@@ -1,0 +1,8 @@
+{
+  "name": "TEST-010: Cart should be cleared after making the checkout",
+  "status": "passed",
+  "uuid": "wm-uuid-3",
+  "start": 1700000002000,
+  "stop": 1700000003000,
+  "labels": [{ "name": "suite", "value": "ui.cart" }]
+}

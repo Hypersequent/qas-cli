@@ -1,0 +1,20 @@
+{
+  "name": "TEST-002 Login with invalid password",
+  "status": "failed",
+  "uuid": "ut-uuid-2",
+  "start": 1700000002000,
+  "stop": 1700000003000,
+  "fullName": "tests.login_test.TestLogin#test_invalid_password",
+  "labels": [{ "name": "suite", "value": "login_test" }],
+  "statusDetails": {
+    "message": "AssertionError: expected 'Welcome' to equal 'Error'",
+    "trace": "Traceback (most recent call last):\n  File \"test_login.py\", line 42\n    assert title == 'Error'\nAssertionError"
+  },
+  "attachments": [
+    {
+      "name": "Screenshot on failure",
+      "source": "ut-screenshot-attachment.txt",
+      "type": "text/plain"
+    }
+  ]
+}

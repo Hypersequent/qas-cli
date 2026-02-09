@@ -1,0 +1,18 @@
+{
+  "name": "Login with valid credentials",
+  "status": "passed",
+  "uuid": "ut-uuid-1",
+  "start": 1700000000000,
+  "stop": 1700000001500,
+  "fullName": "tests.login_test.TestLogin#test_valid_login",
+  "labels": [
+    { "name": "parentSuite", "value": "tests" },
+    { "name": "suite", "value": "login_test" },
+    { "name": "subSuite", "value": "TestLogin" },
+    { "name": "framework", "value": "pytest" }
+  ],
+  "statusDetails": null,
+  "attachments": [],
+  "links": [],
+  "parameters": []
+}

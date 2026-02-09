@@ -1,0 +1,11 @@
+{
+  "name": "Feature flag disabled test",
+  "status": "skipped",
+  "uuid": "ut-uuid-4",
+  "start": 1700000005000,
+  "stop": 1700000005000,
+  "labels": [{ "name": "suite", "value": "feature_tests" }],
+  "statusDetails": {
+    "message": "Skipped: feature flag is disabled"
+  }
+}

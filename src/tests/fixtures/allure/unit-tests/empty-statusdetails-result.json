@@ -1,0 +1,9 @@
+{
+  "name": "Test with empty statusDetails",
+  "status": "failed",
+  "uuid": "ut-uuid-10",
+  "start": 1700000016000,
+  "stop": 1700000017000,
+  "labels": [{ "name": "suite", "value": "misc" }],
+  "statusDetails": {}
+}
