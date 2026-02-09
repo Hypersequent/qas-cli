@@ -128,6 +128,55 @@ describe('Junit XML parsing', () => {
 		expect(failedTest?.message).toContain('expect(received).toBe(expected)')
 	})
 
+	test('Should use classname as folder for pytest-style JUnit XML', async () => {
+		const xmlPath = `${xmlBasePath}/pytest-style.xml`
+		const xmlContent = await readFile(xmlPath, 'utf8')
+
+		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(5)
+
+		// pytest puts all tests in a single suite named "pytest", but classname
+		// provides meaningful grouping like "tests.login_test.TestLogin"
+		const loginTests = testcases.filter((tc) => tc.folder === 'tests.login_test.TestLogin')
+		expect(loginTests).toHaveLength(2)
+
+		const checkoutTests = testcases.filter((tc) => tc.folder === 'tests.checkout_test.TestCheckout')
+		expect(checkoutTests).toHaveLength(1)
+
+		const inventoryTests = testcases.filter(
+			(tc) => tc.folder === 'tests.inventory_test.TestInventory'
+		)
+		expect(inventoryTests).toHaveLength(2)
+
+		// Verify the failed test has proper status
+		const failedTest = testcases.find((tc) => tc.status === 'failed')
+		expect(failedTest).toBeDefined()
+		expect(failedTest?.folder).toBe('tests.inventory_test.TestInventory')
+		expect(failedTest?.message).toContain('AssertionError')
+	})
+
+	test('Should fall back to suite name when classname is absent', async () => {
+		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Test Suite">
+  <testsuite name="my-suite">
+    <testcase name="test one" time="1.0">
+    </testcase>
+  </testsuite>
+</testsuites>`
+
+		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].folder).toBe('my-suite')
+	})
+
 	test('Should extract attachments from failure/error message attributes (WebDriverIO style)', async () => {
 		const xmlPath = `${xmlBasePath}/webdriverio-real.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
