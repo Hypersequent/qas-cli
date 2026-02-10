@@ -8,7 +8,7 @@
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
 
-The tool can upload test case results from JUnit XML and Playwright JSON files to QA Sphere test runs by matching test case names (mentions of special markers) to QA Sphere's test cases.
+The tool can upload test case results from JUnit XML files, Playwright JSON files, and Allure result directories to QA Sphere test runs by matching test case references to QA Sphere test cases.
 
 ## Installation
 
@@ -39,7 +39,7 @@ Verify installation: `qasphere --version`
 The CLI requires the following variables to be defined:
 
 - `QAS_TOKEN` - QA Sphere API token (see [docs](https://docs.qasphere.com/api/authentication) if you need help generating one)
-- `QAS_URL` - Base URL of your QA Sphere instance (e.g., https://qas.eu2.qasphere.com)
+- `QAS_URL` - Base URL of your QA Sphere instance (e.g., `https://qas.eu2.qasphere.com`)
 
 These variables could be defined:
 
@@ -59,9 +59,9 @@ QAS_URL=https://qas.eu1.qasphere.com
 # QAS_URL=https://qas.eu1.qasphere.com
 ```
 
-## Commands: `junit-upload`, `playwright-json-upload`
+## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`
 
-The `junit-upload` and `playwright-json-upload` commands upload test results from JUnit XML and Playwright JSON reports to QA Sphere respectively.
+The `junit-upload`, `playwright-json-upload`, and `allure-upload` commands upload test results to QA Sphere.
 
 There are two modes for uploading results using the commands:
 
@@ -70,6 +70,7 @@ There are two modes for uploading results using the commands:
 
 ### Options
 
+- `<files..>` / `<directories..>` - Input paths. Use report files for `junit-upload` and `playwright-json-upload`, and Allure results directories for `allure-upload`
 - `-r`/`--run-url` - Upload results to an existing test run
 - `--project-code`, `--run-name`, `--create-tcases` - Create a new test run and upload results to it
   - `--project-code` - Project code for creating new test run. It can also be auto detected from test case markers in the results, but this is not fully reliable, so it is recommended to specify the project code explicitly
@@ -170,14 +171,28 @@ Ensure the required environment variables are defined before running these comma
    This will exclude stdout from passed tests while still including it for failed, blocked, or skipped tests.
 
 10. Skip both stdout and stderr for passed tests:
+
     ```bash
     qasphere junit-upload --skip-report-stdout on-success --skip-report-stderr on-success ./test-results.xml
     ```
+
     This is useful when you have verbose logging in tests but only want to see output for failures.
+
+11. Upload Allure results from a directory:
+
+    ```bash
+    qasphere allure-upload -r https://qas.eu1.qasphere.com/project/P1/run/23 ./allure-results
+    ```
+
+12. Continue Allure upload when some `*-result.json` files are malformed (skip invalid files):
+
+    ```bash
+    qasphere allure-upload --force -r https://qas.eu1.qasphere.com/project/P1/run/23 ./allure-results
+    ```
 
 ## Test Report Requirements
 
-The QAS CLI maps test results from your reports (JUnit XML or Playwright JSON) to corresponding test cases in QA Sphere using test case markers. If a test result lacks a valid marker, the CLI will display an error unless you use `--create-tcases` to automatically create test cases, or `--ignore-unmatched`/`--force` to skip unmatched results.
+The QAS CLI maps test results from your reports (JUnit XML, Playwright JSON, or Allure) to corresponding test cases in QA Sphere. If a test result lacks a valid marker/reference, the CLI will display an error unless you use `--create-tcases` to automatically create test cases, or `--ignore-unmatched`/`--force` to skip unmatched results.
 
 ### JUnit XML
 
@@ -217,6 +232,18 @@ Playwright JSON reports support two methods for referencing test cases (checked 
    ```
 
 2. **Test Case Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML)
+
+### Allure
+
+Allure results use one `*-result.json` file per test in a results directory. `allure-upload` matches test cases using:
+
+1. **TMS links (Recommended)** - `links[]` entries with:
+   - `type`: `"tms"`
+   - `url`: QA Sphere test case URL, e.g. `https://qas.eu1.qasphere.com/project/PRJ/tcase/123`
+2. **TMS link name fallback** - If `url` is not a QA Sphere URL, a marker in `links[].name` is used (for example `PRJ-123`)
+3. **Test case marker in name** - Marker in `name` field (same `PROJECT-SEQUENCE` format as JUnit XML)
+
+Only Allure 2 JSON (`*-result.json`) is supported. Legacy Allure 1 XML files are ignored.
 
 ## Development (for those who want to contribute to the tool)
 

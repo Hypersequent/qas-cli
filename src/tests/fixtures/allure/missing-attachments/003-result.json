@@ -1,0 +1,14 @@
+{
+  "name": "TEST-004 About page content",
+  "status": "passed",
+  "uuid": "missing-attach-003",
+  "start": 1700000022000,
+  "stop": 1700000022500,
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "existing-attachment.txt",
+      "type": "text/plain"
+    }
+  ]
+}

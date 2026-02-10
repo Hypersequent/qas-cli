@@ -1,0 +1,30 @@
+{
+  "name": "Navigation bar items",
+  "status": "failed",
+  "uuid": "matching-004",
+  "start": 1700000003000,
+  "stop": 1700000004200,
+  "statusDetails": {
+    "message": "AssertionError: navbar items mismatch",
+    "trace": "Traceback line 1\nTraceback line 2"
+  },
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "shared-attachment.txt",
+      "type": "text/plain"
+    }
+  ],
+  "labels": [
+    {
+      "name": "package",
+      "value": "ui.contents.spec.ts"
+    }
+  ],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://qas.eu1.qasphere.com/project/TEST/tcase/6"
+    }
+  ]
+}
