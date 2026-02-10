@@ -1,0 +1,28 @@
+{
+  "name": "Test checkout",
+  "status": "passed",
+  "uuid": "matching-002",
+  "start": 1700000001000,
+  "stop": 1700000001600,
+  "statusDetails": null,
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "shared-attachment.txt",
+      "type": "text/plain"
+    }
+  ],
+  "labels": [
+    {
+      "name": "parentSuite",
+      "value": "ui.cart.spec.ts"
+    }
+  ],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://external.example.com/test-case/3",
+      "name": "TEST-003"
+    }
+  ]
+}

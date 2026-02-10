@@ -1,0 +1,11 @@
+{
+  "name": "The checkout should finish successfully",
+  "status": "failed",
+  "uuid": "without-markers-002",
+  "start": 1700000031000,
+  "stop": 1700000031800,
+  "statusDetails": {
+    "message": "AssertionError: expected true to be false"
+  },
+  "labels": []
+}

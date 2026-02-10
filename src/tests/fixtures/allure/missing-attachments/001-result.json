@@ -1,0 +1,14 @@
+{
+  "name": "TEST-002 Test cart",
+  "status": "passed",
+  "uuid": "missing-attach-001",
+  "start": 1700000020000,
+  "stop": 1700000020200,
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "existing-attachment.txt",
+      "type": "text/plain"
+    }
+  ]
+}

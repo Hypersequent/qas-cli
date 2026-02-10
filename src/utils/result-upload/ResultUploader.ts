@@ -81,6 +81,8 @@ export class ResultUploader {
 			this.printJUnitGuidance()
 		} else if (this.type === 'playwright-json-upload') {
 			this.printPlaywrightGuidance(missing[0]?.name || 'your test name')
+		} else if (this.type === 'allure-upload') {
+			this.printAllureGuidance(missing[0]?.name || 'your test name')
 		}
 		console.error(
 			chalk.yellow(
@@ -124,6 +126,36 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
   Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
   Example: ${chalk.green(`${this.project}-1024: Login with valid credentials`)}
+  ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
+`)
+	}
+
+	private printAllureGuidance(exampleTestName: string) {
+		console.error(`
+${chalk.yellow('To fix this issue, choose one of the following options:')}
+
+  ${chalk.bold('Option 1: Add a TMS Link (Recommended)')}
+  Add a TMS link in the Allure result with:
+    - ${chalk.green('type')}: ${chalk.green('"tms"')}
+    - ${chalk.green('url')}: ${chalk.green(
+			`"https://your-qas-instance.com/project/${this.project}/tcase/123"`
+		)}
+
+  Example:
+  ${chalk.green(`{
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://your-qas-instance.com/project/${this.project}/tcase/123"
+    }
+  ]
+}`)}
+
+  ${chalk.bold('Option 2: Include Test Case Marker in Name')}
+  Include marker ${chalk.green(`${this.project}-<sequence>`)} in the test name:
+
+  Format: ${chalk.green(`${this.project}-<sequence>: Your test name`)}
+  Example: ${chalk.green(`${this.project}-1024: ${exampleTestName}`)}
   ${chalk.dim('Where <sequence> is the test case number (minimum 3 digits, zero-padded if needed)')}
 `)
 	}

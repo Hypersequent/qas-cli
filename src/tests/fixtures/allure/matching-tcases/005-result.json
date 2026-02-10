@@ -1,0 +1,24 @@
+{
+  "name": "Welcome page content (updated)",
+  "status": "unknown",
+  "uuid": "matching-005",
+  "start": 1700000005000,
+  "stop": 1700000006200,
+  "statusDetails": {
+    "message": "No status was produced by adapter"
+  },
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "shared-attachment.txt",
+      "type": "text/plain"
+    }
+  ],
+  "labels": [],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://qas.eu1.qasphere.com/project/TEST/tcase/7"
+    }
+  ]
+}
