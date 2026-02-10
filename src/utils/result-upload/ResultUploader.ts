@@ -1,10 +1,11 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
 import { RunTCase } from '../../api/schemas'
-import { getTCaseMarker, parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
+import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
+import type { MarkerParser } from './MarkerParser'
 
 const MAX_CONCURRENT_FILE_UPLOADS = 10
 let MAX_RESULTS_IN_REQUEST = 50 // Only updated from tests, otherwise it's a constant
@@ -15,6 +16,7 @@ export class ResultUploader {
 	private run: number
 
 	constructor(
+		private markerParser: MarkerParser,
 		private type: UploadCommandType,
 		private args: Arguments<ResultUploadCommandArgs>
 	) {
@@ -290,10 +292,9 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
 		testcaseResults.forEach((result) => {
 			if (result.name) {
-				const tcase = testcases.find((tcase) => {
-					const tcaseMarker = getTCaseMarker(this.project, tcase.seq)
-					return result.name.includes(tcaseMarker)
-				})
+				const tcase = testcases.find((tcase) =>
+					this.markerParser.nameMatchesTCase(result.name, this.project, tcase.seq)
+				)
 
 				if (tcase) {
 					results.push({ result, tcase })

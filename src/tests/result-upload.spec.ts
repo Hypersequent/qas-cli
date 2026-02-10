@@ -174,6 +174,66 @@ const fileTypes = [
 	},
 ]
 
+describe('Hyphenless test case markers (pytest style)', () => {
+	const junitBasePath = './src/tests/fixtures/junit-xml'
+
+	describe('Uploading with --run-url', () => {
+		test('Hyphenless markers in JUnit XML should be mapped to run test cases', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(`junit-upload -r ${runURL} ${junitBasePath}/hyphenless-matching-tcases.xml`)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+
+	describe('Uploading with auto-detected project code', () => {
+		test('Project code should be auto-detected from hyphenless markers', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(`junit-upload ${junitBasePath}/hyphenless-matching-tcases.xml`)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+
+	describe('Uploading with --project-code', () => {
+		test('Explicit project code with hyphenless markers should work', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(
+				`junit-upload --project-code ${projectCode} ${junitBasePath}/hyphenless-matching-tcases.xml`
+			)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+})
+
+describe('CamelCase test case markers (Go/Java style)', () => {
+	const junitBasePath = './src/tests/fixtures/junit-xml'
+
+	describe('Uploading with --run-url', () => {
+		test('CamelCase markers in JUnit XML should be mapped to run test cases', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(`junit-upload -r ${runURL} ${junitBasePath}/camelcase-matching-tcases.xml`)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+
+	describe('Uploading with auto-detected project code', () => {
+		test('Project code should be auto-detected from CamelCase markers', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(`junit-upload ${junitBasePath}/camelcase-matching-tcases.xml`)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+
+	describe('Uploading with --project-code', () => {
+		test('Explicit project code with CamelCase markers should work', async () => {
+			const numResultUploadCalls = countResultUploadApiCalls()
+			await run(
+				`junit-upload --project-code ${projectCode} ${junitBasePath}/camelcase-matching-tcases.xml`
+			)
+			expect(numResultUploadCalls()).toBe(1) // 5 results total
+		})
+	})
+})
+
 fileTypes.forEach((fileType) => {
 	describe(`Uploading ${fileType.name} files`, () => {
 		describe('Argument parsing', () => {

@@ -4,7 +4,8 @@ import stripAnsi from 'strip-ansi'
 import { Attachment, TestCaseResult } from './types'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
-import { getTCaseMarker, parseTCaseUrl } from '../misc'
+import { parseTCaseUrl } from '../misc'
+import { formatMarker } from './MarkerParser'
 import { getAttachments } from './utils'
 
 // Schema definition as per https://github.com/microsoft/playwright/blob/main/packages/playwright/types/testReporter.d.ts
@@ -160,7 +161,7 @@ const getTCaseMarkerFromAnnotations = (annotations: Annotation[]) => {
 		if (annotation.type.toLowerCase().includes('test case') && annotation.description) {
 			const res = parseTCaseUrl(annotation.description)
 			if (res) {
-				return getTCaseMarker(res.project, res.tcaseSeq)
+				return formatMarker(res.project, res.tcaseSeq)
 			}
 		}
 	}

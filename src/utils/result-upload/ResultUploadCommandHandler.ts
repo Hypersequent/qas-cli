@@ -2,7 +2,8 @@ import { Arguments } from 'yargs'
 import chalk from 'chalk'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { getTCaseMarker, parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
+import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
+import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
 import { TestCaseResult } from './types'
@@ -67,6 +68,7 @@ const commandTypeParsers: Record<UploadCommandType, Parser> = {
 export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
+	private markerParser: MarkerParser
 
 	constructor(
 		private type: UploadCommandType,
@@ -76,6 +78,7 @@ export class ResultUploadCommandHandler {
 
 		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
 		this.api = createApi(this.baseUrl, apiToken)
+		this.markerParser = new MarkerParser(this.type)
 	}
 
 	async handle() {
@@ -145,15 +148,11 @@ export class ResultUploadCommandHandler {
 	}
 
 	protected detectProjectCodeFromTCaseNames(fileResults: FileResults[]) {
-		// Look for pattern like PRJ-123 or TEST-456
-		const tcaseSeqPattern = String.raw`([A-Za-z0-9]{1,5})-\d{3,}`
 		for (const { results } of fileResults) {
 			for (const result of results) {
 				if (result.name) {
-					const match = this.execRegexWithPriority(tcaseSeqPattern, result.name)
-					if (match) {
-						return match[1]
-					}
+					const code = this.markerParser.detectProjectCode(result.name)
+					if (code) return code
 				}
 			}
 		}
@@ -163,25 +162,8 @@ export class ResultUploadCommandHandler {
 		)
 	}
 
-	private execRegexWithPriority(pattern: string, str: string): RegExpExecArray | null {
-		// Try matching at start first
-		const startRegex = new RegExp(`^${pattern}`)
-		let match = startRegex.exec(str)
-		if (match) return match
-
-		// Try matching at end
-		const endRegex = new RegExp(`${pattern}$`)
-		match = endRegex.exec(str)
-		if (match) return match
-
-		// Fall back to matching anywhere
-		const anywhereRegex = new RegExp(pattern)
-		return anywhereRegex.exec(str)
-	}
-
 	protected async getTCaseIds(projectCode: string, fileResults: FileResults[]) {
 		const shouldFailOnInvalid = !this.args.force && !this.args.ignoreUnmatched
-		const tcaseSeqPattern = String.raw`${projectCode}-(\d{3,})`
 
 		const seqIdsSet: Set<number> = new Set()
 		const resultsWithSeqAndFile: TestCaseResultWithSeqAndFile[] = []
@@ -196,15 +178,15 @@ export class ResultUploadCommandHandler {
 					continue
 				}
 
-				const match = this.execRegexWithPriority(tcaseSeqPattern, result.name)
+				const seq = this.markerParser.extractSeq(result.name, projectCode)
 				resultsWithSeqAndFile.push({
-					seq: match ? Number(match[1]) : null,
+					seq,
 					file,
 					result,
 				})
 
-				if (match) {
-					seqIdsSet.add(Number(match[1]))
+				if (seq !== null) {
+					seqIdsSet.add(seq)
 				}
 			}
 		}
@@ -212,7 +194,9 @@ export class ResultUploadCommandHandler {
 		// Now fetch the test cases by their sequence numbers
 		const apiTCasesMap: Record<number, TCase> = {}
 		if (seqIdsSet.size > 0) {
-			const tcaseMarkers = Array.from(seqIdsSet).map((v) => getTCaseMarker(projectCode, v))
+			const tcaseMarkers = Array.from(seqIdsSet).map((v) =>
+				this.markerParser.formatMarker(projectCode, v)
+			)
 
 			for (let page = 1; ; page++) {
 				const response = await this.api.testcases.getTCasesBySeq(projectCode, {
@@ -260,7 +244,7 @@ export class ResultUploadCommandHandler {
 			const newTCases = await this.createNewTCases(projectCode, keys)
 
 			for (let i = 0; i < keys.length; i++) {
-				const marker = getTCaseMarker(projectCode, newTCases[i].seq)
+				const marker = this.markerParser.formatMarker(projectCode, newTCases[i].seq)
 				for (const result of tcasesToCreateMap[keys[i]] || []) {
 					// Prefix the test case markers for use in ResultUploader. The fileResults array
 					// containing the updated name is returned to the caller
@@ -372,7 +356,9 @@ export class ResultUploadCommandHandler {
 		try {
 			const mappingFilename = processTemplate(DEFAULT_MAPPING_FILENAME_TEMPLATE)
 			const mappingLines = tcases
-				.map((t, i) => `${getTCaseMarker(projectCode, t.seq)}: ${tcasesToCreate[i]}`)
+				.map(
+					(t, i) => `${this.markerParser.formatMarker(projectCode, t.seq)}: ${tcasesToCreate[i]}`
+				)
 				.join('\n')
 
 			writeFileSync(mappingFilename, mappingLines)
@@ -434,7 +420,7 @@ export class ResultUploadCommandHandler {
 
 	private async uploadResults(projectCode: string, runId: number, results: TestCaseResult[]) {
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
-		const uploader = new ResultUploader(this.type, { ...this.args, runUrl })
+		const uploader = new ResultUploader(this.markerParser, this.type, { ...this.args, runUrl })
 		await uploader.handle(results)
 	}
 }

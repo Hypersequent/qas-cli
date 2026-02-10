@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="pytest tests">
+  <testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="3.5" timestamp="2026-02-09T12:00:00.000000+00:00" hostname="test-host">
+    <testcase classname="tests.cart_test.TestCart" name="test_test002_cart_items" time="0.649">
+    </testcase>
+    <testcase classname="tests.cart_test.TestCart" name="test_test003_checkout_flow" time="0.625">
+    </testcase>
+    <testcase classname="tests.contents_test.TestContents" name="test_test004_about_page" time="0.988">
+    </testcase>
+    <testcase classname="tests.contents_test.TestContents" name="test_test006_navbar_items" time="0.584">
+      <failure message="AssertionError: expected True but got False">AssertionError: expected True but got False</failure>
+    </testcase>
+    <testcase classname="tests.contents_test.TestContents" name="test_test007_menu_content" time="0.734">
+    </testcase>
+  </testsuite>
+</testsuites>
