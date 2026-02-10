@@ -48,6 +48,8 @@ export class MarkerParser {
 	 */
 	detectProjectCode(name: string): string | null {
 		// 1. Hyphenated: PRJ-123
+		// Case-sensitive, returns code as-is (no uppercasing). Hyphenated markers appear
+		// in annotations or string literals where there's no reason to use wrong case.
 		const hyphenatedPattern = String.raw`([A-Za-z0-9]{1,5})-\d{3,}`
 		const hyphenatedMatch = execRegexWithPriority(hyphenatedPattern, name)
 		if (hyphenatedMatch) {
@@ -57,6 +59,12 @@ export class MarkerParser {
 		if (this.type !== 'junit-upload' || !LOOKS_LIKE_TEST_FN.test(name)) {
 			return null
 		}
+
+		// Hyphenless patterns use letters-only for project codes ([A-Za-z]{1,5}).
+		// Alphanumeric codes (e.g., "BD026") won't work here because without a hyphen
+		// delimiter there's no way to tell where the code ends and the sequence starts
+		// (e.g., "BD026123" is ambiguous). This is a known limitation — projects using
+		// numeric characters in their code must use hyphenated markers.
 
 		// 2. Separator-bounded hyphenless: test_prj123_foo
 		const sepPattern = String.raw`(?:^|${MARKER_SEP})([A-Za-z]{1,5})(\d{3,})(?:$|${MARKER_SEP})`
