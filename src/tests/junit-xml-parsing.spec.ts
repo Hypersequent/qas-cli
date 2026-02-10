@@ -302,4 +302,83 @@ describe('Junit XML parsing', () => {
 		// Should not include stdout or stderr for passed tests
 		expect(testcases[0].message).toBe('')
 	})
+
+	test('Should parse <testsuites> without attributes', async () => {
+		const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="com.example.MyTest" tests="1" time="0.5">
+    <testcase classname="com.example.MyTest" name="test1" time="0.5"/>
+  </testsuite>
+</testsuites>`
+
+		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('test1')
+		expect(testcases[0].folder).toBe('com.example.MyTest')
+		expect(testcases[0].status).toBe('passed')
+	})
+
+	test('Should parse <testsuite> without attributes inside <testsuites>', async () => {
+		const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite>
+    <testcase classname="com.example.MyTest" name="test1" time="0.3"/>
+  </testsuite>
+</testsuites>`
+
+		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('test1')
+		expect(testcases[0].folder).toBe('com.example.MyTest')
+	})
+
+	test('Should accept bare <testsuite> as root element', async () => {
+		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<testsuite hostname="host" failures="0" tests="2" name="com.example.MathUtilsTest"
+           time="0.001" errors="0" timestamp="2026-02-10T12:24:12 UTC" skipped="0">
+  <testcase classname="com.example.MathUtilsTest" name="testAddition" time="0.001"/>
+  <testcase classname="com.example.MathUtilsTest" name="testDivisionByZero" time="0.000">
+    <failure message="Expected exception">java.lang.ArithmeticException</failure>
+  </testcase>
+</testsuite>`
+
+		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(2)
+		expect(testcases[0].name).toBe('testAddition')
+		expect(testcases[0].folder).toBe('com.example.MathUtilsTest')
+		expect(testcases[0].status).toBe('passed')
+		expect(testcases[0].timeTaken).toBe(1)
+
+		expect(testcases[1].name).toBe('testDivisionByZero')
+		expect(testcases[1].status).toBe('failed')
+		expect(testcases[1].message).toContain('ArithmeticException')
+	})
+
+	test('Should accept bare <testsuite> without attributes as root element', async () => {
+		const xml = `<?xml version="1.0"?>
+<testsuite>
+  <testcase name="test1" time="0.1"/>
+</testsuite>`
+
+		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('test1')
+		expect(testcases[0].folder).toBe('')
+	})
 })

@@ -56,18 +56,22 @@ const testCaseSchema = z.object({
 
 const junitXmlSchema = z.object({
 	testsuites: z.object({
-		$: z.object({
-			name: z.string().optional(),
-			time: z.string().optional(),
-			timeStamp: z.string().optional(),
-		}),
+		$: z
+			.object({
+				name: z.string().optional(),
+				time: z.string().optional(),
+				timeStamp: z.string().optional(),
+			})
+			.optional(),
 		testsuite: z.array(
 			z.object({
-				$: z.object({
-					name: z.string().optional(),
-					time: z.string().optional(),
-					timeStamp: z.string().optional(),
-				}),
+				$: z
+					.object({
+						name: z.string().optional(),
+						time: z.string().optional(),
+						timeStamp: z.string().optional(),
+					})
+					.optional(),
 				testcase: z.array(testCaseSchema).optional(),
 			})
 		),
@@ -83,6 +87,13 @@ export const parseJUnitXml: Parser = async (
 		explicitCharkey: true,
 		includeWhiteChars: true,
 	})
+
+	// Accept bare <testsuite> as root by wrapping it in <testsuites>
+	if (xmlData.testsuite && !xmlData.testsuites) {
+		xmlData.testsuites = { testsuite: [xmlData.testsuite] }
+		delete xmlData.testsuite
+	}
+
 	const validated = junitXmlSchema.parse(xmlData)
 	const testcases: TestCaseResult[] = []
 	const attachmentsPromises: Array<{
@@ -98,7 +109,7 @@ export const parseJUnitXml: Parser = async (
 			// grouping for test runners like pytest that put all tests in a single
 			// generic suite (e.g., "pytest"). For runners where classname matches the
 			// suite name (e.g., Playwright), this produces the same result.
-			const folder = tcase.$.classname ?? suite.$.name ?? ''
+			const folder = tcase.$.classname ?? suite.$?.name ?? ''
 			const index =
 				testcases.push({
 					...result,
