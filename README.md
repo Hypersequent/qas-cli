@@ -181,17 +181,36 @@ The QAS CLI maps test results from your reports (JUnit XML or Playwright JSON) t
 
 ### JUnit XML
 
-Test case names in JUnit XML reports must include a QA Sphere test case marker in the format `PROJECT-SEQUENCE`:
+Test case names in JUnit XML reports must include a QA Sphere test case marker. The following marker formats are supported (checked in order):
 
-- **PROJECT** - Your QA Sphere project code
-- **SEQUENCE** - Test case sequence number (minimum 3 digits, zero-padded if needed)
+#### 1. Hyphenated Marker (all languages)
+
+Format: `PROJECT-SEQUENCE` where **PROJECT** is your QA Sphere project code and **SEQUENCE** is the test case sequence number (minimum 3 digits, zero-padded if needed). The marker can appear anywhere in the test name and is matched case-insensitively.
 
 **Examples:**
 
 - `PRJ-002: Login with valid credentials`
 - `Login with invalid credentials: PRJ-1312`
 
-**Note:** The project code in test names must exactly match your QA Sphere project code.
+#### 2. Underscore-Separated Hyphenless Marker (pytest, Go, Rust, etc.)
+
+For languages where test names are function identifiers and hyphens are not allowed, the CLI supports hyphenless markers separated by underscores. The test name must start with `test` (case-insensitive).
+
+**Examples (pytest):**
+
+- `test_prj002_login_with_valid_credentials`
+- `test_login_with_invalid_credentials_prj1312`
+
+#### 3. CamelCase Hyphenless Marker (Go, Java)
+
+For CamelCase test function names, the CLI detects markers at the start (immediately after the `Test` prefix) or at the end of the name. The test name must start with `Test` (case-insensitive).
+
+**Examples (Go):**
+
+- `TestPrj002LoginWithValidCredentials` (marker at start)
+- `TestLoginWithValidCredentialsPrj1312` (marker at end)
+
+**Note:** Hyphenless matching (formats 2 and 3) is only available for `junit-upload`. For `playwright-json-upload`, only the hyphenated format is supported (or test annotations, see below).
 
 ### Playwright JSON
 
@@ -216,7 +235,7 @@ Playwright JSON reports support two methods for referencing test cases (checked 
    )
    ```
 
-2. **Test Case Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML)
+2. **Hyphenated Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML format 1). Hyphenless markers are **not** supported for Playwright JSON
 
 ## Development (for those who want to contribute to the tool)
 

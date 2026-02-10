@@ -34,16 +34,22 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 
 ### Core Upload Pipeline (src/utils/result-upload/)
 
-The upload flow has two stages handled by two classes:
+The upload flow has two stages handled by two classes, with a shared `MarkerParser` instance:
 
-1. **`ResultUploadCommandHandler`** — Orchestrates the overall flow:
+1. **`MarkerParser`** — Centralizes all test case marker detection/extraction/matching logic:
+   - Supports three marker formats: hyphenated (`PRJ-123`), underscore-separated hyphenless (`test_prj123_foo`), and CamelCase hyphenless (`TestPrj123Foo` or `TestFooPrj123`)
+   - Hyphenless matching (underscore-separated and CamelCase) is gated on `type === 'junit-upload'` and requires the test name to start with `test` (case-insensitive)
+   - Created by `ResultUploadCommandHandler` and passed to `ResultUploader` — both share one instance
+   - Also exports a standalone `formatMarker()` function used by parsers
+
+2. **`ResultUploadCommandHandler`** — Orchestrates the overall flow:
    - Parses report files using the appropriate parser (JUnit XML or Playwright JSON)
-   - Detects project code from test case names (or from `--run-url`)
+   - Detects project code from test case names via `MarkerParser` (or from `--run-url`)
    - Creates a new test run (or reuses an existing one if title conflicts)
    - Delegates actual result uploading to `ResultUploader`
 
-2. **`ResultUploader`** — Handles the upload-to-run mechanics:
-   - Fetches test cases from the run, maps parsed results to them via marker matching
+3. **`ResultUploader`** — Handles the upload-to-run mechanics:
+   - Fetches test cases from the run, maps parsed results to them via `MarkerParser` matching
    - Validates unmatched/missing test cases (respects `--force`, `--ignore-unmatched`)
    - Uploads file attachments concurrently (max 10 parallel), then creates results in batches (max 50 per request)
 
@@ -65,14 +71,15 @@ Composable fetch wrappers using higher-order functions:
 
 - `env.ts` — Loads `QAS_TOKEN` and `QAS_URL` from environment variables, `.env`, or `.qaspherecli` (searched up the directory tree)
 - `config.ts` — Constants (required Node version)
-- `misc.ts` — URL parsing, template string processing (`{env:VAR}`, date placeholders), error handling utilities
+- `misc.ts` — URL parsing, template string processing (`{env:VAR}`, date placeholders), error handling utilities. Note: marker-related functions have been moved to `MarkerParser.ts`
 - `version.ts` — Reads version from `package.json` by traversing parent directories
 
 ## Testing
 
 Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`:
 
-- `result-upload.spec.ts` — Integration tests for the full upload flow (both JUnit and Playwright), with MSW intercepting all API calls
+- `result-upload.spec.ts` — Integration tests for the full upload flow (both JUnit and Playwright), with MSW intercepting all API calls. Includes hyphenless and CamelCase marker tests (JUnit only)
+- `marker-parser.spec.ts` — Unit tests for `MarkerParser` (detection, extraction, matching across all marker formats and command types)
 - `junit-xml-parsing.spec.ts` — Unit tests for JUnit XML parser
 - `playwright-json-parsing.spec.ts` — Unit tests for Playwright JSON parser
 - `template-string-processing.spec.ts` — Unit tests for run name template processing
@@ -90,3 +97,4 @@ ESM project (`"type": "module"`). TypeScript compiles to `build/`, then `ts-add-
 - **Linter**: ESLint with typescript-eslint (config: `eslint.config.mjs`)
 - **Formatter**: Prettier (config: `.prettierrc`)
 - **Pre-commit hook** (Husky): runs lint-staged (Prettier + ESLint on staged files)
+- **Commits**: Do NOT add `Co-Authored-By` lines to commit messages

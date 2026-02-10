@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="Go tests">
+  <testsuite name="cart_test" errors="0" failures="1" skipped="0" tests="5" time="3.5" timestamp="2026-02-09T12:00:00.000000+00:00" hostname="test-host">
+    <testcase classname="cart_test" name="TestTest002CartItems" time="0.649">
+    </testcase>
+    <testcase classname="cart_test" name="TestTest003CheckoutFlow" time="0.625">
+    </testcase>
+    <testcase classname="contents_test" name="TestAboutPageTest004" time="0.988">
+    </testcase>
+    <testcase classname="contents_test" name="TestTest006NavbarItems" time="0.584">
+      <failure message="AssertionError: expected True but got False">AssertionError: expected True but got False</failure>
+    </testcase>
+    <testcase classname="contents_test" name="TestMenuContentTest007" time="0.734">
+    </testcase>
+  </testsuite>
+</testsuites>
