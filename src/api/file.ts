@@ -1,15 +1,20 @@
 import { jsonResponse } from './utils'
 
 export const createFileApi = (fetcher: typeof fetch) => ({
-	uploadFile: async (file: Blob, filename: string) => {
+	uploadFiles: async (files: Array<{ blob: Blob; filename: string }>) => {
 		const form = new FormData()
-		form.append('file', file, filename)
+		for (const { blob, filename } of files) {
+			form.append('files', blob, filename)
+		}
 
-		const res = await fetcher('/api/public/v0/file', {
+		const res = await fetcher('/api/public/v0/file/batch', {
 			method: 'POST',
 			body: form,
 		})
 
-		return jsonResponse<{ id: string; url: string }>(res)
+		const { files: uploaded } = await jsonResponse<{
+			files: Array<{ id: string; url: string }>
+		}>(res)
+		return uploaded
 	},
 })

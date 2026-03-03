@@ -7,8 +7,10 @@ import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
 import type { MarkerParser } from './MarkerParser'
 
-const MAX_CONCURRENT_FILE_UPLOADS = 10
-let MAX_RESULTS_IN_REQUEST = 50 // Only updated from tests, otherwise it's a constant
+const MAX_CONCURRENT_BATCH_UPLOADS = 3
+const MAX_BATCH_SIZE_BYTES = 100 * 1024 * 1024 // 100 MiB
+const MAX_BATCH_FILE_COUNT = 100
+let MAX_RESULTS_IN_REQUEST = 500 // Only updated from tests, otherwise it's a constant
 
 export class ResultUploader {
 	private api: Api
@@ -171,7 +173,6 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			attachment: Attachment
 			tcaseIndex: number
 		}> = []
-		let uploadedCount = 0
 
 		results.forEach((item, index) => {
 			item.result.attachments.forEach((attachment) => {
@@ -185,37 +186,68 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			return results
 		}
 
-		// Upload all attachments concurrently with progress tracking
+		// Group attachments into batches where total size <= MAX_BATCH_SIZE_BYTES
+		const batches: Array<typeof allAttachments> = []
+		let currentBatch: typeof allAttachments = []
+		let currentBatchSize = 0
+
+		for (const item of allAttachments) {
+			const size = item.attachment.buffer!.byteLength
+			if (
+				currentBatch.length > 0 &&
+				(currentBatchSize + size > MAX_BATCH_SIZE_BYTES ||
+					currentBatch.length >= MAX_BATCH_FILE_COUNT)
+			) {
+				batches.push(currentBatch)
+				currentBatch = []
+				currentBatchSize = 0
+			}
+			currentBatch.push(item)
+			currentBatchSize += size
+		}
+		if (currentBatch.length > 0) {
+			batches.push(currentBatch)
+		}
+
+		// Upload batches concurrently with progress tracking
+		let uploadedCount = 0
 		loader.start(`Uploading attachments: 0/${allAttachments.length} files uploaded`)
-		const uploadedAttachments = await this.processConcurrently(
-			allAttachments,
-			async ({ attachment, tcaseIndex }) => {
-				const { url } = await this.api.files.uploadFile(
-					new Blob([attachment.buffer! as BlobPart]),
-					attachment.filename
-				)
-				uploadedCount++
+
+		const batchResults = await this.processConcurrently(
+			batches,
+			async (batch) => {
+				const files = batch.map(({ attachment }) => ({
+					blob: new Blob([attachment.buffer! as BlobPart]),
+					filename: attachment.filename,
+				}))
+
+				const uploaded = await this.api.files.uploadFiles(files)
+
+				uploadedCount += batch.length
 				loader.setText(
 					`Uploading attachments: ${uploadedCount}/${allAttachments.length} files uploaded`
 				)
-				return {
-					tcaseIndex,
-					url,
-					name: attachment.filename,
-				}
+
+				return batch.map((item, i) => ({
+					tcaseIndex: item.tcaseIndex,
+					url: uploaded[i].url,
+					name: item.attachment.filename,
+				}))
 			},
-			MAX_CONCURRENT_FILE_UPLOADS
+			MAX_CONCURRENT_BATCH_UPLOADS
 		)
 		loader.stop()
 
-		// Group uploaded attachments by test case index
+		// Flatten batch results and group by test case index
 		const attachmentsByTCase = new Map<number, Array<{ name: string; url: string }>>()
-		uploadedAttachments.forEach(({ tcaseIndex, url, name }) => {
-			if (!attachmentsByTCase.has(tcaseIndex)) {
-				attachmentsByTCase.set(tcaseIndex, [])
+		for (const batchResult of batchResults) {
+			for (const { tcaseIndex, url, name } of batchResult) {
+				if (!attachmentsByTCase.has(tcaseIndex)) {
+					attachmentsByTCase.set(tcaseIndex, [])
+				}
+				attachmentsByTCase.get(tcaseIndex)!.push({ url, name })
 			}
-			attachmentsByTCase.get(tcaseIndex)!.push({ url, name })
-		})
+		}
 
 		// Map results with their uploaded attachment URLs
 		return results.map(({ tcase, result }, index) => {
