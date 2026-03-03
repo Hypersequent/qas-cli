@@ -10,7 +10,7 @@ describe('Junit XML parsing', () => {
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
 		// This should not throw any exceptions
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -55,7 +55,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/comprehensive-test.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -86,7 +86,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -103,7 +103,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/jest-failure-type-missing.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -132,7 +132,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/pytest-style.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -168,7 +168,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -181,7 +181,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/webdriverio-real.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -203,7 +203,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -218,7 +218,7 @@ describe('Junit XML parsing', () => {
 		const xmlPath = `${xmlBasePath}/empty-system-err.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
-		const testcases = await parseJUnitXml(xmlContent, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xmlContent, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'never',
 		})
@@ -241,7 +241,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'on-success',
 		})
@@ -266,7 +266,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -291,7 +291,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -311,7 +311,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -330,7 +330,7 @@ describe('Junit XML parsing', () => {
   </testsuite>
 </testsuites>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -350,7 +350,7 @@ describe('Junit XML parsing', () => {
   </testcase>
 </testsuite>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -372,7 +372,7 @@ describe('Junit XML parsing', () => {
   <testcase name="test1" time="0.1"/>
 </testsuite>`
 
-		const testcases = await parseJUnitXml(xml, xmlBasePath, {
+		const { testCaseResults: testcases } = await parseJUnitXml(xml, xmlBasePath, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -380,5 +380,53 @@ describe('Junit XML parsing', () => {
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toBe('test1')
 		expect(testcases[0].folder).toBe('')
+	})
+
+	test('Should return empty runFailureLogs when no suite-level errors', async () => {
+		const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Test Suite">
+  <testsuite name="my-suite">
+    <testcase name="test one" time="1.0">
+    </testcase>
+  </testsuite>
+</testsuites>`
+
+		const { runFailureLogs } = await parseJUnitXml(xml, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('')
+	})
+
+	test('Should extract suite-level system-err into runFailureLogs', async () => {
+		const xmlPath = `${xmlBasePath}/suite-level-errors.xml`
+		const xmlContent = await readFile(xmlPath, 'utf8')
+
+		const { runFailureLogs } = await parseJUnitXml(xmlContent, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toContain('com.example.SetupFailureTest')
+		expect(runFailureLogs).toContain('Failed to initialize database connection')
+		expect(runFailureLogs).toContain('Connection refused')
+	})
+
+	test('Should extract empty-name testcase errors into runFailureLogs and exclude from testCaseResults', async () => {
+		const xmlPath = `${xmlBasePath}/suite-level-errors.xml`
+		const xmlContent = await readFile(xmlPath, 'utf8')
+
+		const { testCaseResults, runFailureLogs } = await parseJUnitXml(xmlContent, xmlBasePath, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		// Empty-name testcase should be excluded from testCaseResults
+		expect(testCaseResults).toHaveLength(2)
+		expect(testCaseResults.every((tc) => tc.name !== '')).toBe(true)
+
+		// Its error content should be in runFailureLogs
+		expect(runFailureLogs).toContain('BeforeAll setup failed')
 	})
 })

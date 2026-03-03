@@ -8,7 +8,7 @@
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
 
-The tool can upload test case results from JUnit XML and Playwright JSON files to QA Sphere test runs by matching test case names (mentions of special markers) to QA Sphere's test cases.
+The tool can upload test case results from JUnit XML and Playwright JSON files to QA Sphere test runs by matching test case names (mentions of special markers) to QA Sphere's test cases. It also automatically detects global or suite-level failures (e.g., setup/teardown errors) and uploads them as run-level logs.
 
 ## Installation
 
@@ -236,6 +236,13 @@ Playwright JSON reports support two methods for referencing test cases (checked 
    ```
 
 2. **Hyphenated Marker in Name** - Include the `PROJECT-SEQUENCE` marker in the test name (same format as JUnit XML format 1). Hyphenless markers are **not** supported for Playwright JSON
+
+## Run-Level Logs
+
+The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
+
+- **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs. Empty-name testcases are excluded from individual test case results.
+- **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
 
 ## Development (for those who want to contribute to the tool)
 

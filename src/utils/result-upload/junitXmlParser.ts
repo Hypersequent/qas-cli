@@ -1,15 +1,16 @@
 import escapeHtml from 'escape-html'
 import xml from 'xml2js'
 import z from 'zod'
-import { Attachment, TestCaseResult } from './types'
+import { Attachment, ParseResult, TestCaseResult } from './types'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
 import { getAttachments } from './utils'
 
-// Note about junit xml schema:
-// there are multiple schemas on the internet, and apparently some are more strict than others
-// we have to use LESS strict schema (see one from Jest, based on Jenkins JUnit schema)
-// see https://github.com/jest-community/jest-junit/blob/master/__tests__/lib/junit.xsd#L42
+// There is no official JUnit XML schema — multiple popular variants exist with varying strictness:
+// - Jenkins/Jest:   https://github.com/jest-community/jest-junit/blob/master/__tests__/lib/junit.xsd
+// - Windyroad:      https://github.com/windyroad/JUnit-Schema/blob/master/JUnit.xsd
+// - Maven Surefire: https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd
+// We use a lenient schema that accepts the union of common elements/attributes across these variants.
 
 const stringContent = z.object({
 	_: z.string().optional(),
@@ -39,16 +40,18 @@ const skippedSchema = z.union([
 	}),
 ])
 
+// Some JUnit producers emit empty tags like <system-err></system-err> which
+// xml2js may parse as empty strings. Accept both object and string forms.
+const systemErrOutSchema = z.array(z.union([stringContent, z.string()])).optional()
+
 const testCaseSchema = z.object({
 	$: z.object({
 		name: z.string().optional(),
 		classname: z.string().optional(),
 		time: z.string().optional(),
 	}),
-	// Some JUnit producers emit empty tags like <system-err></system-err> which
-	// xml2js may parse as empty strings. Accept both object and string forms.
-	'system-out': z.array(z.union([stringContent, z.string()])).optional(),
-	'system-err': z.array(z.union([stringContent, z.string()])).optional(),
+	'system-out': systemErrOutSchema,
+	'system-err': systemErrOutSchema,
 	failure: z.array(failureErrorSchema).optional(),
 	skipped: z.array(skippedSchema).optional(),
 	error: z.array(failureErrorSchema).optional(),
@@ -73,6 +76,7 @@ const junitXmlSchema = z.object({
 					})
 					.optional(),
 				testcase: z.array(testCaseSchema).optional(),
+				'system-err': systemErrOutSchema,
 			})
 		),
 	}),
@@ -82,7 +86,7 @@ export const parseJUnitXml: Parser = async (
 	xmlString: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
-): Promise<TestCaseResult[]> => {
+): Promise<ParseResult> => {
 	const xmlData = await xml.parseStringPromise(xmlString, {
 		explicitCharkey: true,
 		includeWhiteChars: true,
@@ -100,9 +104,38 @@ export const parseJUnitXml: Parser = async (
 		index: number
 		promise: Promise<Attachment[]>
 	}> = []
+	const runFailureLogParts: string[] = []
 
 	for (const suite of validated.testsuites.testsuite) {
+		const suiteName = suite.$?.name ?? ''
+
+		// Extract suite-level system-err into runFailureLogParts
+		for (const err of suite['system-err'] ?? []) {
+			const content = (typeof err === 'string' ? err : (err._ ?? '')).trim()
+			if (content) {
+				if (suiteName) runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
+				runFailureLogParts.push(`<pre><code>${escapeHtml(content)}</code></pre>`)
+			}
+		}
+
 		for (const tcase of suite.testcase ?? []) {
+			const tcaseName = tcase.$.name ?? ''
+
+			// Empty-name testcases with error/failure can be synthetic entries from
+			// setup/teardown failures (e.g., Maven Surefire). Extract into runFailureLogParts
+			// and exclude from testCaseResults.
+			if (!tcaseName && (tcase.error || tcase.failure)) {
+				const elements = tcase.error ?? tcase.failure ?? []
+				for (const element of elements) {
+					const content = (typeof element === 'string' ? element : (element._ ?? '')).trim()
+					if (content) {
+						if (suiteName) runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
+						runFailureLogParts.push(`<pre><code>${escapeHtml(content)}</code></pre>`)
+					}
+				}
+				continue
+			}
+
 			const result = getResult(tcase, options)
 			const timeTakenSeconds = Number.parseFloat(tcase.$.time ?? '')
 			// Use classname as folder when available, as it provides more meaningful
@@ -114,7 +147,7 @@ export const parseJUnitXml: Parser = async (
 				testcases.push({
 					...result,
 					folder,
-					name: tcase.$.name ?? '',
+					name: tcaseName,
 					timeTaken:
 						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0
 							? timeTakenSeconds * 1000
@@ -168,7 +201,7 @@ export const parseJUnitXml: Parser = async (
 		testcases[tcaseIndex].attachments = tcaseAttachment
 	})
 
-	return testcases
+	return { testCaseResults: testcases, runFailureLogs: runFailureLogParts.join('') }
 }
 
 const getResult = (
@@ -204,10 +237,10 @@ const getResult = (
 		messageOptions.push(mainResult)
 	}
 	if (includeStdout) {
-		messageOptions.push({ result: out, type: 'code' })
+		messageOptions.push({ header: 'Output (stdout):', result: out, type: 'code' })
 	}
 	if (includeStderr) {
-		messageOptions.push({ result: err, type: 'code' })
+		messageOptions.push({ header: 'Output (stderr):', result: err, type: 'code' })
 	}
 
 	return {
@@ -217,6 +250,7 @@ const getResult = (
 }
 
 interface GetResultMessageOption {
+	header?: string
 	result?: (
 		| string
 		| Partial<z.infer<typeof failureErrorSchema>>
@@ -226,23 +260,28 @@ interface GetResultMessageOption {
 }
 
 const getResultMessage = (...options: GetResultMessageOption[]): string => {
-	let message = ''
+	const parts: string[] = []
 	options.forEach((option) => {
+		const sectionParts: string[] = []
 		option.result?.forEach((r) => {
 			// Handle both string and object formats from xml2js parsing
 			const content = (typeof r === 'string' ? r : r._)?.trim()
 			if (!content) return
 
 			if (!option.type || option.type === 'paragraph') {
-				message += `<p>${escapeHtml(content)}</p>`
-				return
+				sectionParts.push(`<p>${escapeHtml(content)}</p>`)
 			} else if (option.type === 'code') {
-				message += `<pre><code>${escapeHtml(content)}</code></pre>`
-				return
+				sectionParts.push(`<pre><code>${escapeHtml(content)}</code></pre>`)
 			}
 		})
+		if (sectionParts.length > 0) {
+			if (option.header) {
+				parts.push(`<h4>${option.header}</h4>`)
+			}
+			parts.push(...sectionParts)
+		}
 	})
-	return message
+	return parts.join('')
 }
 
 const extractAttachmentPaths = (content: string) => {

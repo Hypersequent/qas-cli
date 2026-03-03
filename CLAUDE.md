@@ -43,21 +43,22 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
    - Also exports a standalone `formatMarker()` function used by parsers
 
 2. **`ResultUploadCommandHandler`** — Orchestrates the overall flow:
-   - Parses report files using the appropriate parser (JUnit XML or Playwright JSON)
+   - Parses report files using the appropriate parser (JUnit XML or Playwright JSON), which return `ParseResult` objects containing both `testCaseResults` and `runFailureLogs`
    - Detects project code from test case names via `MarkerParser` (or from `--run-url`)
    - Creates a new test run (or reuses an existing one if title conflicts)
-   - Delegates actual result uploading to `ResultUploader`
+   - Collects run-level logs from all parsed files and passes them to `ResultUploader`
 
 3. **`ResultUploader`** — Handles the upload-to-run mechanics:
    - Fetches test cases from the run, maps parsed results to them via `MarkerParser` matching
    - Validates unmatched/missing test cases (respects `--force`, `--ignore-unmatched`)
+   - If run-level log is present, uploads it via `createRunLog` API before uploading test case results
    - Uploads file attachments concurrently (max 10 parallel), then creates results in batches (max 50 per request)
 
 ### Report Parsers
 
-- `junitXmlParser.ts` — Parses JUnit XML via `xml2js` + Zod validation. Extracts attachments from `[[ATTACHMENT|path]]` markers in system-out/failure/error/skipped elements.
-- `playwrightJsonParser.ts` — Parses Playwright JSON report. Supports two test case linking methods: (1) test annotations with `type: "test case"` and URL description, (2) marker in test name. Handles nested suites recursively.
-- `types.ts` — Shared `TestCaseResult` and `Attachment` interfaces used by both parsers.
+- `junitXmlParser.ts` — Parses JUnit XML via `xml2js` + Zod validation. Extracts attachments from `[[ATTACHMENT|path]]` markers in system-out/failure/error/skipped elements. Extracts suite-level `<system-err>` and empty-name `<testcase>` errors as run level error logs.
+- `playwrightJsonParser.ts` — Parses Playwright JSON report. Supports two test case linking methods: (1) test annotations with `type: "test case"` and URL description, (2) marker in test name. Handles nested suites recursively. Extracts top-level `errors[]` as run level error logs.
+- `types.ts` — Shared `TestCaseResult`, `ParseResult`, and `Attachment` interfaces used by both parsers.
 
 ### API Layer (src/api/)
 

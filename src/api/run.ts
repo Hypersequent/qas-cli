@@ -17,6 +17,10 @@ export interface CreateRunResponse {
 	id: number
 }
 
+export interface CreateRunLogRequest {
+	comment: string
+}
+
 export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
@@ -36,6 +40,12 @@ export const createRunApi = (fetcher: typeof fetch) => {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<CreateRunResponse>(r)),
+
+		createRunLog: (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) =>
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
+				method: 'POST',
+				body: JSON.stringify(req),
+			}).then((r) => jsonResponse<{ id: string }>(r)),
 	}
 }
 

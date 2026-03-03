@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Test Suite">
+  <testsuite name="com.example.SetupFailureTest">
+    <system-err>Failed to initialize database connection
+java.sql.SQLException: Connection refused</system-err>
+    <testcase name="" time="0.0">
+      <error message="Setup failed" type="java.lang.RuntimeException">java.lang.RuntimeException: BeforeAll setup failed
+	at com.example.SetupFailureTest.setup(SetupFailureTest.java:15)</error>
+    </testcase>
+    <testcase name="TEST-001: Normal passing test" classname="com.example.SetupFailureTest" time="1.5">
+    </testcase>
+    <testcase name="TEST-002: Another test" classname="com.example.SetupFailureTest" time="2.0">
+      <failure message="Expected true">Expected true but got false</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -17,3 +17,8 @@ export interface TestCaseResult {
 	timeTaken: number | null // In milliseconds
 	attachments: Attachment[]
 }
+
+export interface ParseResult {
+	testCaseResults: TestCaseResult[]
+	runFailureLogs: string // HTML string, empty if no global/suite-level issues
+}

@@ -116,6 +116,10 @@ const server = setupServer(
 			})
 		}
 	),
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/log`, ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		return HttpResponse.json({ id: 'log-1' })
+	}),
 	http.post(`${baseURL}/api/public/v0/file`, async ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		expect(request.headers.get('Content-Type')).includes('multipart/form-data')
@@ -144,6 +148,8 @@ const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result/batch'))
 const countCreateTCasesApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/bulk'))
+const countRunLogApiCalls = () =>
+	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith(`/run/${runId}/log`))
 
 const getMappingFiles = () =>
 	new Set(
@@ -562,5 +568,25 @@ fileTypes.forEach((fileType) => {
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
+	})
+})
+
+describe('Run-level log upload', () => {
+	const junitBasePath = './src/tests/fixtures/junit-xml'
+
+	test('Should upload run-level log when suite-level errors exist', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`junit-upload -r ${runURL} --force ${junitBasePath}/suite-level-errors.xml`)
+		expect(numRunLogCalls()).toBe(1)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+
+	test('Should not upload run-level log when no suite-level errors exist', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`junit-upload -r ${runURL} ${junitBasePath}/matching-tcases.xml`)
+		expect(numRunLogCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(1)
 	})
 })

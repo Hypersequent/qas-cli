@@ -1,7 +1,7 @@
 import z from 'zod'
 import escapeHtml from 'escape-html'
 import stripAnsi from 'strip-ansi'
-import { Attachment, TestCaseResult } from './types'
+import { Attachment, ParseResult, TestCaseResult } from './types'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { ResultStatus } from '../../api/schemas'
 import { parseTCaseUrl } from '../misc'
@@ -78,13 +78,14 @@ const suiteSchema: z.ZodType<Suite> = z.object({
 
 const playwrightJsonSchema = z.object({
 	suites: suiteSchema.array(),
+	errors: reportErrorSchema.array().optional(),
 })
 
 export const parsePlaywrightJson: Parser = async (
 	jsonString: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
-): Promise<TestCaseResult[]> => {
+): Promise<ParseResult> => {
 	const jsonData = JSON.parse(jsonString)
 	const validated = playwrightJsonSchema.parse(jsonData)
 	const testcases: TestCaseResult[] = []
@@ -153,7 +154,14 @@ export const parsePlaywrightJson: Parser = async (
 		testcases[tcaseIndex].attachments = tcaseAttachment
 	})
 
-	return testcases
+	// Build runFailureLogs from top-level errors
+	const runFailureLogParts: string[] = []
+	for (const error of validated.errors ?? []) {
+		const cleanMessage = stripAnsi(error.message)
+		runFailureLogParts.push(`<pre><code>${escapeHtml(cleanMessage)}</code></pre>`)
+	}
+
+	return { testCaseResults: testcases, runFailureLogs: runFailureLogParts.join('') }
 }
 
 const getTCaseMarkerFromAnnotations = (annotations: Annotation[]) => {
@@ -183,18 +191,18 @@ const mapPlaywrightStatus = (status: Status): ResultStatus => {
 }
 
 const buildMessage = (result: Result, status: ResultStatus, options: ParserOptions) => {
-	let message = ''
+	const parts: string[] = []
 
 	if (result.retry) {
-		message += `<p><b>Test passed in ${result.retry + 1} attempts</b></p>`
+		parts.push(`<p><b>Test passed in ${result.retry + 1} attempts</b></p>`)
 	}
 
 	if (result.errors.length > 0) {
-		message += '<h4>Errors:</h4>'
+		parts.push('<h4>Errors:</h4>')
 		result.errors.forEach((error) => {
 			if (error.message) {
 				const cleanMessage = stripAnsi(error.message)
-				message += `<pre><code>${escapeHtml(cleanMessage)}</code></pre>`
+				parts.push(`<pre><code>${escapeHtml(cleanMessage)}</code></pre>`)
 			}
 		})
 	}
@@ -202,12 +210,12 @@ const buildMessage = (result: Result, status: ResultStatus, options: ParserOptio
 	// Conditionally include stdout based on status and options
 	const includeStdout = !(status === 'passed' && options.skipStdout === 'on-success')
 	if (includeStdout && result.stdout.length > 0) {
-		message += '<h4>Output:</h4>'
+		parts.push('<h4>Output (stdout):</h4>')
 		result.stdout.forEach((out) => {
 			const content = 'text' in out ? out.text : out.buffer
 			if (content) {
 				const cleanContent = stripAnsi(content)
-				message += `<pre><code>${escapeHtml(cleanContent)}</code></pre>`
+				parts.push(`<pre><code>${escapeHtml(cleanContent)}</code></pre>`)
 			}
 		})
 	}
@@ -215,15 +223,15 @@ const buildMessage = (result: Result, status: ResultStatus, options: ParserOptio
 	// Conditionally include stderr based on status and options
 	const includeStderr = !(status === 'passed' && options.skipStderr === 'on-success')
 	if (includeStderr && result.stderr.length > 0) {
-		message += '<h4>Errors (stderr):</h4>'
+		parts.push('<h4>Output (stderr):</h4>')
 		result.stderr.forEach((err) => {
 			const content = 'text' in err ? err.text : err.buffer
 			if (content) {
 				const cleanContent = stripAnsi(content)
-				message += `<pre><code>${escapeHtml(cleanContent)}</code></pre>`
+				parts.push(`<pre><code>${escapeHtml(cleanContent)}</code></pre>`)
 			}
 		})
 	}
 
-	return message
+	return parts.join('')
 }

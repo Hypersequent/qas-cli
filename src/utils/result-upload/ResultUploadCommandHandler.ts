@@ -6,7 +6,7 @@ import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
-import { TestCaseResult } from './types'
+import { ParseResult, TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
 import { parseJUnitXml } from './junitXmlParser'
 import { parsePlaywrightJson } from './playwrightJsonParser'
@@ -24,7 +24,7 @@ export type Parser = (
 	data: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
-) => Promise<TestCaseResult[]>
+) => Promise<ParseResult>
 
 export type ResultUploadCommandArgs = {
 	type: UploadCommandType
@@ -48,6 +48,7 @@ export type ResultUploadCommandArgs = {
 interface FileResults {
 	file: string
 	results: TestCaseResult[]
+	runFailureLogs: string
 }
 
 interface TestCaseResultWithSeqAndFile {
@@ -123,7 +124,8 @@ export class ResultUploadCommandHandler {
 		}
 
 		const results = fileResults.flatMap((fileResult) => fileResult.results)
-		await this.uploadResults(projectCode, runId, results)
+		const runFailureLogs = fileResults.map((fr) => fr.runFailureLogs).join('')
+		await this.uploadResults(projectCode, runId, results, runFailureLogs)
 	}
 
 	protected async parseFiles(): Promise<FileResults[]> {
@@ -136,12 +138,16 @@ export class ResultUploadCommandHandler {
 
 		for (const file of this.args.files) {
 			const fileData = readFileSync(file).toString()
-			const fileResults = await commandTypeParsers[this.type](
+			const parseResult = await commandTypeParsers[this.type](
 				fileData,
 				dirname(file),
 				parserOptions
 			)
-			results.push({ file, results: fileResults })
+			results.push({
+				file,
+				results: parseResult.testCaseResults,
+				runFailureLogs: parseResult.runFailureLogs,
+			})
 		}
 
 		return results
@@ -254,7 +260,7 @@ export class ResultUploadCommandHandler {
 			}
 		}
 
-		if (tcaseIds.length === 0) {
+		if (tcaseIds.length === 0 && !fileResults.some((fr) => fr.runFailureLogs)) {
 			return printErrorThenExit('No valid test cases found in any of the files')
 		}
 
@@ -418,9 +424,14 @@ export class ResultUploadCommandHandler {
 		}
 	}
 
-	private async uploadResults(projectCode: string, runId: number, results: TestCaseResult[]) {
+	private async uploadResults(
+		projectCode: string,
+		runId: number,
+		results: TestCaseResult[],
+		runFailureLogs: string
+	) {
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
 		const uploader = new ResultUploader(this.markerParser, this.type, { ...this.args, runUrl })
-		await uploader.handle(results)
+		await uploader.handle(results, runFailureLogs)
 	}
 }
