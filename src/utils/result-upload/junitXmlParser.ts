@@ -108,13 +108,16 @@ export const parseJUnitXml: Parser = async (
 
 	for (const suite of validated.testsuites.testsuite) {
 		const suiteName = suite.$?.name ?? ''
+		let runLevelFailureLogsFound = false
 
 		// Extract suite-level system-err into runFailureLogParts
 		for (const err of suite['system-err'] ?? []) {
 			const content = (typeof err === 'string' ? err : (err._ ?? '')).trim()
 			if (content) {
-				if (suiteName) runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
+				if (suiteName && !runLevelFailureLogsFound)
+					runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
 				runFailureLogParts.push(`<pre><code>${escapeHtml(content)}</code></pre>`)
+				runLevelFailureLogsFound = true
 			}
 		}
 
@@ -129,8 +132,10 @@ export const parseJUnitXml: Parser = async (
 				for (const element of elements) {
 					const content = (typeof element === 'string' ? element : (element._ ?? '')).trim()
 					if (content) {
-						if (suiteName) runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
+						if (suiteName && !runLevelFailureLogsFound)
+							runFailureLogParts.push(`<h4>${escapeHtml(suiteName)}</h4>`)
 						runFailureLogParts.push(`<pre><code>${escapeHtml(content)}</code></pre>`)
+						runLevelFailureLogsFound = true
 					}
 				}
 				continue

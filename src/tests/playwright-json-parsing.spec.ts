@@ -806,9 +806,10 @@ describe('Playwright JSON parsing', () => {
 		})
 
 		expect(testCaseResults).toHaveLength(0)
-		expect(runFailureLogs).toContain('Error in global setup: Connection refused')
-		expect(runFailureLogs).toContain('Failed to start server')
-		expect(runFailureLogs).toContain('<pre><code>')
+		expect(runFailureLogs).toBe(
+			'<pre><code>Error in global setup: Connection refused</code></pre>' +
+				'<pre><code>Failed to start server</code></pre>'
+		)
 	})
 
 	test('Should strip ANSI codes from top-level errors in runFailureLogs', async () => {
@@ -822,7 +823,6 @@ describe('Playwright JSON parsing', () => {
 			skipStderr: 'never',
 		})
 
-		expect(runFailureLogs).not.toContain('\x1b[')
-		expect(runFailureLogs).toContain('Error: Global setup failed')
+		expect(runFailureLogs).toBe('<pre><code>Error: Global setup failed</code></pre>')
 	})
 })

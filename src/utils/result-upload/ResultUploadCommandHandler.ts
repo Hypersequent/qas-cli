@@ -125,7 +125,7 @@ export class ResultUploadCommandHandler {
 
 		const results = fileResults.flatMap((fileResult) => fileResult.results)
 		const runFailureLogs = fileResults.map((fr) => fr.runFailureLogs).join('')
-		await this.uploadResults(projectCode, runId, results, runFailureLogs)
+		await this.uploadResults({ projectCode, runId, results, runFailureLogs })
 	}
 
 	protected async parseFiles(): Promise<FileResults[]> {
@@ -424,12 +424,17 @@ export class ResultUploadCommandHandler {
 		}
 	}
 
-	private async uploadResults(
-		projectCode: string,
-		runId: number,
-		results: TestCaseResult[],
+	private async uploadResults({
+		projectCode,
+		runId,
+		results,
+		runFailureLogs,
+	}: {
+		projectCode: string
+		runId: number
+		results: TestCaseResult[]
 		runFailureLogs: string
-	) {
+	}) {
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
 		const uploader = new ResultUploader(this.markerParser, this.type, { ...this.args, runUrl })
 		await uploader.handle(results, runFailureLogs)

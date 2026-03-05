@@ -399,21 +399,7 @@ describe('Junit XML parsing', () => {
 		expect(runFailureLogs).toBe('')
 	})
 
-	test('Should extract suite-level system-err into runFailureLogs', async () => {
-		const xmlPath = `${xmlBasePath}/suite-level-errors.xml`
-		const xmlContent = await readFile(xmlPath, 'utf8')
-
-		const { runFailureLogs } = await parseJUnitXml(xmlContent, xmlBasePath, {
-			skipStdout: 'never',
-			skipStderr: 'never',
-		})
-
-		expect(runFailureLogs).toContain('com.example.SetupFailureTest')
-		expect(runFailureLogs).toContain('Failed to initialize database connection')
-		expect(runFailureLogs).toContain('Connection refused')
-	})
-
-	test('Should extract empty-name testcase errors into runFailureLogs and exclude from testCaseResults', async () => {
+	test('Should extract suite-level system-err and empty-name testcase errors into runFailureLogs', async () => {
 		const xmlPath = `${xmlBasePath}/suite-level-errors.xml`
 		const xmlContent = await readFile(xmlPath, 'utf8')
 
@@ -426,7 +412,13 @@ describe('Junit XML parsing', () => {
 		expect(testCaseResults).toHaveLength(2)
 		expect(testCaseResults.every((tc) => tc.name !== '')).toBe(true)
 
-		// Its error content should be in runFailureLogs
-		expect(runFailureLogs).toContain('BeforeAll setup failed')
+		// Suite name header should appear only once, followed by both system-err and empty-name testcase error
+		expect(runFailureLogs).toBe(
+			'<h4>com.example.SetupFailureTest</h4>' +
+				'<pre><code>Failed to initialize database connection\n' +
+				'java.sql.SQLException: Connection refused</code></pre>' +
+				'<pre><code>java.lang.RuntimeException: BeforeAll setup failed\n' +
+				'\tat com.example.SetupFailureTest.setup(SetupFailureTest.java:15)</code></pre>'
+		)
 	})
 })
