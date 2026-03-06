@@ -43,7 +43,8 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
    - Also exports a standalone `formatMarker()` function used by parsers
 
 2. **`ResultUploadCommandHandler`** — Orchestrates the overall flow:
-   - Parses report inputs using the appropriate parser (JUnit XML file, Playwright JSON file, or Allure results directory)
+   - Parses report inputs using the appropriate parser (JUnit XML file, Playwright JSON file, or Allure results directory). File-based parsers receive file contents; directory-based parsers (Allure) receive the path — controlled by the module-level `directoryInputTypes` Set
+   - `ParserOptions` includes `allowPartialParse` (set from `--force`) to skip invalid files instead of aborting
    - Detects project code from test case names via `MarkerParser` (or from `--run-url`)
    - Creates a new test run (or reuses an existing one if title conflicts)
    - Delegates actual result uploading to `ResultUploader`
@@ -57,7 +58,7 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
 
 - `junitXmlParser.ts` — Parses JUnit XML via `xml2js` + Zod validation. Extracts attachments from `[[ATTACHMENT|path]]` markers in system-out/failure/error/skipped elements.
 - `playwrightJsonParser.ts` — Parses Playwright JSON report. Supports two test case linking methods: (1) test annotations with `type: "test case"` and URL description, (2) marker in test name. Handles nested suites recursively.
-- `allureParser.ts` — Parses Allure 2 JSON results directories (`*-result.json` files only). Supports test case linking via TMS links (`type: "tms"`) or marker in test name, maps Allure statuses to QA Sphere result statuses, and resolves attachments via `attachments[].source`.
+- `allureParser.ts` — Parses Allure 2 JSON results directories (`*-result.json` files only; containers/XML/images ignored). Supports test case linking via TMS links (`type: "tms"`) or marker in test name, maps Allure statuses to QA Sphere result statuses (`unknown→open`, `broken→blocked`), strips ANSI codes and HTML-escapes messages, and resolves attachments via `attachments[].source`. Uses `formatMarker()` from `MarkerParser`.
 - `types.ts` — Shared `TestCaseResult` and `Attachment` interfaces used by both parsers.
 
 ### API Layer (src/api/)

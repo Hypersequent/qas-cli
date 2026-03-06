@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import stripAnsi from 'strip-ansi'
 import z from 'zod'
 import { ResultStatus } from '../../api/schemas'
-import { getTCaseMarker, parseTCaseUrl } from '../misc'
+import { parseTCaseUrl } from '../misc'
+import { formatMarker } from './MarkerParser'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { Attachment, TestCaseResult } from './types'
 import { getAttachments } from './utils'
@@ -201,7 +202,7 @@ const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined
 	for (const link of tmsLinks) {
 		const parsed = parseTCaseUrl(link.url)
 		if (parsed) {
-			return getTCaseMarker(parsed.project, parsed.tcaseSeq)
+			return formatMarker(parsed.project, parsed.tcaseSeq)
 		}
 	}
 
@@ -225,7 +226,7 @@ const getMarkerFromText = (text: string | undefined): string | undefined => {
 		return undefined
 	}
 
-	return getTCaseMarker(match[1], Number(match[2]))
+	return formatMarker(match[1], Number(match[2]))
 }
 
 const getErrorMessage = (error: unknown) => {

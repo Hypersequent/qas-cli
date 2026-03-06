@@ -268,4 +268,131 @@ describe('Allure parsing', () => {
 		expect(testcases[0].name).toBe('TEST-002: TEST-404 marker in test name')
 		expect(testcases[1].name).toBe('TEST-006: TEST-405 marker in test name')
 	})
+
+	test('Should strip ANSI escape codes from message and trace', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-500 ANSI test',
+					status: 'failed',
+					statusDetails: {
+						message: '\x1b[31mred error\x1b[0m',
+						trace: '\x1b[1m\x1b[33mbold yellow trace\x1b[0m',
+					},
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases[0].message).toContain('red error')
+		expect(testcases[0].message).not.toContain('\x1b')
+		expect(testcases[0].message).toContain('bold yellow trace')
+	})
+
+	test('Should handle null arrays (labels, attachments, links, parameters) gracefully', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-600 null arrays',
+					labels: null,
+					attachments: null,
+					links: null,
+					parameters: null,
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].folder).toBe('')
+		expect(testcases[0].attachments).toHaveLength(0)
+	})
+
+	test('Should HTML-escape special characters in message and trace', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-700 HTML test',
+					status: 'failed',
+					statusDetails: {
+						message: '<div>error</div>',
+						trace: '<script>alert(1)</script>',
+					},
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases[0].message).toContain('&lt;div&gt;')
+		expect(testcases[0].message).not.toContain('<div>')
+		expect(testcases[0].message).toContain('&lt;script&gt;')
+	})
+
+	test('Should ignore container files, non-result JSON, XML, and images', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'valid result only' })),
+			'002-container.json': JSON.stringify({ uuid: 'c1', befores: [], afters: [] }),
+			'report.xml': '<xml/>',
+			'screenshot.png': 'fake-png-data',
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('valid result only')
+	})
+
+	test('Should return empty array for empty directory', async () => {
+		const dir = await createTempAllureDir({})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(0)
+	})
+
+	test('Should include message and trace for failed tests even with on-success skip options', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-900 failed with details',
+					status: 'failed',
+					statusDetails: {
+						message: 'assertion failed',
+						trace: 'stack trace here',
+					},
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'on-success',
+			skipStderr: 'on-success',
+		})
+		expect(testcases[0].message).toContain('assertion failed')
+		expect(testcases[0].message).toContain('stack trace here')
+	})
+
+	test('Should return null timeTaken when stop is before start', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-1000 negative duration',
+					start: 2000,
+					stop: 1000,
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases[0].timeTaken).toBeNull()
+	})
 })

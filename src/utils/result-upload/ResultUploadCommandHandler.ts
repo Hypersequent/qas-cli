@@ -70,6 +70,8 @@ const commandTypeParsers: Record<UploadCommandType, Parser> = {
 	'allure-upload': parseAllureResults,
 }
 
+const directoryInputTypes: Set<UploadCommandType> = new Set(['allure-upload'])
+
 export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
@@ -141,10 +143,12 @@ export class ResultUploadCommandHandler {
 		}
 
 		for (const file of this.args.files) {
-			const fileData = this.type === 'allure-upload' ? file : readFileSync(file).toString()
+			const isDirectoryInput = directoryInputTypes.has(this.type)
+			const fileData = isDirectoryInput ? file : readFileSync(file).toString()
+			const attachmentBaseDir = isDirectoryInput ? file : dirname(file)
 			const fileResults = await commandTypeParsers[this.type](
 				fileData,
-				this.type === 'allure-upload' ? file : dirname(file),
+				attachmentBaseDir,
 				parserOptions
 			)
 			results.push({ file, results: fileResults })
