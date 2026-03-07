@@ -43,9 +43,27 @@ const allureParameterSchema = z.object({
 
 const allureLinkSchema = z.object({
 	name: z.string().optional(),
-	url: z.string(),
+	url: z.string().optional(),
 	type: z.string().optional(),
 })
+
+type AllureStep = {
+	name?: string
+	status?: string
+	attachments?: Array<{ name: string; source: string; type: string }> | null
+	steps?: AllureStep[] | null
+}
+
+const allureStepSchema: z.ZodType<AllureStep> = z.lazy(() =>
+	z
+		.object({
+			name: z.string().optional(),
+			status: z.string().optional(),
+			attachments: z.array(allureAttachmentSchema).nullish(),
+			steps: z.array(allureStepSchema).nullish(),
+		})
+		.passthrough()
+)
 
 const allureResultSchema = z.object({
 	name: z.string(),
@@ -64,7 +82,7 @@ const allureResultSchema = z.object({
 	labels: z.array(allureLabelSchema).nullish(),
 	links: z.array(allureLinkSchema).nullish(),
 	parameters: z.array(allureParameterSchema).nullish(),
-	steps: z.array(z.unknown()).nullish(),
+	steps: z.array(allureStepSchema).nullish(),
 })
 
 type AllureResult = z.infer<typeof allureResultSchema>
@@ -129,7 +147,9 @@ export const parseAllureResults: Parser = async (
 				attachments: [],
 			}) - 1
 
-		const attachmentPaths = (parsedResult.attachments || []).map((attachment) => attachment.source)
+		const topLevelPaths = (parsedResult.attachments || []).map((a) => a.source)
+		const stepPaths = collectStepAttachmentPaths(parsedResult.steps)
+		const attachmentPaths = [...topLevelPaths, ...stepPaths]
 		attachmentsPromises.push({
 			index,
 			promise: getAttachments(attachmentPaths, attachmentBaseDirectory || resultsDirectory),
@@ -143,6 +163,14 @@ export const parseAllureResults: Parser = async (
 	})
 
 	return testcases
+}
+
+const collectStepAttachmentPaths = (steps: AllureStep[] | null | undefined): string[] => {
+	if (!steps) return []
+	return steps.flatMap((step) => [
+		...(step.attachments || []).map((a) => a.source),
+		...collectStepAttachmentPaths(step.steps),
+	])
 }
 
 const mapAllureStatus = (status: AllureStatus): ResultStatus => {
@@ -209,6 +237,7 @@ const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined
 	const tmsLinks = (links || []).filter((link) => link.type?.toLowerCase() === 'tms')
 
 	for (const link of tmsLinks) {
+		if (!link.url) continue
 		const parsed = parseTCaseUrl(link.url)
 		if (parsed) {
 			return formatMarker(parsed.project, parsed.tcaseSeq)
@@ -224,6 +253,7 @@ const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined
 
 	return undefined
 }
+
 const getErrorMessage = (error: unknown) => {
 	return error instanceof Error ? error.message : String(error)
 }

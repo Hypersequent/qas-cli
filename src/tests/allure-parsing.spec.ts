@@ -428,6 +428,110 @@ describe('Allure parsing', () => {
 		expect(testcases[0].timeTaken).toBeNull()
 	})
 
+	test('Should extract marker from TMS link name when URL is absent', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'Login page test',
+					links: [{ type: 'tms', name: 'TEST-042' }],
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('TEST-042: Login page test')
+	})
+
+	test('Should fall through to test name when TMS link has neither URL nor name', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-099 Checkout test',
+					links: [{ type: 'tms' }],
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('TEST-099: TEST-099 Checkout test')
+	})
+
+	test('Should collect attachments from nested steps', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-800 step attachments',
+					steps: [
+						{
+							name: 'Step 1',
+							status: 'passed',
+							attachments: [{ name: 'step-log.txt', source: 'step-log.txt', type: 'text/plain' }],
+							steps: [],
+						},
+					],
+				})
+			),
+			'step-log.txt': 'step log content',
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].attachments).toHaveLength(1)
+		expect(testcases[0].attachments[0].filename).toBe('step-log.txt')
+		expect(testcases[0].attachments[0].buffer).not.toBeNull()
+	})
+
+	test('Should collect attachments from deeply nested sub-steps', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'TEST-801 deep step attachments',
+					attachments: [{ name: 'top-level.txt', source: 'top-level.txt', type: 'text/plain' }],
+					steps: [
+						{
+							name: 'Step 1',
+							status: 'passed',
+							attachments: [{ name: 'level1.txt', source: 'level1.txt', type: 'text/plain' }],
+							steps: [
+								{
+									name: 'Sub-step 1.1',
+									status: 'passed',
+									attachments: [
+										{
+											name: 'level2.txt',
+											source: 'level2.txt',
+											type: 'text/plain',
+										},
+									],
+									steps: [],
+								},
+							],
+						},
+					],
+				})
+			),
+			'top-level.txt': 'top',
+			'level1.txt': 'level1',
+			'level2.txt': 'level2',
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].attachments).toHaveLength(3)
+		const filenames = testcases[0].attachments.map((a) => a.filename).sort()
+		expect(filenames).toEqual(['level1.txt', 'level2.txt', 'top-level.txt'])
+	})
+
 	test('Should throw a friendly error when the results directory does not exist', async () => {
 		const missingDir = join(tmpdir(), `qas-missing-allure-results-${Date.now()}`)
 

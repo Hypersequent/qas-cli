@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { MarkerParser, formatMarker } from '../utils/result-upload/MarkerParser'
+import { MarkerParser, formatMarker, getMarkerFromText } from '../utils/result-upload/MarkerParser'
 
 const junit = new MarkerParser('junit-upload')
 const playwright = new MarkerParser('playwright-json-upload')
@@ -166,6 +166,37 @@ describe('extractSeq', () => {
 		test('returns null for no marker', () => {
 			expect(junit.extractSeq('test_cart_items', 'TEST')).toBeNull()
 		})
+	})
+})
+
+describe('getMarkerFromText', () => {
+	test('returns marker from text containing a valid marker', () => {
+		expect(getMarkerFromText('Some TEST-002 test')).toBe('TEST-002')
+	})
+
+	test('returns undefined for undefined input', () => {
+		expect(getMarkerFromText(undefined)).toBeUndefined()
+	})
+
+	test('returns undefined for empty string', () => {
+		expect(getMarkerFromText('')).toBeUndefined()
+	})
+
+	test('returns undefined for markers with fewer than 3 digits', () => {
+		expect(getMarkerFromText('TEST-1')).toBeUndefined()
+		expect(getMarkerFromText('TEST-12')).toBeUndefined()
+	})
+
+	test('returns first match when multiple markers present', () => {
+		expect(getMarkerFromText('TEST-002 PROJ-003')).toBe('TEST-002')
+	})
+
+	test('handles max-length project code (5 chars)', () => {
+		expect(getMarkerFromText('ABCDE-123')).toBe('ABCDE-123')
+	})
+
+	test('rejects project code longer than 5 chars', () => {
+		expect(getMarkerFromText('ABCDEF-123')).toBeUndefined()
 	})
 })
 
