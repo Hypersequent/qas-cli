@@ -5,7 +5,7 @@ import stripAnsi from 'strip-ansi'
 import z from 'zod'
 import { ResultStatus } from '../../api/schemas'
 import { parseTCaseUrl } from '../misc'
-import { formatMarker } from './MarkerParser'
+import { formatMarker, getMarkerFromText } from './MarkerParser'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
 import { Attachment, TestCaseResult } from './types'
 import { getAttachments } from './utils'
@@ -51,8 +51,8 @@ const allureResultSchema = z.object({
 	name: z.string(),
 	status: allureStatusSchema,
 	uuid: z.string(),
-	start: z.number(),
-	stop: z.number(),
+	start: z.number().optional(),
+	stop: z.number().optional(),
 	fullName: z.string().optional(),
 	historyId: z.string().optional(),
 	testCaseId: z.string().optional(),
@@ -69,16 +69,21 @@ const allureResultSchema = z.object({
 
 type AllureResult = z.infer<typeof allureResultSchema>
 
-const markerRegex = /\b([A-Za-z0-9]{1,5})-(\d+)\b/
-
 export const parseAllureResults: Parser = async (
 	resultsDirectory: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
 ): Promise<TestCaseResult[]> => {
-	const resultFiles = readdirSync(resultsDirectory)
-		.filter((f) => f.endsWith('-result.json'))
-		.sort()
+	let resultFiles: string[]
+	try {
+		resultFiles = readdirSync(resultsDirectory)
+			.filter((f) => f.endsWith('-result.json'))
+			.sort()
+	} catch (error) {
+		throw new Error(
+			`Failed to read Allure results directory "${resultsDirectory}": ${getErrorMessage(error)}`
+		)
+	}
 
 	const testcases: TestCaseResult[] = []
 	const attachmentsPromises: Array<{
@@ -116,7 +121,11 @@ export const parseAllureResults: Parser = async (
 				status,
 				message: buildMessage(parsedResult, status, options),
 				timeTaken:
-					parsedResult.stop >= parsedResult.start ? parsedResult.stop - parsedResult.start : null,
+					parsedResult.start != null &&
+					parsedResult.stop != null &&
+					parsedResult.stop >= parsedResult.start
+						? parsedResult.stop - parsedResult.start
+						: null,
 				attachments: [],
 			}) - 1
 
@@ -215,20 +224,6 @@ const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined
 
 	return undefined
 }
-
-const getMarkerFromText = (text: string | undefined): string | undefined => {
-	if (!text) {
-		return undefined
-	}
-
-	const match = text.match(markerRegex)
-	if (!match) {
-		return undefined
-	}
-
-	return formatMarker(match[1], Number(match[2]))
-}
-
 const getErrorMessage = (error: unknown) => {
 	return error instanceof Error ? error.message : String(error)
 }

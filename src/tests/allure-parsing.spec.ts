@@ -379,6 +379,38 @@ describe('Allure parsing', () => {
 		expect(testcases[0].message).toContain('stack trace here')
 	})
 
+	test('Should parse results without start and stop timestamps', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'Result without timestamps',
+					start: undefined,
+					stop: undefined,
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases[0].timeTaken).toBeNull()
+	})
+
+	test('Should not extract markers with fewer than 3 digits', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(
+				makeResult({
+					name: 'Short marker TEST-1 should stay raw',
+				})
+			),
+		})
+		const testcases = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+		expect(testcases[0].name).toBe('Short marker TEST-1 should stay raw')
+	})
+
 	test('Should return null timeTaken when stop is before start', async () => {
 		const dir = await createTempAllureDir({
 			'001-result.json': JSON.stringify(
@@ -394,5 +426,16 @@ describe('Allure parsing', () => {
 			skipStderr: 'never',
 		})
 		expect(testcases[0].timeTaken).toBeNull()
+	})
+
+	test('Should throw a friendly error when the results directory does not exist', async () => {
+		const missingDir = join(tmpdir(), `qas-missing-allure-results-${Date.now()}`)
+
+		await expect(
+			parseAllureResults(missingDir, missingDir, {
+				skipStdout: 'never',
+				skipStderr: 'never',
+			})
+		).rejects.toThrow(`Failed to read Allure results directory "${missingDir}"`)
 	})
 })
