@@ -1,0 +1,16 @@
+{
+  "name": "TEST-006 Navigation bar items",
+  "status": "failed",
+  "uuid": "missing-004",
+  "start": 1700000013000,
+  "stop": 1700000013300,
+  "statusDetails": {
+    "message": "AssertionError: navigation items mismatch"
+  },
+  "labels": [
+    {
+      "name": "package",
+      "value": "ui.contents.spec.ts"
+    }
+  ]
+}

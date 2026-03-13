@@ -1,0 +1,14 @@
+{
+  "name": "TEST-003 Test checkout",
+  "status": "passed",
+  "uuid": "missing-attach-002",
+  "start": 1700000021000,
+  "stop": 1700000021350,
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "existing-attachment.txt",
+      "type": "text/plain"
+    }
+  ]
+}

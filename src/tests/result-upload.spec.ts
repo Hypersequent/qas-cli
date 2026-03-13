@@ -159,18 +159,45 @@ const cleanupGeneratedMappingFiles = (existingMappingFiles?: Set<string>) => {
 	})
 }
 
+interface TestFileType {
+	name: string
+	command: 'junit-upload' | 'playwright-json-upload' | 'allure-upload'
+	dataBasePath: string
+	inputType: 'file' | 'directory'
+	fileExtension?: string
+}
+
+const fixtureInputPath = (fileType: TestFileType, fixtureName: string) => {
+	if (fileType.inputType === 'directory') {
+		return `${fileType.dataBasePath}/${fixtureName}`
+	}
+	return `${fileType.dataBasePath}/${fixtureName}.${fileType.fileExtension}`
+}
+
 const fileTypes = [
 	{
 		name: 'JUnit XML',
 		command: 'junit-upload',
 		dataBasePath: './src/tests/fixtures/junit-xml',
 		fileExtension: 'xml',
+		inputType: 'file',
 	},
 	{
 		name: 'Playwright JSON',
 		command: 'playwright-json-upload',
 		dataBasePath: './src/tests/fixtures/playwright-json',
 		fileExtension: 'json',
+		inputType: 'file',
+	},
+] as const satisfies readonly TestFileType[]
+
+const fileTypesWithAllure: TestFileType[] = [
+	...fileTypes,
+	{
+		name: 'Allure',
+		command: 'allure-upload',
+		dataBasePath: './src/tests/fixtures/allure',
+		inputType: 'directory',
 	},
 ]
 
@@ -234,14 +261,14 @@ describe('CamelCase test case markers (Go/Java style)', () => {
 	})
 })
 
-fileTypes.forEach((fileType) => {
+fileTypesWithAllure.forEach((fileType) => {
 	describe(`Uploading ${fileType.name} files`, () => {
 		describe('Argument parsing', () => {
 			test('Passing correct Run URL pattern should result in success', async () => {
 				const patterns = [
-					`${fileType.command} --run-url ${runURL} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`,
-					`${fileType.command} -r ${runURL}/ ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`,
-					`${fileType.command} -r ${runURL}/tcase/1 ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`,
+					`${fileType.command} --run-url ${runURL} ${fixtureInputPath(fileType, 'matching-tcases')}`,
+					`${fileType.command} -r ${runURL}/ ${fixtureInputPath(fileType, 'matching-tcases')}`,
+					`${fileType.command} -r ${runURL}/tcase/1 ${fixtureInputPath(fileType, 'matching-tcases')}`,
 				]
 
 				for (const pattern of patterns) {
@@ -258,7 +285,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(1)
 				await run(
-					`${fileType.command} -r ${qasHost}/project/${projectCode}/run/${runId} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${qasHost}/project/${projectCode}/run/${runId} ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
@@ -266,8 +293,8 @@ fileTypes.forEach((fileType) => {
 
 			test('Passing incorrect Run URL pattern should result in failure', async () => {
 				const patterns = [
-					`${fileType.command} -r ${qasHost}/projects/${projectCode}/runs/${runId} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`,
-					`${fileType.command} -r ${runURL}abc/tcase/1 ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`,
+					`${fileType.command} -r ${qasHost}/projects/${projectCode}/runs/${runId} ${fixtureInputPath(fileType, 'matching-tcases')}`,
+					`${fileType.command} -r ${runURL}abc/tcase/1 ${fixtureInputPath(fileType, 'matching-tcases')}`,
 				]
 
 				for (const pattern of patterns) {
@@ -293,7 +320,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(2)
 				await run(
-					`${fileType.command} -r ${runURL} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(3) // 5 results total
@@ -303,9 +330,7 @@ fileTypes.forEach((fileType) => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
 				await expect(
-					run(
-						`${fileType.command} -r ${runURL} ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
-					)
+					run(`${fileType.command} -r ${runURL} ${fixtureInputPath(fileType, 'missing-tcases')}`)
 				).rejects.toThrowError()
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(0)
@@ -316,7 +341,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(3)
 				await run(
-					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --force ${fixtureInputPath(fileType, 'missing-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(2) // 4 results total
@@ -326,7 +351,7 @@ fileTypes.forEach((fileType) => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
 				await run(
-					`${fileType.command} -r ${runURL} --ignore-unmatched ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --ignore-unmatched ${fixtureInputPath(fileType, 'missing-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(1) // 4 results total
@@ -337,7 +362,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(2)
 				await run(
-					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension} ${fileType.dataBasePath}/missing-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --force ${fixtureInputPath(fileType, 'missing-tcases')} ${fixtureInputPath(fileType, 'missing-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(4) // 8 results total
@@ -347,7 +372,7 @@ fileTypes.forEach((fileType) => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
 				await run(
-					`${fileType.command} -r ${runURL} --force ${fileType.dataBasePath}/empty-tsuite.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --force ${fixtureInputPath(fileType, 'empty-tsuite')}`
 				)
 				expect(numFileUploadCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(1) // 1 result total
@@ -360,7 +385,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(3)
 				await run(
-					`${fileType.command} -r ${runURL} --attachments ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --attachments ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 				expect(numFileUploadCalls()).toBe(5)
 				expect(numResultUploadCalls()).toBe(2) // 5 results total
@@ -370,7 +395,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				await expect(
 					run(
-						`${fileType.command} -r ${runURL} --attachments ${fileType.dataBasePath}/missing-attachments.${fileType.fileExtension}`
+						`${fileType.command} -r ${runURL} --attachments ${fixtureInputPath(fileType, 'missing-attachments')}`
 					)
 				).rejects.toThrow()
 				expect(numFileUploadCalls()).toBe(0)
@@ -381,7 +406,7 @@ fileTypes.forEach((fileType) => {
 				const numResultUploadCalls = countResultUploadApiCalls()
 				setMaxResultsInRequest(1)
 				await run(
-					`${fileType.command} -r ${runURL} --attachments --force ${fileType.dataBasePath}/missing-attachments.${fileType.fileExtension}`
+					`${fileType.command} -r ${runURL} --attachments --force ${fixtureInputPath(fileType, 'missing-attachments')}`
 				)
 				expect(numFileUploadCalls()).toBe(4)
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
@@ -402,7 +427,7 @@ fileTypes.forEach((fileType) => {
 				try {
 					// This should create a new run since no --run-url is specified
 					await run(
-						`${fileType.command} --run-name "CI Build {env:TEST_BUILD_NUMBER}" ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+						`${fileType.command} --run-name "CI Build {env:TEST_BUILD_NUMBER}" ${fixtureInputPath(fileType, 'matching-tcases')}`
 					)
 
 					expect(lastCreatedRunTitle).toBe('CI Build 456')
@@ -423,7 +448,7 @@ fileTypes.forEach((fileType) => {
 				const expectedDay = String(now.getDate()).padStart(2, '0')
 
 				await run(
-					`${fileType.command} --run-name "Test Run {YYYY}-{MM}-{DD}" ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} --run-name "Test Run {YYYY}-{MM}-{DD}" ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 
 				expect(lastCreatedRunTitle).toBe(`Test Run ${expectedYear}-${expectedMonth}-${expectedDay}`)
@@ -435,7 +460,7 @@ fileTypes.forEach((fileType) => {
 
 				try {
 					await run(
-						`${fileType.command} --run-name "{env:TEST_PROJECT} - {YYYY}/{MM}" ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+						`${fileType.command} --run-name "{env:TEST_PROJECT} - {YYYY}/{MM}" ${fixtureInputPath(fileType, 'matching-tcases')}`
 					)
 
 					const now = new Date()
@@ -458,7 +483,7 @@ fileTypes.forEach((fileType) => {
 
 				createRunTitleConflict = true
 				await run(
-					`${fileType.command} --run-name "duplicate run title" ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} --run-name "duplicate run title" ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 
 				expect(lastCreatedRunTitle).toBe('duplicate run title')
@@ -467,9 +492,7 @@ fileTypes.forEach((fileType) => {
 			})
 
 			test('Should use default name template when --run-name is not specified', async () => {
-				await run(
-					`${fileType.command} ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
-				)
+				await run(`${fileType.command} ${fixtureInputPath(fileType, 'matching-tcases')}`)
 
 				// Should use default format: "Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}"
 				expect(lastCreatedRunTitle).toContain('Automated test run - ')
@@ -507,7 +530,7 @@ fileTypes.forEach((fileType) => {
 				}
 
 				await run(
-					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/without-markers.${fileType.fileExtension}`
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fixtureInputPath(fileType, 'without-markers')}`
 				)
 				expect(numCreateTCasesCalls()).toBe(1)
 				expect(numResultUploadCalls()).toBe(3) // 3 results total
@@ -544,7 +567,7 @@ fileTypes.forEach((fileType) => {
 				}
 
 				await run(
-					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/without-markers.${fileType.fileExtension}`
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fixtureInputPath(fileType, 'without-markers')}`
 				)
 				expect(numCreateTCasesCalls()).toBe(1)
 				expect(numResultUploadCalls()).toBe(3) // 3 results total
@@ -556,11 +579,27 @@ fileTypes.forEach((fileType) => {
 
 				setMaxResultsInRequest(1)
 				await run(
-					`${fileType.command} --project-code ${projectCode} --create-tcases ${fileType.dataBasePath}/matching-tcases.${fileType.fileExtension}`
+					`${fileType.command} --project-code ${projectCode} --create-tcases ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
 				expect(numCreateTCasesCalls()).toBe(0)
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
+	})
+})
+
+describe('Allure invalid result file handling', () => {
+	test('Should fail when directory contains malformed files without --force', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await expect(
+			run(`allure-upload -r ${runURL} ./src/tests/fixtures/allure/invalid-results`)
+		).rejects.toThrowError()
+		expect(numResultUploadCalls()).toBe(0)
+	})
+
+	test('Should skip invalid files and continue when --force is set', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`allure-upload -r ${runURL} --force ./src/tests/fixtures/allure/invalid-results`)
+		expect(numResultUploadCalls()).toBe(1) // 1 valid result total
 	})
 })

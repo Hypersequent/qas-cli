@@ -1,0 +1,8 @@
+{
+  "name": "The cart is still filled after refreshing the page",
+  "status": "passed",
+  "uuid": "without-markers-001",
+  "start": 1700000030000,
+  "stop": 1700000030200,
+  "labels": []
+}

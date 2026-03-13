@@ -1,0 +1,13 @@
+{
+  "name": "TEST-002 Test cart",
+  "status": "passed",
+  "uuid": "empty-tsuite-001",
+  "start": 1700000040000,
+  "stop": 1700000040100,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "ui.cart.spec.ts"
+    }
+  ]
+}

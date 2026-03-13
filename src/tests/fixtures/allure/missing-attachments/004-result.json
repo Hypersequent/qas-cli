@@ -1,0 +1,17 @@
+{
+  "name": "TEST-006 Navigation bar items",
+  "status": "failed",
+  "uuid": "missing-attach-004",
+  "start": 1700000023000,
+  "stop": 1700000023300,
+  "statusDetails": {
+    "message": "AssertionError: navigation items mismatch"
+  },
+  "attachments": [
+    {
+      "name": "attachment",
+      "source": "existing-attachment.txt",
+      "type": "text/plain"
+    }
+  ]
+}
