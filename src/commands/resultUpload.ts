@@ -7,33 +7,43 @@ import {
 	UploadCommandType,
 } from '../utils/result-upload/ResultUploadCommandHandler'
 
-const commandTypeDisplayStrings: Record<UploadCommandType, string> = {
-	'junit-upload': 'JUnit XML',
-	'playwright-json-upload': 'Playwright JSON',
-	'allure-upload': 'Allure',
+interface CommandDetails {
+	displayString: string
+	inputKind: string
+	exampleInput: string
 }
 
-const commandTypeInputKinds: Record<UploadCommandType, string> = {
-	'junit-upload': 'files',
-	'playwright-json-upload': 'files',
-	'allure-upload': 'directories',
-}
-
-const commandTypeExampleInputs: Record<UploadCommandType, string> = {
-	'junit-upload': './test-results.xml',
-	'playwright-json-upload': './test-results.json',
-	'allure-upload': './allure-results',
+const commandDetails: Record<UploadCommandType, CommandDetails> = {
+	'junit-upload': {
+		displayString: 'JUnit XML',
+		inputKind: 'files',
+		exampleInput: './test-results.xml',
+	},
+	'playwright-json-upload': {
+		displayString: 'Playwright JSON',
+		inputKind: 'files',
+		exampleInput: './test-results.json',
+	},
+	'allure-upload': {
+		displayString: 'Allure',
+		inputKind: 'directories',
+		exampleInput: './allure-results',
+	},
 }
 
 export class ResultUploadCommandModule implements CommandModule<unknown, ResultUploadCommandArgs> {
-	constructor(private readonly type: UploadCommandType) {}
+	private readonly details: CommandDetails
+
+	constructor(private readonly type: UploadCommandType) {
+		this.details = commandDetails[type]
+	}
 
 	get command() {
 		return `${this.type} [args..] <files..>`
 	}
 
 	get describe() {
-		return `Upload ${commandTypeDisplayStrings[this.type]} ${commandTypeInputKinds[this.type]} to a new or existing test run`
+		return `Upload ${this.details.displayString} ${this.details.inputKind} to a new or existing test run`
 	}
 
 	builder = (argv: Argv) => {
@@ -101,20 +111,18 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 
 		argv.example(
 			`$0 ${this.type} -r https://qas.eu1.qasphere.com/project/P1/run/23 ${
-				commandTypeExampleInputs[this.type]
+				this.details.exampleInput
 			}`,
 			'Upload results to existing run ID 23 of project P1'
 		)
 
 		argv.example(
-			`$0 ${this.type} ${commandTypeExampleInputs[this.type]}`,
+			`$0 ${this.type} ${this.details.exampleInput}`,
 			'Create a new test run with default name template and upload results. Project code is detected from test case markers in the results'
 		)
 
 		argv.example(
-			`$0 ${this.type} --project-code P1 --run-name "v1.4.4-rc5" ${
-				commandTypeExampleInputs[this.type]
-			}`,
+			`$0 ${this.type} --project-code P1 --run-name "v1.4.4-rc5" ${this.details.exampleInput}`,
 			'Create a new test run with name template without any placeholders and upload results'
 		)
 
@@ -122,7 +130,7 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 			`$0 ${
 				this.type
 			} --project-code P1 --run-name "CI Build {env:BUILD_NUMBER} - {YYYY}-{MM}-{DD}" ${
-				commandTypeExampleInputs[this.type]
+				this.details.exampleInput
 			}`,
 			'Create a new test run with name template using environment variable and date placeholders and upload results'
 		)
@@ -131,7 +139,7 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 			`$0 ${
 				this.type
 			} --project-code P1 --run-name "Nightly Tests {YYYY}/{MM}/{DD} {HH}:{mm}" --create-tcases ${
-				commandTypeExampleInputs[this.type]
+				this.details.exampleInput
 			}`,
 			'Create a new test run with name template using date and time placeholders and create test cases for results without valid markers and upload results'
 		)
