@@ -1,3 +1,11 @@
+// Allure 2 result file schema reference:
+//   https://allurereport.org/docs/how-it-works-test-result-file/
+//
+// Real framework outputs used to verify field presence vs docs:
+//   https://github.com/allure-framework/allure-examples
+//   Frameworks tested: python-pytest, python-behave, python-robotframework,
+//   js-jest, ts-mocha (js-codeceptjs / ts-codeceptjs produce Allure 1 XML — not supported)
+
 import { afterEach, describe, expect, test } from 'vitest'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
