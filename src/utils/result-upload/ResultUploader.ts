@@ -1,7 +1,7 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
 import escapeHtml from 'escape-html'
-import { RunTCase } from '../../api/schemas'
+import { RunTCase } from '../../api/runs'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import { Attachment, TestCaseResult } from './types'
@@ -329,7 +329,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			const endIdx = Math.min(startIdx + MAX_RESULTS_IN_REQUEST, results.length)
 			const batch = results.slice(startIdx, endIdx)
 
-			await this.api.runs.createResults(this.project, this.run, {
+			await this.api.results.createResults(this.project, this.run, {
 				items: batch.map(({ tcase, result }) => ({
 					tcaseId: tcase.id,
 					status: result.status,

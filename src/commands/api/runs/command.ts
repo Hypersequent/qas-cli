@@ -1,0 +1,365 @@
+import { Argv, CommandModule } from 'yargs'
+import { apiHandler, parseAndValidateJsonArg, printJson, validateWithSchema } from '../utils'
+import { cloneRunBodySchema, createRunBodySchema, queryPlansSchema } from './schemas'
+import help from './help'
+
+interface RunsCreateArgs {
+	'project-code': string
+	title: string
+	type: 'static' | 'static_struct' | 'live'
+	description?: string
+	'milestone-id'?: number
+	'configuration-id'?: string
+	'assignment-id'?: number
+	'query-plans': string
+}
+
+const createCommand: CommandModule<object, RunsCreateArgs> = {
+	command: 'create',
+	describe: help.create.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				title: {
+					type: 'string',
+					demandOption: true,
+					describe: help.create.title,
+				},
+				type: {
+					type: 'string',
+					demandOption: true,
+					choices: ['static', 'static_struct', 'live'] as const,
+					describe: help.create.type,
+				},
+				description: {
+					type: 'string',
+					describe: help.create.description,
+				},
+				'milestone-id': {
+					type: 'number',
+					describe: help.create['milestone-id'],
+				},
+				'configuration-id': {
+					type: 'string',
+					describe: help.create['configuration-id'],
+				},
+				'assignment-id': {
+					type: 'number',
+					describe: help.create['assignment-id'],
+				},
+				'query-plans': {
+					type: 'string',
+					demandOption: true,
+					describe: help.create['query-plans'],
+				},
+			})
+			.example(help.examples[0].usage, help.examples[0].description)
+			.epilog(help.create.epilog),
+	handler: apiHandler<RunsCreateArgs>(async (args, connectApi) => {
+		const {
+			'project-code': projectCode,
+			'query-plans': queryPlansArg,
+			'milestone-id': milestoneId,
+			'configuration-id': configurationId,
+			'assignment-id': assignmentId,
+			...restArgs
+		} = args
+		const queryPlans = parseAndValidateJsonArg(queryPlansArg, '--query-plans', queryPlansSchema)
+
+		const body = validateWithSchema(
+			{ ...restArgs, queryPlans, milestoneId, configurationId, assignmentId },
+			'request body',
+			createRunBodySchema
+		)
+
+		const api = connectApi()
+		const result = await api.runs.createRun(projectCode, body)
+		printJson(result)
+	}),
+}
+
+interface RunsListArgs {
+	'project-code': string
+	closed?: boolean
+	'milestone-ids'?: string
+	limit?: number
+}
+
+const listCommand: CommandModule<object, RunsListArgs> = {
+	command: 'list',
+	describe: help.list.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				closed: {
+					type: 'boolean',
+					describe: help.list.closed,
+				},
+				'milestone-ids': {
+					type: 'string',
+					describe: help.list['milestone-ids'],
+				},
+				limit: {
+					type: 'number',
+					describe: help.list.limit,
+				},
+			})
+			.epilog(help.list.epilog),
+	handler: apiHandler<RunsListArgs>(async (args, connectApi) => {
+		const api = connectApi()
+		const result = await api.runs.listRuns(args['project-code'], {
+			closed: args.closed,
+			milestoneIds: args['milestone-ids']?.split(',').map(Number),
+			limit: args.limit,
+		})
+		printJson(result)
+	}),
+}
+
+interface RunsCloneArgs {
+	'project-code': string
+	'run-id': number
+	title: string
+	description?: string
+	'milestone-id'?: number
+	'assignment-id'?: number
+}
+
+const cloneCommand: CommandModule<object, RunsCloneArgs> = {
+	command: 'clone',
+	describe: help.clone.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				'run-id': {
+					type: 'number',
+					demandOption: true,
+					describe: help['run-id'],
+				},
+				title: {
+					type: 'string',
+					demandOption: true,
+					describe: help.clone.title,
+				},
+				description: {
+					type: 'string',
+					describe: help.clone.description,
+				},
+				'milestone-id': {
+					type: 'number',
+					describe: help.clone['milestone-id'],
+				},
+				'assignment-id': {
+					type: 'number',
+					describe: help.clone['assignment-id'],
+				},
+			})
+			.epilog(help.clone.epilog),
+	handler: apiHandler<RunsCloneArgs>(async (args, connectApi) => {
+		const {
+			'project-code': projectCode,
+			'run-id': runId,
+			'milestone-id': milestoneId,
+			'assignment-id': assignmentId,
+			...restArgs
+		} = args
+
+		const body = validateWithSchema(
+			{ ...restArgs, runId, milestoneId, assignmentId },
+			'request body',
+			cloneRunBodySchema
+		)
+
+		const api = connectApi()
+		const result = await api.runs.cloneRun(projectCode, body)
+		printJson(result)
+	}),
+}
+
+interface RunsCloseArgs {
+	'project-code': string
+	'run-id': number
+}
+
+const closeCommand: CommandModule<object, RunsCloseArgs> = {
+	command: 'close',
+	describe: help.close.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				'run-id': {
+					type: 'number',
+					demandOption: true,
+					describe: help['run-id'],
+				},
+			})
+			.epilog(help.close.epilog),
+	handler: apiHandler<RunsCloseArgs>(async (args, connectApi) => {
+		const api = connectApi()
+		const result = await api.runs.closeRun(args['project-code'], args['run-id'])
+		printJson(result)
+	}),
+}
+
+// Nested tcases subgroup
+
+interface RunsTCasesListArgs {
+	'project-code': string
+	'run-id': number
+	search?: string
+	tags?: string
+	priorities?: string
+	limit?: number
+	include?: string
+	'sort-field'?: string
+	'sort-order'?: string
+}
+
+const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
+	command: 'list',
+	describe: help.tcases.list.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				'run-id': {
+					type: 'number',
+					demandOption: true,
+					describe: help['run-id'],
+				},
+				search: {
+					type: 'string',
+					describe: help.tcases.list.search,
+				},
+				tags: {
+					type: 'string',
+					describe: help.tcases.list.tags,
+				},
+				priorities: {
+					type: 'string',
+					describe: help.tcases.list.priorities,
+				},
+				limit: {
+					type: 'number',
+					describe: help.tcases.list.limit,
+				},
+				include: {
+					type: 'string',
+					describe: help.tcases.list.include,
+				},
+				'sort-field': {
+					type: 'string',
+					describe: help.tcases.list['sort-field'],
+				},
+				'sort-order': {
+					type: 'string',
+					choices: ['asc', 'desc'],
+					describe: help.tcases.list['sort-order'],
+				},
+			})
+			.epilog(help.tcases.list.epilog),
+	handler: apiHandler<RunsTCasesListArgs>(async (args, connectApi) => {
+		const {
+			'project-code': projectCode,
+			'run-id': runId,
+			'sort-field': sortField,
+			'sort-order': sortOrder,
+			...rest
+		} = args
+		const api = connectApi()
+		const result = await api.runs.listRunTCases(projectCode, runId, {
+			...rest,
+			sortField,
+			sortOrder,
+			tags: args.tags?.split(',').map(Number),
+			priorities: args.priorities?.split(','),
+		})
+		printJson(result)
+	}),
+}
+
+interface RunsTCasesGetArgs {
+	'project-code': string
+	'run-id': number
+	'tcase-id': string
+}
+
+const tcasesGetCommand: CommandModule<object, RunsTCasesGetArgs> = {
+	command: 'get',
+	describe: help.tcases.get.command,
+	builder: (yargs: Argv) =>
+		yargs
+			.options({
+				'project-code': {
+					type: 'string',
+					demandOption: true,
+					describe: help['project-code'],
+				},
+				'run-id': {
+					type: 'number',
+					demandOption: true,
+					describe: help['run-id'],
+				},
+				'tcase-id': {
+					type: 'string',
+					demandOption: true,
+					describe: help.tcases.get['tcase-id'],
+				},
+			})
+			.epilog(help.tcases.get.epilog),
+	handler: apiHandler<RunsTCasesGetArgs>(async (args, connectApi) => {
+		const api = connectApi()
+		const result = await api.runs.getRunTCase(
+			args['project-code'],
+			args['run-id'],
+			args['tcase-id']
+		)
+		printJson(result)
+	}),
+}
+
+const tcasesCommand: CommandModule = {
+	command: 'tcases',
+	describe: help.tcases.command,
+	builder: (yargs: Argv) =>
+		yargs.command(tcasesListCommand).command(tcasesGetCommand).demandCommand(1, ''),
+	handler: () => {},
+}
+
+export const runsCommand: CommandModule = {
+	command: 'runs',
+	describe: 'Manage test runs',
+	builder: (yargs: Argv) =>
+		yargs
+			.command(createCommand)
+			.command(listCommand)
+			.command(cloneCommand)
+			.command(closeCommand)
+			.command(tcasesCommand)
+			.demandCommand(1, ''),
+	handler: () => {},
+}

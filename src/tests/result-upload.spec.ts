@@ -3,13 +3,9 @@ import { setupServer } from 'msw/node'
 import { unlinkSync, readdirSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach, vi } from 'vitest'
 import { run } from '../commands/main'
-import {
-	CreateTCasesRequest,
-	CreateTCasesResponse,
-	Folder,
-	PaginatedResponse,
-	TCase,
-} from '../api/schemas'
+import { PaginatedResponse } from '../api/schemas'
+import { CreateTCasesRequest, CreateTCasesResponse, TCase } from '../api/tcases'
+import { Folder } from '../api/folders'
 import { DEFAULT_FOLDER_TITLE } from '../utils/result-upload/ResultUploadCommandHandler'
 import { setMaxResultsInRequest } from '../utils/result-upload/ResultUploader'
 import { runTestCases } from './fixtures/testcases'

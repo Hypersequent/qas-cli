@@ -29,7 +29,7 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 ### Entry Point & CLI Framework
 
 - `src/bin/qasphere.ts` — Entry point (`#!/usr/bin/env node`). Validates Node version, delegates to `run()`.
-- `src/commands/main.ts` — Yargs setup. Registers three commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of the same `ResultUploadCommandModule` class.
+- `src/commands/main.ts` — Yargs setup. Registers three upload commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of `ResultUploadCommandModule`, plus the `api` command.
 - `src/commands/resultUpload.ts` — `ResultUploadCommandModule` defines CLI options shared by both commands. Loads env vars, then delegates to `ResultUploadCommandHandler`.
 
 ### Core Upload Pipeline (src/utils/result-upload/)
@@ -62,24 +62,51 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
 - `allureParser.ts` — Parses Allure JSON results directories (`*-result.json` and `*-container.json` files; XML/images ignored). Supports test case linking via TMS links (`type: "tms"`) or marker in test name, maps Allure statuses to QA Sphere result statuses (`unknown→open`, `broken→blocked`), strips ANSI codes and HTML-escapes messages, and resolves attachments via `attachments[].source`. Uses `formatMarker()` from `MarkerParser`. Extracts run-level failure logs from container files by checking `befores`/`afters` fixtures with `failed`/`broken` status — primarily useful for pytest (allure-junit5 and allure-playwright leave container fixtures empty).
 - `types.ts` — Shared `TestCaseResult`, `ParseResult`, and `Attachment` interfaces used by both parsers.
 
+### API Command (src/commands/api/)
+
+The `api` command provides direct programmatic access to the QA Sphere public API: `qasphere api <resource> <action> [options]`. Each resource (e.g., `projects`, `runs`, `test-cases`) is a subcommand with its own actions. Some resources have nested subgroups (e.g., `qasphere api runs tcases list`).
+
+**File structure per resource**:
+
+```
+src/commands/api/<resource>/
+├── command.ts      # Yargs command definitions (list, get, create, etc.)
+├── help.ts         # Help text and descriptions
+└── schemas.ts      # Zod schemas for input validation (optional, only for complex JSON args)
+```
+
+- `main.ts` — Registers all resource subcommands via `.command()`
+- `utils.ts` — Shared helpers: `apiHandler<T>()` wraps handlers with lazy env loading and error handling; `printJson()` outputs formatted JSON; `parseJsonArg()` supports inline JSON or `@filename`; `parseAndValidateJsonArg()` and `validateWithSchema()` validate with Zod and produce detailed error messages; `apiDocsEpilog()` appends API doc links
+
+**Key design patterns**:
+
+- **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (via `connectApi()`), so CLI validation errors are reported first
+- **JSON argument flexibility**: Complex args accept inline JSON or `@filename` references (e.g., `--query-plans @plans.json`)
+- **Zod validation with path-based errors**: Detailed messages like `[0].tcaseIds: not allowed for "live" runs`
+
 ### API Layer (src/api/)
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson` decorators that wrap `fetch`
-- `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from sub-modules
-- Sub-modules: `projects.ts`, `run.ts`, `tcases.ts`, `file.ts`
+- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson`, `withDevAuth` decorators that wrap `fetch`; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
+- `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from all sub-modules
+- `schemas.ts` — Shared types: `ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`
+- One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function
+
+The main `createApi()` composes the fetch chain: `withDevAuth(withApiKey(withBaseUrl(fetch, baseUrl), apiKey))`.
 
 ### Configuration (src/utils/)
 
-- `env.ts` — Loads `QAS_TOKEN` and `QAS_URL` from environment variables, `.env`, or `.qaspherecli` (searched up the directory tree)
+- `env.ts` — Loads `QAS_TOKEN` and `QAS_URL` from environment variables, `.env`, or `.qaspherecli` (searched up the directory tree). Optional `QAS_DEV_AUTH` adds a dev cookie via the `withDevAuth` fetch decorator
 - `config.ts` — Constants (required Node version)
 - `misc.ts` — URL parsing, template string processing (`{env:VAR}`, date placeholders), error handling utilities. Note: marker-related functions have been moved to `MarkerParser.ts`
 - `version.ts` — Reads version from `package.json` by traversing parent directories
 
 ## Testing
 
-Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`:
+Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`.
+
+### Upload Command Tests
 
 - `result-upload.spec.ts` — Integration tests for the full upload flow (JUnit, Playwright, and Allure), with MSW intercepting all API calls. Includes hyphenless and CamelCase marker tests (JUnit only)
 - `marker-parser.spec.ts` — Unit tests for `MarkerParser` (detection, extraction, matching across all marker formats and command types)
@@ -89,6 +116,50 @@ Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test fi
 - `template-string-processing.spec.ts` — Unit tests for run name template processing
 
 Test fixtures live in `src/tests/fixtures/` (XML files, JSON files, and mock test case data).
+
+### API Command Tests (src/tests/api/)
+
+Tests for the `api` command are organized by resource under `src/tests/api/`, with one spec file per action (e.g., `projects/list.spec.ts`, `runs/create.spec.ts`). Tests support both mocked and live modes.
+
+**Shared infrastructure** (`src/tests/api/test-helper.ts`):
+
+- `baseURL`, `token` — Configured base URL and token (mocked values or real from env vars)
+- `useMockServer(...handlers)` — Sets up MSW server with lifecycle hooks (before/after each test)
+- `runCli(...args)` — Invokes the CLI programmatically via `run(args)`, captures and parses JSON output. Useful only if the command prints JSON.
+- `test` fixture — Extended Vitest `test` that provides a `project` fixture (mock project in mocked mode, real project with cleanup in live mode)
+- Helper functions for live tests: `createFolder()`, `createTCase()`, `createRun()`
+
+**Global setup** (`src/tests/global-setup.ts`): Authenticates against the live API (if env vars are set) and provides a session token for test project cleanup.
+
+**Test pattern**: Each spec file typically contains:
+
+1. A `describe('mocked', ...)` block with MSW handlers and assertions on request headers/params
+2. Validation error tests checking CLI argument validation
+3. Live tests tagged with `{ tags: ['live'] }` that run against a real QA Sphere instance
+
+**Other tests**:
+
+- `missing-subcommand-help.spec.ts` — Verifies incomplete commands (e.g., `api` alone, `api projects` alone) show help text
+- `api/utils.spec.ts` — Unit tests for API command utility functions
+
+### Running Tests
+
+```bash
+npm run test                                    # Run all tests (mocked only by default)
+npm run test:live                               # Run live tests only (requires env vars)
+```
+
+### Environment Variables for Live API Tests
+
+Live tests require all four variables to be set; otherwise tests run in mocked mode only:
+
+| Variable            | Purpose                                               |
+| ------------------- | ----------------------------------------------------- |
+| `QAS_TEST_URL`      | Base URL of the QA Sphere instance                    |
+| `QAS_TEST_TOKEN`    | API token for authenticated API calls                 |
+| `QAS_TEST_USERNAME` | Email for login endpoint (used by global setup)       |
+| `QAS_TEST_PASSWORD` | Password for login endpoint (used by global setup)    |
+| `QAS_DEV_AUTH`      | (Optional) Dev auth cookie value for dev environments |
 
 The `tsconfig.json` excludes `src/tests` from compilation output.
 

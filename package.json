@@ -6,7 +6,8 @@
   "main": "./build/bin/qasphere.js",
   "types": "./build/bin/qasphere.d.ts",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --tagsFilter=!live",
+    "test:live": "vitest run --tagsFilter=live",
     "test:watch": "vitest",
     "build": "npm run clean && tsc && ts-add-js-extension --dir=./build && chmod +x build/bin/qasphere.js",
     "clean": "rm -rf ./build",
@@ -55,7 +56,7 @@
     "ts-add-js-extension": "^1.6.6",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1",
-    "vitest": "^3.1.2"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "chalk": "^5.4.1",

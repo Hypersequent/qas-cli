@@ -4,6 +4,26 @@
 [![license](https://img.shields.io/npm/l/qas-cli)](https://github.com/Hypersequent/qas-cli/blob/main/LICENSE)
 [![CI](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml)
 
+## Table of Contents
+
+- [Description](#description)
+- [Installation](#installation)
+- [Shell Completion](#shell-completion)
+- [Environment](#environment)
+- [Command: `api`](#command-api)
+  - [Conventions](#conventions)
+  - [Resource Reference](#resource-reference)
+  - [Examples](#examples)
+- [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
+  - [Options](#options)
+  - [Run Name Template Placeholders](#run-name-template-placeholders)
+  - [Usage Examples](#usage-examples)
+- [Test Report Requirements](#test-report-requirements)
+  - [JUnit XML](#junit-xml)
+  - [Playwright JSON](#playwright-json)
+  - [Allure](#allure)
+- [Development](#development-for-those-who-want-to-contribute-to-the-tool)
+
 ## Description
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
@@ -34,6 +54,24 @@ Verify installation: `qasphere --version`
 
 **Update:** Run `npm update -g qas-cli` to get the latest version.
 
+## Shell Completion
+
+The CLI supports shell completion for commands and options. To enable it, append the completion script to your shell profile:
+
+**Zsh:**
+
+```bash
+qasphere completion >> ~/.zshrc
+```
+
+**Bash:**
+
+```bash
+qasphere completion >> ~/.bashrc
+```
+
+Then restart your shell or source the profile (e.g., `source ~/.zshrc`). After that, pressing `Tab` will autocomplete commands and options.
+
 ## Environment
 
 The CLI requires the following variables to be defined:
@@ -57,6 +95,193 @@ QAS_URL=https://qas.eu1.qasphere.com
 # Example with real values:
 # QAS_TOKEN=qas.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
 # QAS_URL=https://qas.eu1.qasphere.com
+```
+
+## Command: `api`
+
+The `api` command provides direct access to the QA Sphere public API from the command line. Outputting JSON to stdout for easy scripting and piping.
+
+```
+qasphere api <resource> <action> [options]
+```
+
+### Conventions
+
+- **JSON output** — All commands print JSON to stdout; errors go to stderr.
+- **`--project-code`** — Specified per-command (not global). Some endpoints (audit-logs, users, settings) are org-scoped and don't need it.
+- **Comma-separated arrays** — Options like `--milestone-ids`, `--tags`, `--priorities`, `--folders` accept comma-separated values: `--tags 1,2,3`.
+- **JSON body arguments** — Options like `--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links` accept either inline JSON or `@filename` to read from a file: `--body @tcase.json`.
+- **`--verbose`** — Add to any command for full stack traces on errors.
+- **Result statuses** — `passed`, `failed`, `blocked`, `skipped`, `open`, `custom1`, `custom2`, `custom3`, `custom4`.
+
+### Resource Reference
+
+Each table shows required options in **bold**. Optional options are listed in the description. Run `qasphere api <resource> <action> --help` for full option details.
+
+#### audit-logs
+
+| Subcommand | Required Options | Description                                              |
+| ---------- | ---------------- | -------------------------------------------------------- |
+| `list`     | _(none)_         | List audit logs. Optional: `--after` (cursor), `--count` |
+
+#### custom-fields
+
+| Subcommand | Required Options | Description                     |
+| ---------- | ---------------- | ------------------------------- |
+| `list`     | `--project-code` | List custom fields in a project |
+
+#### files
+
+| Subcommand | Required Options | Description              |
+| ---------- | ---------------- | ------------------------ |
+| `upload`   | `--file <path>`  | Upload a file attachment |
+
+#### folders
+
+| Subcommand    | Required Options                            | Description                                                                 |
+| ------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
+| `list`        | `--project-code`                            | List folders. Optional: `--page`, `--limit`, `--sort-field`, `--sort-order` |
+| `bulk-create` | `--project-code`, `--folders <json\|@file>` | Create or update folders in bulk. Format: `[{"path": ["Parent", "Child"]}]` |
+
+#### milestones
+
+| Subcommand | Required Options            | Description                             |
+| ---------- | --------------------------- | --------------------------------------- |
+| `list`     | `--project-code`            | List milestones. Optional: `--archived` |
+| `create`   | `--project-code`, `--title` | Create a milestone                      |
+
+#### projects
+
+| Subcommand | Required Options    | Description                                                                                       |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------------------- |
+| `list`     | _(none)_            | List all projects                                                                                 |
+| `get`      | `--project-code`    | Get a project by code                                                                             |
+| `create`   | `--code`, `--title` | Create a project. Optional: `--links <json\|@file>`, `--overview-title`, `--overview-description` |
+
+#### requirements
+
+| Subcommand | Required Options | Description                                                              |
+| ---------- | ---------------- | ------------------------------------------------------------------------ |
+| `list`     | `--project-code` | List requirements. Optional: `--sort-field`, `--sort-order`, `--include` |
+
+#### results
+
+| Subcommand     | Required Options                                       | Description                                                                            |
+| -------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `create`       | `--project-code`, `--run-id`, `--tcase-id`, `--status` | Create a single result. Optional: `--comment`, `--time-taken`, `--links <json\|@file>` |
+| `batch-create` | `--project-code`, `--run-id`, `--items <json\|@file>`  | Create results in batch. Format: `[{"tcaseId": "abc", "status": "passed"}]`            |
+
+#### runs
+
+| Subcommand    | Required Options                                                     | Description                                                                                                                                       |
+| ------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`      | `--project-code`, `--title`, `--type`, `--query-plans <json\|@file>` | Create a test run. Types: `static`, `static_struct`, `live`. Optional: `--description`, `--milestone-id`, `--configuration-id`, `--assignment-id` |
+| `list`        | `--project-code`                                                     | List test runs. Optional: `--closed`, `--milestone-ids`, `--limit`                                                                                |
+| `clone`       | `--project-code`, `--run-id`, `--title`                              | Clone a test run. Optional: `--description`, `--milestone-id`, `--assignment-id`                                                                  |
+| `close`       | `--project-code`, `--run-id`                                         | Close a test run                                                                                                                                  |
+| `tcases list` | `--project-code`, `--run-id`                                         | List test cases in a run. Optional: `--search`, `--tags`, `--priorities`, `--limit`, `--include`, `--sort-field`, `--sort-order`                  |
+| `tcases get`  | `--project-code`, `--run-id`, `--tcase-id`                           | Get a test case in a run                                                                                                                          |
+
+#### settings
+
+| Subcommand        | Required Options           | Description                                                                                                |
+| ----------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `list-statuses`   | _(none)_                   | List all result statuses (standard + custom)                                                               |
+| `update-statuses` | `--statuses <json\|@file>` | Update custom statuses. Format: `[{"id": "custom1", "name": "...", "color": "#FF9800", "isActive": true}]` |
+
+#### shared-preconditions
+
+| Subcommand | Required Options         | Description                                                                      |
+| ---------- | ------------------------ | -------------------------------------------------------------------------------- |
+| `list`     | `--project-code`         | List shared preconditions. Optional: `--sort-field`, `--sort-order`, `--include` |
+| `get`      | `--project-code`, `--id` | Get a shared precondition                                                        |
+
+#### shared-steps
+
+| Subcommand | Required Options         | Description                                                              |
+| ---------- | ------------------------ | ------------------------------------------------------------------------ |
+| `list`     | `--project-code`         | List shared steps. Optional: `--sort-field`, `--sort-order`, `--include` |
+| `get`      | `--project-code`, `--id` | Get a shared step                                                        |
+
+#### tags
+
+| Subcommand | Required Options | Description            |
+| ---------- | ---------------- | ---------------------- |
+| `list`     | `--project-code` | List tags in a project |
+
+#### test-cases
+
+| Subcommand | Required Options                                       | Description                                                                                                                                                          |
+| ---------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list`     | `--project-code`                                       | List test cases. Optional: `--page`, `--limit`, `--folders`, `--tags`, `--priorities`, `--search`, `--types`, `--draft`, `--sort-field`, `--sort-order`, `--include` |
+| `get`      | `--project-code`, `--tcase-id`                         | Get a single test case                                                                                                                                               |
+| `count`    | `--project-code`                                       | Count test cases matching filters. Optional: `--folders`, `--recursive`, `--tags`, `--priorities`, `--draft`                                                         |
+| `create`   | `--project-code`, `--body <json\|@file>`               | Create a test case. Body: `{"title": "...", "type": "standalone"}`                                                                                                   |
+| `update`   | `--project-code`, `--tcase-id`, `--body <json\|@file>` | Update a test case                                                                                                                                                   |
+
+#### test-plans
+
+| Subcommand | Required Options                         | Description                                                 |
+| ---------- | ---------------------------------------- | ----------------------------------------------------------- |
+| `create`   | `--project-code`, `--body <json\|@file>` | Create a test plan. Body: `{"title": "...", "runs": [...]}` |
+
+#### users
+
+| Subcommand | Required Options | Description                        |
+| ---------- | ---------------- | ---------------------------------- |
+| `list`     | _(none)_         | List all users in the organization |
+
+### Examples
+
+**List all test cases in a project, filtered by tag:**
+
+```bash
+qasphere api test-cases list --project-code PRJ --tags 1,2 --limit 50
+```
+
+**Create a test run with specific test cases:**
+
+```bash
+qasphere api runs create \
+  --project-code PRJ \
+  --title "Sprint 42 Regression" \
+  --type static \
+  --query-plans '[{"tcaseIds": ["abc123", "def456"]}]'
+```
+
+**Submit results for a run in batch:**
+
+```bash
+qasphere api results batch-create \
+  --project-code PRJ \
+  --run-id 15 \
+  --items '[{"tcaseId": "abc123", "status": "passed"}, {"tcaseId": "def456", "status": "failed", "comment": "Assertion error on line 42"}]'
+```
+
+**Create a test run from a JSON file and close it after uploading results:**
+
+```bash
+# Create the run
+qasphere api runs create \
+  --project-code PRJ \
+  --title "Nightly Build" \
+  --type static \
+  --query-plans @plans.json
+
+# Upload results from a file
+qasphere api results batch-create \
+  --project-code PRJ \
+  --run-id 15 \
+  --items @results.json
+
+# Close the run
+qasphere api runs close --project-code PRJ --run-id 15
+```
+
+**List open runs for a milestone:**
+
+```bash
+qasphere api runs list --project-code PRJ --closed false --milestone-ids 1,2
 ```
 
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`
@@ -271,6 +496,16 @@ The CLI automatically detects global or suite-level failures and uploads them as
 - **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs.
 - **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
 - **Allure**: Failed or broken `befores`/`afters` fixtures in `*-container.json` files (e.g., session/module-level setup/teardown failures from pytest) are extracted as run-level logs.
+
+## AI Agent Skill
+
+qas-cli includes a [SKILL.md](./SKILL.md) file that enables AI coding agents (e.g., Claude Code, Cursor) to use the CLI effectively. To add this skill to your agent:
+
+```bash
+npx skills add Hypersequent/qas-cli
+```
+
+The skill provides the agent with full documentation of the CLI commands, options, and conventions. See [skills](https://github.com/vercel-labs/skills) for more details.
 
 ## Development (for those who want to contribute to the tool)
 

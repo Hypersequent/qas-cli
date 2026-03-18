@@ -5,7 +5,7 @@ import { dirname } from 'node:path'
 import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
-import { TCase } from '../../api/schemas'
+import { TCase } from '../../api/tcases'
 import { ParseResult, TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
 import { parseJUnitXml } from './parsers/junitXmlParser'
@@ -215,7 +215,7 @@ export class ResultUploadCommandHandler {
 			)
 
 			for (let page = 1; ; page++) {
-				const response = await this.api.testcases.getTCasesBySeq(projectCode, {
+				const response = await this.api.testCases.getTCasesBySeq(projectCode, {
 					seqIds: tcaseMarkers,
 					page,
 					limit: DEFAULT_PAGE_SIZE,
@@ -306,7 +306,7 @@ export class ResultUploadCommandHandler {
 		const apiTCasesMap: Record<string, TCase> = {}
 		if (defaultFolderId) {
 			for (let page = 1; ; page++) {
-				const response = await this.api.testcases.getTCasesPaginated(projectCode, {
+				const response = await this.api.testCases.getTCasesPaginated(projectCode, {
 					folders: [defaultFolderId],
 					page,
 					limit: DEFAULT_PAGE_SIZE,
@@ -350,7 +350,7 @@ export class ResultUploadCommandHandler {
 		}
 
 		// Create new test cases and update the placeholders with the actual test case IDs
-		const { tcases } = await this.api.testcases.createTCases(projectCode, {
+		const { tcases } = await this.api.testCases.createTCases(projectCode, {
 			folderPath: [DEFAULT_FOLDER_TITLE],
 			tcases: finalTCasesToCreate.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
 		})
