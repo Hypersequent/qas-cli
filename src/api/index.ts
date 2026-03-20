@@ -3,7 +3,7 @@ import { createFolderApi } from './folders'
 import { createProjectApi } from './projects'
 import { createRunApi } from './run'
 import { createTCaseApi } from './tcases'
-import { withApiKey, withBaseUrl } from './utils'
+import { withApiKey, withBaseUrl, withHttpRetry } from './utils'
 
 const getApi = (fetcher: typeof fetch) => {
 	return {
@@ -18,4 +18,4 @@ const getApi = (fetcher: typeof fetch) => {
 export type Api = ReturnType<typeof getApi>
 
 export const createApi = (baseUrl: string, apiKey: string) =>
-	getApi(withApiKey(withBaseUrl(fetch, baseUrl), apiKey))
+	getApi(withHttpRetry(withApiKey(withBaseUrl(fetch, baseUrl), apiKey)))

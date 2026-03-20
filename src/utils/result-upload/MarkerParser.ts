@@ -33,6 +33,20 @@ const execRegexWithPriority = (
 export const formatMarker = (projectCode: string, seq: number) =>
 	`${projectCode}-${seq.toString().padStart(3, '0')}`
 
+/** Extract and normalize a hyphenated marker like "TEST-002" from free text. */
+export const getMarkerFromText = (text: string | undefined): string | undefined => {
+	if (!text) {
+		return undefined
+	}
+
+	const match = text.match(/\b([A-Za-z0-9]{1,5})-(\d{3,})\b/)
+	if (!match) {
+		return undefined
+	}
+
+	return formatMarker(match[1], Number(match[2]))
+}
+
 export class MarkerParser {
 	constructor(private type: UploadCommandType) {}
 
