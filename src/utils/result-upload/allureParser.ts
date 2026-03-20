@@ -7,7 +7,7 @@ import { ResultStatus } from '../../api/schemas'
 import { parseTCaseUrl } from '../misc'
 import { formatMarker, getMarkerFromText } from './MarkerParser'
 import { Parser, ParserOptions } from './ResultUploadCommandHandler'
-import { Attachment, TestCaseResult } from './types'
+import { Attachment, ParseResult, TestCaseResult } from './types'
 import { getAttachments } from './utils'
 
 const allureStatusSchema = z.enum(['passed', 'failed', 'broken', 'skipped', 'unknown'])
@@ -91,7 +91,7 @@ export const parseAllureResults: Parser = async (
 	resultsDirectory: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
-): Promise<TestCaseResult[]> => {
+): Promise<ParseResult> => {
 	let resultFiles: string[]
 	try {
 		resultFiles = readdirSync(resultsDirectory)
@@ -162,7 +162,7 @@ export const parseAllureResults: Parser = async (
 		testcases[tcaseIndex].attachments = tcaseAttachment
 	})
 
-	return testcases
+	return { testCaseResults: testcases, runFailureLogs: '' }
 }
 
 const collectStepAttachmentPaths = (steps: AllureStep[] | null | undefined): string[] => {

@@ -10,7 +10,7 @@ describe('Playwright JSON parsing', () => {
 		const jsonContent = await readFile(jsonPath, 'utf8')
 
 		// This should not throw any exceptions
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -53,7 +53,7 @@ describe('Playwright JSON parsing', () => {
 		const jsonPath = `${playwrightJsonBasePath}/empty-tsuite.json`
 		const jsonContent = await readFile(jsonPath, 'utf8')
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -108,7 +108,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -185,7 +185,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -252,7 +252,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -363,7 +363,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -498,7 +498,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -545,7 +545,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -597,7 +597,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'never',
 		})
@@ -643,7 +643,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'never',
 			skipStderr: 'on-success',
 		})
@@ -689,7 +689,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -736,7 +736,7 @@ describe('Playwright JSON parsing', () => {
 			],
 		})
 
-		const testcases = await parsePlaywrightJson(jsonContent, '', {
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -746,5 +746,83 @@ describe('Playwright JSON parsing', () => {
 		expect(testcases[0].message).not.toContain('stdout content')
 		expect(testcases[0].message).not.toContain('stderr content')
 		expect(testcases[0].message).toBe('')
+	})
+
+	test('Should return empty runFailureLogs when no top-level errors', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'test.spec.ts',
+					specs: [
+						{
+							title: 'Simple test',
+							tags: [],
+							tests: [
+								{
+									annotations: [],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											duration: 1000,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const { runFailureLogs } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('')
+	})
+
+	test('Should extract top-level errors into runFailureLogs', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [],
+			errors: [
+				{ message: 'Error in global setup: Connection refused' },
+				{ message: 'Failed to start server' },
+			],
+		})
+
+		const { testCaseResults, runFailureLogs } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testCaseResults).toHaveLength(0)
+		expect(runFailureLogs).toBe(
+			'<pre><code>Error in global setup: Connection refused</code></pre>' +
+				'<pre><code>Failed to start server</code></pre>'
+		)
+	})
+
+	test('Should strip ANSI codes from top-level errors in runFailureLogs', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [],
+			errors: [{ message: '\x1b[31mError: Global setup failed\x1b[0m' }],
+		})
+
+		const { runFailureLogs } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('<pre><code>Error: Global setup failed</code></pre>')
 	})
 })

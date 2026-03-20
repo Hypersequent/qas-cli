@@ -43,7 +43,7 @@ afterEach(async () => {
 describe('Allure parsing', () => {
 	test('Should parse matching directory with marker extraction and status mapping', async () => {
 		const dir = `${allureBasePath}/matching-tcases`
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 			allowPartialParse: false,
@@ -85,7 +85,7 @@ describe('Allure parsing', () => {
 			),
 		})
 
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -107,13 +107,13 @@ describe('Allure parsing', () => {
 			),
 		})
 
-		const skippedOnSuccess = await parseAllureResults(dir, dir, {
+		const { testCaseResults: skippedOnSuccess } = await parseAllureResults(dir, dir, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
 		expect(skippedOnSuccess[0].message).toBe('')
 
-		const neverSkip = await parseAllureResults(dir, dir, {
+		const { testCaseResults: neverSkip } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -159,7 +159,7 @@ describe('Allure parsing', () => {
 			'005-result.json': JSON.stringify(makeResult({ name: 'TEST-305 has no labels', labels: [] })),
 		})
 
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -173,7 +173,7 @@ describe('Allure parsing', () => {
 
 	test('Should keep attachment errors without crashing parse', async () => {
 		const dir = `${allureBasePath}/missing-attachments`
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -230,7 +230,7 @@ describe('Allure parsing', () => {
 				stop: 20,
 			}),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 			allowPartialParse: true,
@@ -267,7 +267,7 @@ describe('Allure parsing', () => {
 			),
 		})
 
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -290,7 +290,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -311,7 +311,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -333,7 +333,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -349,7 +349,7 @@ describe('Allure parsing', () => {
 			'report.xml': '<xml/>',
 			'screenshot.png': 'fake-png-data',
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -359,7 +359,7 @@ describe('Allure parsing', () => {
 
 	test('Should return empty array for empty directory', async () => {
 		const dir = await createTempAllureDir({})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -379,7 +379,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'on-success',
 			skipStderr: 'on-success',
 		})
@@ -397,7 +397,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -412,7 +412,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -429,7 +429,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -445,7 +445,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -462,7 +462,7 @@ describe('Allure parsing', () => {
 				})
 			),
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -487,7 +487,7 @@ describe('Allure parsing', () => {
 			),
 			'step-log.txt': 'step log content',
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
@@ -530,7 +530,7 @@ describe('Allure parsing', () => {
 			'level1.txt': 'level1',
 			'level2.txt': 'level2',
 		})
-		const testcases = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})

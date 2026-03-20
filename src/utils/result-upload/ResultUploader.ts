@@ -30,7 +30,7 @@ export class ResultUploader {
 		this.api = createApi(url, apiToken)
 	}
 
-	async handle(results: TestCaseResult[]) {
+	async handle(results: TestCaseResult[], runFailureLogs?: string) {
 		const tcases = await this.api.runs
 			.getRunTCases(this.project, this.run)
 			.catch(printErrorThenExit)
@@ -44,8 +44,16 @@ export class ResultUploader {
 				.map((f) => chalk.green(f))
 				.join(', ')}] to run [${chalk.green(this.run)}] of project [${chalk.green(this.project)}]`
 		)
-		await this.uploadTestCases(mappedResults)
-		console.log(`Uploaded ${mappedResults.length} test cases`)
+
+		if (runFailureLogs) {
+			await this.api.runs.createRunLog(this.project, this.run, { comment: runFailureLogs })
+			console.log(`Uploaded run failure logs`)
+		}
+
+		if (mappedResults.length) {
+			await this.uploadTestCases(mappedResults)
+			console.log(`Uploaded ${mappedResults.length} test cases`)
+		}
 	}
 
 	private validateAndPrintMissingTestCases(missing: TestCaseResult[]) {

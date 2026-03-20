@@ -8,7 +8,7 @@
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
 
-The tool can upload test case results from JUnit XML files, Playwright JSON files, and Allure result directories to QA Sphere test runs by matching test case references to QA Sphere test cases.
+The tool can upload test case results from JUnit XML files, Playwright JSON files, and Allure result directories to QA Sphere test runs by matching test case references to QA Sphere test cases. It also automatically detects global or suite-level failures (e.g., setup/teardown errors) and uploads them as run-level logs.
 
 ## Installation
 
@@ -263,6 +263,13 @@ Allure results use one `*-result.json` file per test in a results directory. `al
 3. **Test case marker in name** - Marker in `name` field (same `PROJECT-SEQUENCE` format as JUnit XML)
 
 Only Allure 2 JSON (`*-result.json`) is supported. Legacy Allure 1 XML files are ignored.
+
+## Run-Level Logs
+
+The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
+
+- **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs. Empty-name testcases are excluded from individual test case results.
+- **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
 
 ## Development (for those who want to contribute to the tool)
 
