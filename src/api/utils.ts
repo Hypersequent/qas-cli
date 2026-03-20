@@ -75,6 +75,64 @@ const updateSearchParams = <T extends object>(searchParams: URLSearchParams, obj
 	})
 }
 
+interface HttpRetryOptions {
+	maxRetries: number
+	baseDelayMs: number
+	backoffFactor: number
+	jitterFraction: number
+	retryableStatuses: Set<number>
+}
+
+const DEFAULT_HTTP_RETRY_OPTIONS: HttpRetryOptions = {
+	maxRetries: 5,
+	baseDelayMs: 1000,
+	backoffFactor: 2,
+	jitterFraction: 0.25,
+	retryableStatuses: new Set([429, 502, 503]),
+}
+
+export const withHttpRetry = (
+	fetcher: typeof fetch,
+	options?: Partial<HttpRetryOptions>
+): typeof fetch => {
+	const opts = { ...DEFAULT_HTTP_RETRY_OPTIONS, ...options }
+
+	return async (input: URL | RequestInfo, init?: RequestInit | undefined) => {
+		let lastResponse: Response | undefined
+		for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
+			lastResponse = await fetcher(input, init)
+
+			if (!opts.retryableStatuses.has(lastResponse.status)) {
+				return lastResponse
+			}
+
+			if (attempt === opts.maxRetries) {
+				break
+			}
+
+			const retryAfter = lastResponse.headers.get('Retry-After')
+			let delayMs: number
+
+			if (retryAfter !== null) {
+				const parsed = Number(retryAfter)
+				if (!Number.isNaN(parsed)) {
+					delayMs = parsed * 1000
+				} else {
+					const date = Date.parse(retryAfter)
+					delayMs = Number.isNaN(date) ? opts.baseDelayMs : Math.max(0, date - Date.now())
+				}
+			} else {
+				delayMs = opts.baseDelayMs * Math.pow(opts.backoffFactor, attempt)
+			}
+
+			const jitter = delayMs * opts.jitterFraction * Math.random()
+			await new Promise((resolve) => setTimeout(resolve, delayMs + jitter))
+		}
+
+		return lastResponse!
+	}
+}
+
 export const appendSearchParams = <T extends object>(pathname: string, obj: T): string => {
 	const searchParams = new URLSearchParams()
 	updateSearchParams(searchParams, obj)

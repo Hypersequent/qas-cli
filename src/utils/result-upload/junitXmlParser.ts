@@ -117,7 +117,7 @@ export const parseJUnitXml: Parser = async (
 					name: tcase.$.name ?? '',
 					timeTaken:
 						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0
-							? timeTakenSeconds * 1000
+							? Math.round(timeTakenSeconds * 1000)
 							: null,
 					attachments: [],
 				}) - 1

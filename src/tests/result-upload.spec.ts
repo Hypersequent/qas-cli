@@ -116,12 +116,17 @@ const server = setupServer(
 			})
 		}
 	),
-	http.post(`${baseURL}/api/public/v0/file`, async ({ request }) => {
+	http.post(`${baseURL}/api/public/v0/file/batch`, async ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
 		expect(request.headers.get('Content-Type')).includes('multipart/form-data')
+
+		const formData = await request.formData()
+		const files = formData.getAll('files')
 		return HttpResponse.json({
-			id: 'TEST',
-			url: 'http://example.com',
+			files: files.map((_, i) => ({
+				id: `TEST-${i}`,
+				url: 'http://example.com',
+			})),
 		})
 	})
 )
@@ -135,11 +140,11 @@ afterAll(() => {
 afterEach(() => {
 	server.resetHandlers()
 	server.events.removeAllListeners()
-	setMaxResultsInRequest(50)
+	setMaxResultsInRequest(500)
 })
 
 const countFileUploadApiCalls = () =>
-	countMockedApiCalls(server, (req) => req.url.endsWith('/file'))
+	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/file/batch'))
 const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result/batch'))
 const countCreateTCasesApiCalls = () =>
@@ -387,7 +392,7 @@ fileTypesWithAllure.forEach((fileType) => {
 				await run(
 					`${fileType.command} -r ${runURL} --attachments ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
-				expect(numFileUploadCalls()).toBe(5)
+				expect(numFileUploadCalls()).toBe(1) // all 5 files in one batch
 				expect(numResultUploadCalls()).toBe(2) // 5 results total
 			})
 			test('Missing attachments should throw an error', async () => {
@@ -408,7 +413,7 @@ fileTypesWithAllure.forEach((fileType) => {
 				await run(
 					`${fileType.command} -r ${runURL} --attachments --force ${fixtureInputPath(fileType, 'missing-attachments')}`
 				)
-				expect(numFileUploadCalls()).toBe(4)
+				expect(numFileUploadCalls()).toBe(1) // all 4 files in one batch
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
