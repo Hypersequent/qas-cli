@@ -1,0 +1,23 @@
+{
+  "name": "Test checkout",
+  "status": "failed",
+  "uuid": "matching-002",
+  "start": 1700000001000,
+  "stop": 1700000002000,
+  "statusDetails": {
+    "message": "AssertionError: checkout failed"
+  },
+  "attachments": [],
+  "labels": [
+    {
+      "name": "suite",
+      "value": "ui.cart.spec.ts"
+    }
+  ],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://qas.eu1.qasphere.com/project/TEST/tcase/3"
+    }
+  ]
+}

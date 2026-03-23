@@ -10,7 +10,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseAllureResults } from '../utils/result-upload/allureParser'
+import { parseAllureResults } from '../utils/result-upload/parsers/allureParser'
 
 const allureBasePath = './src/tests/fixtures/allure'
 const tempDirsToCleanup: string[] = []
@@ -342,19 +342,20 @@ describe('Allure parsing', () => {
 		expect(testcases[0].message).toContain('&lt;script&gt;')
 	})
 
-	test('Should ignore container files, non-result JSON, XML, and images', async () => {
+	test('Should only parse result and container files, ignoring non-result JSON, XML, and images', async () => {
 		const dir = await createTempAllureDir({
 			'001-result.json': JSON.stringify(makeResult({ name: 'valid result only' })),
 			'002-container.json': JSON.stringify({ uuid: 'c1', befores: [], afters: [] }),
 			'report.xml': '<xml/>',
 			'screenshot.png': 'fake-png-data',
 		})
-		const { testCaseResults: testcases } = await parseAllureResults(dir, dir, {
+		const { testCaseResults: testcases, runFailureLogs } = await parseAllureResults(dir, dir, {
 			skipStdout: 'never',
 			skipStderr: 'never',
 		})
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toBe('valid result only')
+		expect(runFailureLogs).toBe('')
 	})
 
 	test('Should return empty array for empty directory', async () => {
@@ -538,6 +539,189 @@ describe('Allure parsing', () => {
 		expect(testcases[0].attachments).toHaveLength(3)
 		const filenames = testcases[0].attachments.map((a) => a.filename).sort()
 		expect(filenames).toEqual(['level1.txt', 'level2.txt', 'top-level.txt'])
+	})
+
+	test('Should return empty runFailureLogs when no container failures exist', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 simple test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				befores: [{ name: 'setup', status: 'passed' }],
+				afters: [],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('')
+	})
+
+	test('Should extract failed/broken before fixture errors into runFailureLogs', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 some test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				befores: [
+					{
+						name: 'setup_database',
+						status: 'broken',
+						statusDetails: {
+							message: 'Connection refused',
+							trace: 'at setup_database (setup.py:10)',
+						},
+					},
+				],
+				afters: [],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe(
+			'<h4>setup_database</h4>' +
+				'<p>Connection refused</p>' +
+				'<pre><code>at setup_database (setup.py:10)</code></pre>'
+		)
+	})
+
+	test('Should extract failed after fixture errors into runFailureLogs', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 some test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				befores: [],
+				afters: [
+					{
+						name: 'teardown_server',
+						status: 'failed',
+						statusDetails: {
+							message: 'Failed to stop server',
+						},
+					},
+				],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('<h4>teardown_server</h4>' + '<p>Failed to stop server</p>')
+	})
+
+	test('Should strip ANSI codes and HTML-escape container failure messages in runFailureLogs', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				befores: [
+					{
+						name: 'setup',
+						status: 'failed',
+						statusDetails: {
+							message: '\x1b[31m<div>error</div>\x1b[0m',
+						},
+					},
+				],
+				afters: [],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('<h4>setup</h4>' + '<p>&lt;div&gt;error&lt;/div&gt;</p>')
+	})
+
+	test('Should skip passed/skipped fixtures and only include failed/broken in runFailureLogs', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				befores: [
+					{ name: 'passed_setup', status: 'passed', statusDetails: { message: 'all good' } },
+					{
+						name: 'skipped_setup',
+						status: 'skipped',
+						statusDetails: { message: 'skipped reason' },
+					},
+					{
+						name: 'broken_setup',
+						status: 'broken',
+						statusDetails: { message: 'setup crashed' },
+					},
+				],
+				afters: [],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('<h4>broken_setup</h4>' + '<p>setup crashed</p>')
+	})
+
+	test('Should use container name as header when fixture has no name', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 test' })),
+			'001-container.json': JSON.stringify({
+				uuid: 'c1',
+				name: 'Test Container',
+				befores: [
+					{
+						status: 'failed',
+						statusDetails: { message: 'unnamed fixture error' },
+					},
+				],
+				afters: [],
+			}),
+		})
+
+		const { runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(runFailureLogs).toBe('<h4>Test Container</h4>' + '<p>unnamed fixture error</p>')
+	})
+
+	test('Should fail by default for malformed container files', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 valid' })),
+			'001-container.json': '{ invalid json',
+		})
+		await expect(
+			parseAllureResults(dir, dir, {
+				skipStdout: 'never',
+				skipStderr: 'never',
+				allowPartialParse: false,
+			})
+		).rejects.toThrow('Failed to parse Allure container file')
+	})
+
+	test('Should skip malformed container files when partial parsing is allowed', async () => {
+		const dir = await createTempAllureDir({
+			'001-result.json': JSON.stringify(makeResult({ name: 'TEST-100 valid' })),
+			'001-container.json': '{ invalid json',
+		})
+		const { testCaseResults, runFailureLogs } = await parseAllureResults(dir, dir, {
+			skipStdout: 'never',
+			skipStderr: 'never',
+			allowPartialParse: true,
+		})
+		expect(testCaseResults).toHaveLength(1)
+		expect(runFailureLogs).toBe('')
 	})
 
 	test('Should throw a friendly error when the results directory does not exist', async () => {

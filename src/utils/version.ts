@@ -19,7 +19,7 @@ function tryReadPackageJson(path: string): string | null {
 	return null
 }
 
-export function getVersion(): string {
+function getVersion(): string {
 	try {
 		const __filename = fileURLToPath(import.meta.url)
 		let currentDir = dirname(__filename)
@@ -39,3 +39,5 @@ export function getVersion(): string {
 
 	return FALLBACK_VERSION
 }
+
+export const CLI_VERSION = getVersion()

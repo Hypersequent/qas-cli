@@ -1,12 +1,12 @@
 import z from 'zod'
 import escapeHtml from 'escape-html'
 import stripAnsi from 'strip-ansi'
-import { Attachment, ParseResult, TestCaseResult } from './types'
-import { Parser, ParserOptions } from './ResultUploadCommandHandler'
-import { ResultStatus } from '../../api/schemas'
-import { parseTCaseUrl } from '../misc'
-import { formatMarker } from './MarkerParser'
-import { getAttachments } from './utils'
+import { Attachment, ParseResult, TestCaseResult } from '../types'
+import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
+import { ResultStatus } from '../../../api/schemas'
+import { parseTCaseUrl } from '../../misc'
+import { formatMarker } from '../MarkerParser'
+import { getAttachments } from '../utils'
 
 // Schema definition as per https://github.com/microsoft/playwright/blob/main/packages/playwright/types/testReporter.d.ts
 

@@ -3,12 +3,16 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import stripAnsi from 'strip-ansi'
 import z from 'zod'
-import { ResultStatus } from '../../api/schemas'
-import { parseTCaseUrl } from '../misc'
-import { formatMarker, getMarkerFromText } from './MarkerParser'
-import { Parser, ParserOptions } from './ResultUploadCommandHandler'
-import { Attachment, ParseResult, TestCaseResult } from './types'
-import { getAttachments } from './utils'
+import { ResultStatus } from '../../../api/schemas'
+import { parseTCaseUrl } from '../../misc'
+import { formatMarker, getMarkerFromText } from '../MarkerParser'
+import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
+import { Attachment, ParseResult, TestCaseResult } from '../types'
+import { getAttachments } from '../utils'
+
+// Allure result file schema reference:
+//   https://allurereport.org/docs/how-it-works-test-result-file/
+//   https://allurereport.org/docs/how-it-works-categories-file/
 
 const allureStatusSchema = z.enum(['passed', 'failed', 'broken', 'skipped', 'unknown'])
 type AllureStatus = z.infer<typeof allureStatusSchema>
@@ -87,16 +91,32 @@ const allureResultSchema = z.object({
 
 type AllureResult = z.infer<typeof allureResultSchema>
 
+const allureContainerFixtureSchema = z.object({
+	name: z.string().optional(),
+	status: z.string().optional(),
+	statusDetails: allureStatusDetailsSchema,
+})
+
+const allureContainerSchema = z.object({
+	uuid: z.string().optional(),
+	name: z.string().optional(),
+	befores: z.array(allureContainerFixtureSchema).nullish(),
+	afters: z.array(allureContainerFixtureSchema).nullish(),
+})
+
+type AllureContainer = z.infer<typeof allureContainerSchema>
+
 export const parseAllureResults: Parser = async (
 	resultsDirectory: string,
 	attachmentBaseDirectory: string,
 	options: ParserOptions
 ): Promise<ParseResult> => {
 	let resultFiles: string[]
+	let containerFiles: string[]
 	try {
-		resultFiles = readdirSync(resultsDirectory)
-			.filter((f) => f.endsWith('-result.json'))
-			.sort()
+		const allFiles = readdirSync(resultsDirectory).sort()
+		resultFiles = allFiles.filter((f) => f.endsWith('-result.json'))
+		containerFiles = allFiles.filter((f) => f.endsWith('-container.json'))
 	} catch (error) {
 		throw new Error(
 			`Failed to read Allure results directory "${resultsDirectory}": ${getErrorMessage(error)}`
@@ -162,7 +182,9 @@ export const parseAllureResults: Parser = async (
 		testcases[tcaseIndex].attachments = tcaseAttachment
 	})
 
-	return { testCaseResults: testcases, runFailureLogs: '' }
+	const runFailureLogs = extractRunFailureLogs(containerFiles, resultsDirectory, allowPartialParse)
+
+	return { testCaseResults: testcases, runFailureLogs }
 }
 
 const collectStepAttachmentPaths = (steps: AllureStep[] | null | undefined): string[] => {
@@ -220,7 +242,7 @@ const buildMessage = (
 	let message = ''
 
 	if (includeStdout && statusDetails.message) {
-		message += `<pre><code>${escapeHtml(stripAnsi(statusDetails.message))}</code></pre>`
+		message += `<p>${escapeHtml(stripAnsi(statusDetails.message))}</p>`
 	}
 	if (includeStderr && statusDetails.trace) {
 		message += `<pre><code>${escapeHtml(stripAnsi(statusDetails.trace))}</code></pre>`
@@ -252,6 +274,67 @@ const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined
 	}
 
 	return undefined
+}
+
+const extractRunFailureLogs = (
+	containerFiles: string[],
+	resultsDirectory: string,
+	allowPartialParse: boolean
+): string => {
+	const parts: string[] = []
+
+	for (const file of containerFiles) {
+		const filePath = join(resultsDirectory, file)
+
+		let container: AllureContainer
+		try {
+			const content = readFileSync(filePath, 'utf8')
+			container = allureContainerSchema.parse(JSON.parse(content))
+		} catch (error) {
+			if (allowPartialParse) {
+				console.warn(
+					`Warning: Skipping invalid Allure container file "${filePath}": ${getErrorMessage(error)}`
+				)
+				continue
+			}
+			throw new Error(
+				`Failed to parse Allure container file "${filePath}": ${getErrorMessage(error)}`
+			)
+		}
+
+		const fixtures = [...(container.befores || []), ...(container.afters || [])]
+		for (const fixture of fixtures) {
+			const status = fixture.status?.toLowerCase()
+			if (status !== 'failed' && status !== 'broken') continue
+
+			const details = fixture.statusDetails
+			if (!details) continue
+
+			const fixtureName = fixture.name || container.name
+			let headerEmitted = false
+
+			const entries: Array<{ text: string | undefined; tag: 'p' | 'code' }> = [
+				{ text: details.message, tag: 'p' },
+				{ text: details.trace, tag: 'code' },
+			]
+			for (const { text, tag } of entries) {
+				if (!text) continue
+				const clean = stripAnsi(text).trim()
+				if (!clean) continue
+				if (fixtureName && !headerEmitted) {
+					parts.push(`<h4>${escapeHtml(fixtureName)}</h4>`)
+					headerEmitted = true
+				}
+				if (tag === 'p') {
+					parts.push(`<p>${escapeHtml(clean)}</p>`)
+				} else {
+					parts.push(`<pre><code>${escapeHtml(clean)}</code></pre>`)
+				}
+			}
+		}
+	}
+
+	return parts.join('')
 }
 
 const getErrorMessage = (error: unknown) => {

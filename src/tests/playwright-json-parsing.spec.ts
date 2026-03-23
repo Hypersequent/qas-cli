@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'vitest'
-import { parsePlaywrightJson } from '../utils/result-upload/playwrightJsonParser'
+import { parsePlaywrightJson } from '../utils/result-upload/parsers/playwrightJsonParser'
 import { readFile } from 'fs/promises'
 
 const playwrightJsonBasePath = './src/tests/fixtures/playwright-json'

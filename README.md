@@ -262,14 +262,15 @@ Allure results use one `*-result.json` file per test in a results directory. `al
 2. **TMS link name fallback** - If `url` is not a QA Sphere URL, a marker in `links[].name` is used (for example `PRJ-123`)
 3. **Test case marker in name** - Marker in `name` field (same `PROJECT-SEQUENCE` format as JUnit XML)
 
-Only Allure 2 JSON (`*-result.json`) is supported. Legacy Allure 1 XML files are ignored.
+Only Allure JSON result files (`*-result.json`) are supported. Legacy Allure 1 XML files are ignored.
 
 ## Run-Level Logs
 
 The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
 
-- **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs. Empty-name testcases are excluded from individual test case results.
+- **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs.
 - **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
+- **Allure**: Failed or broken `befores`/`afters` fixtures in `*-container.json` files (e.g., session/module-level setup/teardown failures from pytest) are extracted as run-level logs.
 
 ## Development (for those who want to contribute to the tool)
 

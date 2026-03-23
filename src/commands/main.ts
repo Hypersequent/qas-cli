@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { ResultUploadCommandModule } from './resultUpload'
 import { qasEnvs, qasEnvFile } from '../utils/env'
-import { getVersion } from '../utils/version'
+import { CLI_VERSION } from '../utils/version'
 
 export const run = (args: string | string[]) =>
 	yargs(args)
@@ -17,7 +17,7 @@ Required variables: ${qasEnvs.join(', ')}
 		.demandCommand(1, '')
 		.help('h')
 		.alias('h', 'help')
-		.version(getVersion())
+		.version(CLI_VERSION)
 		.options({
 			verbose: {
 				type: 'boolean',

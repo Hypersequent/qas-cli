@@ -8,9 +8,9 @@ import { Api, createApi } from '../../api'
 import { TCase } from '../../api/schemas'
 import { ParseResult, TestCaseResult } from './types'
 import { ResultUploader } from './ResultUploader'
-import { parseJUnitXml } from './junitXmlParser'
-import { parsePlaywrightJson } from './playwrightJsonParser'
-import { parseAllureResults } from './allureParser'
+import { parseJUnitXml } from './parsers/junitXmlParser'
+import { parsePlaywrightJson } from './parsers/playwrightJsonParser'
+import { parseAllureResults } from './parsers/allureParser'
 
 export type UploadCommandType = 'junit-upload' | 'playwright-json-upload' | 'allure-upload'
 
