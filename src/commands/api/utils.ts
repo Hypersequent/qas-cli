@@ -45,14 +45,16 @@ function parseJsonArg(value: string, optionName: string): unknown {
 	}
 }
 
+type ApiArgs<T> = T & { $0: never; _: never }
 /**
  * Wraps an API command handler with common setup:
  * 1. Catches and formats errors with actionable messages
  * 2. Provides a `connectApi()` function that lazily loads env vars and creates the API client
  *    (call this after validation so arg errors are reported before missing-env-var errors)
+ * 3. Strips field `$0` and `_` to prevent accidental leaks through the API request query.
  */
 export function apiHandler<T>(
-	fn: (args: ArgumentsCamelCase<T>, connectApi: () => Api) => Promise<void>
+	fn: (args: ApiArgs<T>, connectApi: () => Api) => Promise<void>
 ): (args: ArgumentsCamelCase<T>) => Promise<void> {
 	return async (args) => {
 		try {
@@ -60,7 +62,10 @@ export function apiHandler<T>(
 				loadEnvs()
 				return createApi(process.env.QAS_URL!, process.env.QAS_TOKEN!)
 			}
-			await fn(args, connectApi)
+			const argsCopy = { ...args } as ApiArgs<T>
+			delete argsCopy.$0
+			delete argsCopy._
+			await fn(argsCopy, connectApi)
 		} catch (e) {
 			formatApiError(e)
 			process.exit(1)

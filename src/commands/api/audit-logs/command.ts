@@ -23,9 +23,9 @@ const listCommand: CommandModule<object, AuditLogsListArgs> = {
 				},
 			})
 			.epilog(help.list.epilog),
-	handler: apiHandler<AuditLogsListArgs>(async ({ after, count }, connectApi) => {
+	handler: apiHandler<AuditLogsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.auditLogs.listAuditLogs({ after, count })
+		const result = await api.auditLogs.listAuditLogs(args)
 		printJson(result)
 	}),
 }
