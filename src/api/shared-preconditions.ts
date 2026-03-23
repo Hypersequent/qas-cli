@@ -19,14 +19,14 @@ export const createSharedPreconditionApi = (fetcher: typeof fetch) => {
 		listSharedPreconditions: (projectCode: ResourceId, params?: ListSharedPreconditionsRequest) =>
 			fetcher(
 				appendSearchParams(
-					`/api/public/v0/project/${projectCode}/shared-precondition`,
+					encodeURI(`/api/public/v0/project/${projectCode}/shared-precondition`),
 					params ?? {}
 				)
 			).then((r) => jsonResponse<SharedPrecondition[]>(r)),
 
 		getSharedPrecondition: (projectCode: ResourceId, id: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/shared-precondition/${id}`).then((r) =>
-				jsonResponse<SharedPrecondition>(r)
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/shared-precondition/${id}`)).then(
+				(r) => jsonResponse<SharedPrecondition>(r)
 			),
 	}
 }

@@ -27,7 +27,7 @@ export const createResultApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		createResults: (projectCode: ResourceId, runId: ResourceId, req: CreateResultsRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/result/batch`, {
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/result/batch`), {
 				body: JSON.stringify(req),
 				method: 'POST',
 			}).then((r) => jsonResponse<{ ids: number[] }>(r)),
@@ -38,9 +38,12 @@ export const createResultApi = (fetcher: typeof fetch) => {
 			tcaseId: ResourceId,
 			req: CreateResultRequest
 		) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}/result`, {
-				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<CreateResultResponse>(r)),
+			fetcher(
+				encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}/result`),
+				{
+					method: 'POST',
+					body: JSON.stringify(req),
+				}
+			).then((r) => jsonResponse<CreateResultResponse>(r)),
 	}
 }

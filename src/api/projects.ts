@@ -19,7 +19,7 @@ export const createProjectApi = (fetcher: typeof fetch) => {
 	const jsonFetcher = withJson(fetcher)
 	return {
 		checkProjectExists: async (project: string) => {
-			const res = await fetcher(`/api/public/v0/project/${project}`)
+			const res = await fetcher(encodeURI(`/api/public/v0/project/${project}`))
 			return res.ok
 		},
 
@@ -29,7 +29,9 @@ export const createProjectApi = (fetcher: typeof fetch) => {
 				.then((r) => r.projects ?? []),
 
 		getProject: (codeOrId: ResourceId) =>
-			jsonFetcher(`/api/public/v0/project/${codeOrId}`).then((r) => jsonResponse<Project>(r)),
+			jsonFetcher(encodeURI(`/api/public/v0/project/${codeOrId}`)).then((r) =>
+				jsonResponse<Project>(r)
+			),
 
 		createProject: (req: CreateProjectRequest) =>
 			jsonFetcher(`/api/public/v0/project`, {

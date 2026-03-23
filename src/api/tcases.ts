@@ -91,45 +91,48 @@ export const createTCaseApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		getTCasesPaginated: (projectCode: ResourceId, request: GetTCasesRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/tcase`, request)).then(
-				(r) => jsonResponse<PaginatedResponse<TCase>>(r)
-			),
+			fetcher(
+				appendSearchParams(encodeURI(`/api/public/v0/project/${projectCode}/tcase`), request)
+			).then((r) => jsonResponse<PaginatedResponse<TCase>>(r)),
 
 		getTCasesBySeq: (projectCode: ResourceId, request: GetTCasesBySeqRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/tcase/seq`, {
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase/seq`), {
 				method: 'POST',
 				body: JSON.stringify(request),
 			}).then((r) => jsonResponse<PaginatedResponse<TCase>>(r)),
 
 		createTCases: (projectCode: ResourceId, request: CreateTCasesRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/tcase/bulk`, {
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase/bulk`), {
 				method: 'POST',
 				body: JSON.stringify(request),
 			}).then((r) => jsonResponse<CreateTCasesResponse>(r)),
 
 		listTCases: (projectCode: ResourceId, params?: ListTCasesRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/tcase`, params ?? {})).then(
-				(r) => jsonResponse<PaginatedResponse<TCase>>(r)
-			),
+			fetcher(
+				appendSearchParams(encodeURI(`/api/public/v0/project/${projectCode}/tcase`), params ?? {})
+			).then((r) => jsonResponse<PaginatedResponse<TCase>>(r)),
 
 		getTCase: (projectCode: ResourceId, id: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/tcase/${id}`).then((r) =>
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase/${id}`)).then((r) =>
 				jsonResponse<TCase>(r)
 			),
 
 		countTCases: (projectCode: ResourceId, params?: CountTCasesRequest) =>
 			fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/tcase/count`, params ?? {})
+				appendSearchParams(
+					encodeURI(`/api/public/v0/project/${projectCode}/tcase/count`),
+					params ?? {}
+				)
 			).then((r) => jsonResponse<{ count: number }>(r)),
 
 		createTCase: (projectCode: ResourceId, req: CreateTCaseRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/tcase`, {
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase`), {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<{ id: string; seq: number }>(r)),
 
 		updateTCase: (projectCode: ResourceId, id: ResourceId, req: UpdateTCaseRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/tcase/${id}`, {
+			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase/${id}`), {
 				method: 'PATCH',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<{ message: string }>(r)),

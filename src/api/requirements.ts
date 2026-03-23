@@ -17,7 +17,12 @@ export const createRequirementApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		listRequirements: (projectCode: ResourceId, params?: ListRequirementsRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/requirement`, params ?? {}))
+			fetcher(
+				appendSearchParams(
+					encodeURI(`/api/public/v0/project/${projectCode}/requirement`),
+					params ?? {}
+				)
+			)
 				.then((r) => jsonResponse<{ requirements: Requirement[] }>(r))
 				.then((r) => r.requirements),
 	}
