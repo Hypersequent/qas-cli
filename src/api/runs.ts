@@ -102,7 +102,9 @@ export const createRunApi = (fetcher: typeof fetch) => {
 		listRunTCases: (projectCode: ResourceId, runId: ResourceId, params?: ListRunTCasesRequest) =>
 			fetcher(
 				appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, params ?? {})
-			).then((r) => jsonResponse<{ tcases: RunTCase[] }>(r)),
+			)
+				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
+				.then((r) => r.tcases),
 
 		getRunTCase: (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
 			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>

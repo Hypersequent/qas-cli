@@ -16,7 +16,8 @@ const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'runs', 'tcases', 'list', ...args)
 
 describe('mocked', () => {
-	const mockResponse = { tcases: [{ id: 'tc1', title: 'Test', seq: 1 }] }
+	const mockTCases = [{ id: 'tc1', title: 'Test', seq: 1 }]
+	const mockResponse = { tcases: mockTCases }
 
 	let lastUrl: URL | null = null
 	let lastParams: PathParams = {}
@@ -42,7 +43,7 @@ describe('mocked', () => {
 		const result = await runCommand('--project-code', project.code, '--run-id', '42')
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastParams.runId).toBe('42')
-		expect(result).toEqual(mockResponse)
+		expect(result).toEqual(mockTCases)
 	})
 
 	test('passes include param as query parameter', async ({ project }) => {
@@ -59,7 +60,7 @@ test('lists test cases in a run on live server', { tags: ['live'] }, async ({ pr
 	const folderId = folder.ids[0][0]
 	const tcase = await createTCase(project.code, folderId)
 	const run = await createRun(project.code, [tcase.id])
-	const result = await runCli<{ tcases: RunTCase[] }>(
+	const result = await runCli<RunTCase[]>(
 		'api',
 		'runs',
 		'tcases',
@@ -69,7 +70,6 @@ test('lists test cases in a run on live server', { tags: ['live'] }, async ({ pr
 		'--run-id',
 		String(run.id)
 	)
-	expect(result).toHaveProperty('tcases')
-	expect(Array.isArray(result.tcases)).toBe(true)
-	expect(result.tcases.length).toBeGreaterThanOrEqual(1)
+	expect(Array.isArray(result)).toBe(true)
+	expect(result.length).toBeGreaterThanOrEqual(1)
 })

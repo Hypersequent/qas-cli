@@ -1,11 +1,54 @@
 import { z } from 'zod'
-import { queryPlanSchema } from '../test-plans/schemas'
+
+export const queryPlanSchema = z
+	.object({
+		tcaseIds: z.array(z.string()).optional(),
+		folderIds: z.array(z.number().int().positive()).optional(),
+		tagIds: z.array(z.number().int().positive()).optional(),
+		priorities: z.array(z.enum(['low', 'medium', 'high'])).optional(),
+	})
+	.strict()
+	.refine((plan) => Object.values(plan).some((v) => v !== undefined), {
+		message:
+			'Each query plan must specify at least one filter (tcaseIds, folderIds, tagIds, or priorities)',
+	})
 
 export const queryPlansSchema = z.array(queryPlanSchema).min(1, {
 	message:
 		'Must contain at least one query plan. Each plan selects test cases to include in the run. ' +
 		'Example: [{"tcaseIds": ["abc123"]}]',
 })
+
+export const runSchema = z
+	.object({
+		title: z.string().min(1).max(255),
+		description: z.string().optional(),
+		type: z.enum(['static', 'static_struct', 'live']),
+		configurationId: z.string().optional(),
+		assignmentId: z.number().int().positive().optional(),
+		queryPlans: z.array(queryPlanSchema).min(1),
+	})
+	.superRefine((run, ctx) => {
+		if (run.type !== 'live' && run.queryPlans.length > 1) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['queryPlans'],
+				message: `Run type "${run.type}" supports exactly one query plan, but ${run.queryPlans.length} were provided. Only "live" runs support multiple query plans.`,
+			})
+		}
+		if (run.type === 'live') {
+			run.queryPlans.forEach((plan, i) => {
+				if (plan.tcaseIds !== undefined) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['queryPlans', i, 'tcaseIds'],
+						message:
+							'tcaseIds is not allowed for "live" runs. Live runs only support filter-based selection (folderIds, tagIds, priorities).',
+					})
+				}
+			})
+		}
+	})
 
 export const createRunBodySchema = z
 	.object({

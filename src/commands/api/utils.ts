@@ -26,7 +26,11 @@ function parseJsonArg(value: string, optionName: string): unknown {
 			throw new Error(`File not found for ${optionName}: ${filePath}`)
 		}
 		const content = readFileSync(filePath, 'utf-8')
-		return mustParseJson(content, optionName)
+		try {
+			return JSON.parse(content)
+		} catch {
+			throw new Error(`Failed to parse JSON from file ${filePath} for ${optionName}`)
+		}
 	}
 
 	return mustParseJson(value, optionName)
