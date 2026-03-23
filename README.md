@@ -110,7 +110,7 @@ qasphere api <resource> <action> [options]
 - **JSON output** — All commands print JSON to stdout; errors go to stderr.
 - **`--project-code`** — Specified per-command (not global). Some endpoints (audit-logs, users, settings) are org-scoped and don't need it.
 - **Comma-separated arrays** — Options like `--milestone-ids`, `--tags`, `--priorities`, `--folders` accept comma-separated values: `--tags 1,2,3`.
-- **JSON body arguments** — Options like `--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links` accept either inline JSON or `@filename` to read from a file: `--body @tcase.json`.
+- **JSON body arguments** — Options like `--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links` accept either inline JSON or `@filename` to read from a file relative to the current directory: `--body @tcase.json`.
 - **`--verbose`** — Add to any command for full stack traces on errors.
 - **Result statuses** — `passed`, `failed`, `blocked`, `skipped`, `open`, `custom1`, `custom2`, `custom3`, `custom4`.
 

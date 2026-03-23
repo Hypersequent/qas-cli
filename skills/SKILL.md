@@ -320,7 +320,7 @@ Where `test-plan.json`:
 
 - All `api` commands output valid JSON to stdout. Parse with `jq` or your language's JSON parser.
 - Errors are printed to stderr with a non-zero exit code. Use `--verbose` for stack traces.
-- JSON arguments (`--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links`) accept `@filename` to read from a file instead of inline JSON.
+- JSON arguments (`--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links`) accept `@filename` to read from a file relative to the current directory instead of inline JSON.
 - Use `--force` on upload commands to continue past invalid test cases or missing attachments.
 - The `--include` option on list commands (e.g., `--include tcaseCount`) adds extra fields to the response.
 - Run `qasphere api <resource> <action> --help` for full option details and examples.
