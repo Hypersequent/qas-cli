@@ -22,7 +22,7 @@ Example: '[{"text": "Log", "url": "https://ci.example.com/123"}]'`,
 		command: 'Create results for multiple test cases in a run.',
 		items: `JSON array of result items for batch creation.
 Accepts inline JSON or @filename.
-Each item has: tcaseId (string), status (string), comment? (string), timeTaken? (number|null), links? (array).
+Each item has: tcaseId (string), status (string), comment? (string, supports HTML), timeTaken? (number|null), links? (array).
 Example: '[{"tcaseId": "abc", "status": "passed"}]'`,
 		epilog: apiDocsEpilog('result', 'add-multiple-results'),
 	},

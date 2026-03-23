@@ -13,7 +13,7 @@ export default {
 	},
 
 	get: {
-		command: 'Get a shared precondition by ID.',
+		command: 'Get a shared precondition by ID. The response "text" field contains HTML.',
 		id: 'Shared precondition ID.',
 		epilog: apiDocsEpilog('shared_preconditions', 'get-shared-precondition'),
 	},

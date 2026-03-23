@@ -113,6 +113,7 @@ qasphere api <resource> <action> [options]
 - **JSON body arguments** — Options like `--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links` accept either inline JSON or `@filename` to read from a file relative to the current directory: `--body @tcase.json`.
 - **`--verbose`** — Add to any command for full stack traces on errors.
 - **Result statuses** — `passed`, `failed`, `blocked`, `skipped`, `open`, `custom1`, `custom2`, `custom3`, `custom4`.
+- **HTML fields** — Some fields support HTML content (e.g., run descriptions, result comments, test case comments/steps, folder comments, project overview descriptions). See [HTML support](https://docs.qasphere.com/api/html-support.md) for allowed tags.
 
 ### Resource Reference
 
@@ -138,10 +139,10 @@ Each table shows required options in **bold**. Optional options are listed in th
 
 #### folders
 
-| Subcommand    | Required Options                            | Description                                                                 |
-| ------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| `list`        | `--project-code`                            | List folders. Optional: `--page`, `--limit`, `--sort-field`, `--sort-order` |
-| `bulk-create` | `--project-code`, `--folders <json\|@file>` | Create or update folders in bulk. Format: `[{"path": ["Parent", "Child"]}]` |
+| Subcommand    | Required Options                            | Description                                                                                              |
+| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `list`        | `--project-code`                            | List folders. Optional: `--page`, `--limit`, `--sort-field`, `--sort-order`                              |
+| `bulk-create` | `--project-code`, `--folders <json\|@file>` | Create or update folders in bulk. Format: `[{"path": ["Parent", "Child"]}]`. Comment field supports HTML |
 
 #### milestones
 
@@ -194,14 +195,14 @@ Each table shows required options in **bold**. Optional options are listed in th
 | Subcommand | Required Options         | Description                                                                      |
 | ---------- | ------------------------ | -------------------------------------------------------------------------------- |
 | `list`     | `--project-code`         | List shared preconditions. Optional: `--sort-field`, `--sort-order`, `--include` |
-| `get`      | `--project-code`, `--id` | Get a shared precondition                                                        |
+| `get`      | `--project-code`, `--id` | Get a shared precondition. Response `text` field contains HTML                   |
 
 #### shared-steps
 
-| Subcommand | Required Options         | Description                                                              |
-| ---------- | ------------------------ | ------------------------------------------------------------------------ |
-| `list`     | `--project-code`         | List shared steps. Optional: `--sort-field`, `--sort-order`, `--include` |
-| `get`      | `--project-code`, `--id` | Get a shared step                                                        |
+| Subcommand | Required Options         | Description                                                                         |
+| ---------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| `list`     | `--project-code`         | List shared steps. Optional: `--sort-field`, `--sort-order`, `--include`            |
+| `get`      | `--project-code`, `--id` | Get a shared step. Response `description`, `expected`, and sub-step fields are HTML |
 
 #### tags
 
@@ -216,8 +217,8 @@ Each table shows required options in **bold**. Optional options are listed in th
 | `list`     | `--project-code`                                       | List test cases. Optional: `--page`, `--limit`, `--folders`, `--tags`, `--priorities`, `--search`, `--types`, `--draft`, `--sort-field`, `--sort-order`, `--include` |
 | `get`      | `--project-code`, `--tcase-id`                         | Get a single test case                                                                                                                                               |
 | `count`    | `--project-code`                                       | Count test cases matching filters. Optional: `--folders`, `--recursive`, `--tags`, `--priorities`, `--draft`                                                         |
-| `create`   | `--project-code`, `--body <json\|@file>`               | Create a test case. Body: `{"title": "...", "type": "standalone"}`                                                                                                   |
-| `update`   | `--project-code`, `--tcase-id`, `--body <json\|@file>` | Update a test case                                                                                                                                                   |
+| `create`   | `--project-code`, `--body <json\|@file>`               | Create a test case. Body: `{"title": "...", "type": "standalone"}`. Comment, step description/expected, and precondition text support HTML                           |
+| `update`   | `--project-code`, `--tcase-id`, `--body <json\|@file>` | Update a test case. Same HTML fields as create                                                                                                                       |
 
 #### test-plans
 

@@ -16,7 +16,7 @@ export default {
 
 	'bulk-create': {
 		command: 'Create or update multiple folders at once.',
-		folders: `JSON array of folder objects. Each folder has a "path" (string array) and optional "comment".
+		folders: `JSON array of folder objects. Each folder has a "path" (string array) and optional "comment" (supports HTML).
 Accepts inline JSON or @filename.
 Example: '[{"path": ["Parent", "Child"]}]'`,
 		epilog: apiDocsEpilog('folders', 'bulk-upsert-folders'),

@@ -13,7 +13,8 @@ export default {
 	},
 
 	get: {
-		command: 'Get a shared step by ID.',
+		command:
+			'Get a shared step by ID. The response "description", "expected", and sub-step fields contain HTML.',
 		id: 'Shared step ID.',
 		epilog: apiDocsEpilog('shared_steps', 'get-shared-step'),
 	},

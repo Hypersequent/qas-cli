@@ -6,12 +6,12 @@ Fields:
   type ("standalone" | "template") - Test case type.
   folderId (number) - ID of the folder to place the test case in.
   priority ("low" | "medium" | "high") - Priority level.
-  comment (string) - Comment or description.
+  comment (string) - Comment or description (supports HTML).
   tags (string[]) - Array of tag names.
   isDraft (boolean) - Whether the test case is a draft.
   steps (object[]) - Array of step objects, each with:
-    description (string, required), expected (string), sharedStepId (number).
-  precondition (object) - Either { text: string } or { sharedPreconditionId: number }.
+    description (string, required, supports HTML), expected (string, supports HTML), sharedStepId (number).
+  precondition (object) - Either { text: string (supports HTML) } or { sharedPreconditionId: number }.
   pos (number) - Position index within the folder (non-negative integer).
   requirements (object[]) - Array of { text: string, url: string (max 255 chars) }.
   links (object[]) - Array of { text: string, url: string }.`
@@ -23,11 +23,11 @@ export default {
 	draft: 'Filter by draft status (true or false).',
 	title: 'Test case title (1-511 characters).',
 	priority: 'Priority level (low, medium, or high).',
-	comment: 'Comment or description.',
+	comment: 'Comment or description (supports HTML).',
 	tags: 'Comma-separated tag names (e.g., "smoke,regression").',
 	'is-draft': 'Whether the test case is a draft.',
 	steps: `JSON array of step objects. Accepts inline JSON or @filename.
-Each step has: description (string, required), expected (string), sharedStepId (number).
+Each step has: description (string, required, supports HTML), expected (string, supports HTML), sharedStepId (number).
 Example: '[{"description": "Click login", "expected": "Page loads"}]'`,
 
 	// Command-specific groups

@@ -63,7 +63,7 @@ Example: '[{"folderIds": [1, 2], "priorities": ["high"]}]'`,
 	clone: {
 		command: 'Clone an existing test run.',
 		title: `Display title for the cloned run (1-255 characters).`,
-		description: 'Optional description for the cloned run.',
+		description: 'Optional description for the cloned run (supports HTML).',
 		'milestone-id': 'Milestone ID for the cloned run.',
 		'assignment-id': 'Assignment ID for the cloned run.',
 		epilog: apiDocsEpilog('run', 'clone-existing-run'),
