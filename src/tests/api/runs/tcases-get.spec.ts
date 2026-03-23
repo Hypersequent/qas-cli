@@ -56,7 +56,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 	const folderId = folder.ids[0][0]
 	const tcase = await createTCase(project.code, folderId)
 	const run = await createRun(project.code, [tcase.id])
-	const tcases = await runCli<{ tcases: RunTCase[] }>(
+	const tcases = await runCli<RunTCase[]>(
 		'api',
 		'runs',
 		'tcases',
@@ -66,7 +66,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 		'--run-id',
 		String(run.id)
 	)
-	const firstTcase = tcases.tcases[0]
+	const firstTcase = tcases[0]
 	const result = await runCli<RunTCase>(
 		'api',
 		'runs',

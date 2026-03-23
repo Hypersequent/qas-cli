@@ -84,7 +84,7 @@ test('batch creates results on live server', { tags: ['live'] }, async ({ projec
 	const folderId = folder.ids[0][0]
 	const tcase = await createTCase(project.code, folderId)
 	const runObj = await createRun(project.code, [tcase.id])
-	const tcases = await runCli<{ tcases: RunTCase[] }>(
+	const tcases = await runCli<RunTCase[]>(
 		'api',
 		'runs',
 		'tcases',
@@ -94,7 +94,7 @@ test('batch creates results on live server', { tags: ['live'] }, async ({ projec
 		'--run-id',
 		String(runObj.id)
 	)
-	const tcaseId = tcases.tcases[0].id
+	const tcaseId = tcases[0].id
 	const result = await runCli<{ ids: number[] }>(
 		'api',
 		'results',
