@@ -1,4 +1,4 @@
-import type { RunTCase } from '../../../api/run'
+import type { RunTCase } from '../../../api/runs'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
 import {

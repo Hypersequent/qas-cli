@@ -1,26 +1,5 @@
 import { z } from 'zod'
-
-export const queryPlanSchema = z
-	.object({
-		tcaseIds: z.array(z.string()).optional().describe('Specific test case IDs to include'),
-		folderIds: z
-			.array(z.number().int().positive())
-			.optional()
-			.describe('Folder IDs — include all test cases in these folders (includes subfolders)'),
-		tagIds: z
-			.array(z.number().int().positive())
-			.optional()
-			.describe('Tag IDs — filter test cases by these tags'),
-		priorities: z
-			.array(z.enum(['low', 'medium', 'high']))
-			.optional()
-			.describe('Priority levels to filter by'),
-	})
-	.strict()
-	.refine((plan) => Object.values(plan).some((v) => v !== undefined), {
-		message:
-			'Each query plan must specify at least one filter (tcaseIds, folderIds, tagIds, or priorities)',
-	})
+import { queryPlanSchema } from '../test-plans/schemas'
 
 export const queryPlansSchema = z.array(queryPlanSchema).min(1, {
 	message:

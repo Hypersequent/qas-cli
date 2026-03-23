@@ -2,8 +2,16 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
-import { beforeEach, describe, expect, vi, beforeAll, afterAll } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli, createFolder } from '../test-helper'
+import { beforeEach, describe, expect, beforeAll, afterAll } from 'vitest'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	createFolder,
+	expectValidationError,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'test-cases', 'create', ...args)
@@ -272,31 +280,16 @@ test('creates a test case on live server', { tags: ['live'] }, async ({ project 
 })
 
 describe('validation errors', () => {
-	const expectValidationError = async (args: string[], expectedPattern: RegExp) => {
-		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-			throw new Error('process.exit')
-		})
-		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-		try {
-			await expect(runCli('api', 'test-cases', 'create', ...args)).rejects.toThrow('process.exit')
-			const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
-			expect(errorOutput).toMatch(expectedPattern)
-		} finally {
-			exitSpy.mockRestore()
-			errorSpy.mockRestore()
-		}
-	}
-
 	test('rejects invalid JSON', async () => {
 		await expectValidationError(
-			['--project-code', 'PRJ', '--body', 'not-json'],
+			() => runCommand('--project-code', 'PRJ', '--body', 'not-json'),
 			/Failed to parse --body as JSON/
 		)
 	})
 
 	test('rejects missing required fields', async () => {
 		await expectValidationError(
-			['--project-code', 'PRJ', '--body', '{"title": "Test"}'],
+			() => runCommand('--project-code', 'PRJ', '--body', '{"title": "Test"}'),
 			/Validation failed/
 		)
 	})

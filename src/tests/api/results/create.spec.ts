@@ -1,7 +1,7 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
 import type { CreateResultResponse } from '../../../api/results'
-import type { RunTCase } from '../../../api/run'
+import type { RunTCase } from '../../../api/runs'
 import {
 	test,
 	baseURL,

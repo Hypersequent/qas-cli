@@ -2,8 +2,8 @@ import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
-import { beforeEach, describe, expect, vi } from 'vitest'
-import type { CreateRunRequest, CreateRunResponse } from '../../../api/run'
+import { beforeEach, describe, expect } from 'vitest'
+import type { CreateRunRequest, CreateRunResponse } from '../../../api/runs'
 import {
 	test,
 	baseURL,
@@ -12,6 +12,7 @@ import {
 	runCli,
 	createFolder,
 	createTCase,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'create', ...args)
@@ -182,184 +183,208 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	const expectValidationError = async (args: string[], expectedPattern: RegExp) => {
-		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-			throw new Error('process.exit')
-		})
-		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-		try {
-			await expect(runCommand(...args)).rejects.toThrow('process.exit')
-			const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
-			expect(errorOutput).toMatch(expectedPattern)
-		} finally {
-			exitSpy.mockRestore()
-			errorSpy.mockRestore()
-		}
-	}
-
 	test('rejects empty title', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'',
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}]'
+				),
 			/--title must not be empty/
 		)
 	})
 
 	test('rejects title exceeding 255 characters', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'x'.repeat(256),
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'x'.repeat(256),
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}]'
+				),
 			/--title must be at most 255 characters/
 		)
 	})
 
 	test('rejects description exceeding 512 characters', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Valid',
-				'--type',
-				'static',
-				'--description',
-				'x'.repeat(513),
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Valid',
+					'--type',
+					'static',
+					'--description',
+					'x'.repeat(513),
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}]'
+				),
 			/--description must be at most 512 characters/
 		)
 	})
 
 	test('rejects invalid JSON in --query-plans', async () => {
 		await expectValidationError(
-			['--project-code', 'PRJ', '--title', 'Test', '--type', 'static', '--query-plans', 'not-json'],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'not-json'
+				),
 			/Failed to parse --query-plans as JSON/
 		)
 	})
 
 	test('rejects empty query plans array', async () => {
 		await expectValidationError(
-			['--project-code', 'PRJ', '--title', 'Test', '--type', 'static', '--query-plans', '[]'],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[]'
+				),
 			/Must contain at least one query plan/
 		)
 	})
 
 	test('rejects empty query plan object', async () => {
 		await expectValidationError(
-			['--project-code', 'PRJ', '--title', 'Test', '--type', 'static', '--query-plans', '[{}]'],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{}]'
+				),
 			/must specify at least one filter/
 		)
 	})
 
 	test('rejects unknown keys in query plan (strict mode)', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"unknownKey": true}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"unknownKey": true}]'
+				),
 			/Unrecognized key/
 		)
 	})
 
 	test('rejects invalid priority values', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"priorities": ["critical"]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"priorities": ["critical"]}]'
+				),
 			/Invalid enum value.*Expected 'low' \| 'medium' \| 'high'/
 		)
 	})
 
 	test('rejects tcaseIds in live runs', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'live',
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'live',
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}]'
+				),
 			/tcaseIds is not allowed for "live" runs/
 		)
 	})
 
 	test('rejects multiple query plans for static runs', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]'
+				),
 			/supports exactly one query plan/
 		)
 	})
 
 	test('rejects multiple query plans for static_struct runs', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'static_struct',
-				'--query-plans',
-				'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static_struct',
+					'--query-plans',
+					'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]'
+				),
 			/supports exactly one query plan/
 		)
 	})
 
 	test('rejects non-integer folderIds', async () => {
 		await expectValidationError(
-			[
-				'--project-code',
-				'PRJ',
-				'--title',
-				'Test',
-				'--type',
-				'static',
-				'--query-plans',
-				'[{"folderIds": [1.5]}]',
-			],
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'static',
+					'--query-plans',
+					'[{"folderIds": [1.5]}]'
+				),
 			/integer/
 		)
 	})

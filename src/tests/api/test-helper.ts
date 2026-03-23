@@ -1,4 +1,4 @@
-import { inject, test as baseTest, vi, beforeAll, afterAll, afterEach } from 'vitest'
+import { inject, test as baseTest, vi, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { setupServer, type SetupServerApi } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import { createApi } from '../../api/index'
@@ -141,6 +141,24 @@ export async function createRun(projectCode: string, tcaseIds: string[]): Promis
 		'--query-plans',
 		JSON.stringify([{ tcaseIds }])
 	)
+}
+
+export async function expectValidationError(
+	runner: () => Promise<unknown>,
+	expectedPattern: RegExp
+): Promise<void> {
+	const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+		throw new Error('process.exit')
+	})
+	const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+	try {
+		await expect(runner()).rejects.toThrow('process.exit')
+		const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+		expect(errorOutput).toMatch(expectedPattern)
+	} finally {
+		exitSpy.mockRestore()
+		errorSpy.mockRestore()
+	}
 }
 
 export const test = baseTest.extend<{ project: TestProject }>({

@@ -1,11 +1,17 @@
 import { z } from 'zod'
 
-const queryPlanSchema = z.object({
-	tcaseIds: z.array(z.string()).optional(),
-	folderIds: z.array(z.number().int().positive()).optional(),
-	tagIds: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(z.enum(['low', 'medium', 'high'])).optional(),
-})
+export const queryPlanSchema = z
+	.object({
+		tcaseIds: z.array(z.string()).optional(),
+		folderIds: z.array(z.number().int().positive()).optional(),
+		tagIds: z.array(z.number().int().positive()).optional(),
+		priorities: z.array(z.enum(['low', 'medium', 'high'])).optional(),
+	})
+	.strict()
+	.refine((plan) => Object.values(plan).some((v) => v !== undefined), {
+		message:
+			'Each query plan must specify at least one filter (tcaseIds, folderIds, tagIds, or priorities)',
+	})
 
 export const createTestPlanBodySchema = z.object({
 	title: z

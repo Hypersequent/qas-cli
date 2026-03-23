@@ -1,4 +1,4 @@
-import type { CloneRunResponse } from '../../../api/run'
+import type { CloneRunResponse } from '../../../api/runs'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect, vi } from 'vitest'
 import {

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import chalk from 'chalk'
+import { type ArgumentsCamelCase } from 'yargs'
 import { ZodError, ZodType } from 'zod'
 import { loadEnvs } from '../../utils/env'
 import { createApi, Api } from '../../api/index'
@@ -51,8 +52,8 @@ function parseJsonArg(value: string, optionName: string): unknown {
  *    (call this after validation so arg errors are reported before missing-env-var errors)
  */
 export function apiHandler<T>(
-	fn: (args: T, connectApi: () => Api) => Promise<void>
-): (args: T) => Promise<void> {
+	fn: (args: ArgumentsCamelCase<T>, connectApi: () => Api) => Promise<void>
+): (args: ArgumentsCamelCase<T>) => Promise<void> {
 	return async (args) => {
 		try {
 			const connectApi = () => {
