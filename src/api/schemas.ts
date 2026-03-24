@@ -33,7 +33,7 @@ export class RequestValidationError extends Error {
 		public readonly zodError: ZodError,
 		public readonly rawValue: unknown
 	) {
-		super('Request validation failed')
+		super(zodError.message)
 		this.name = 'RequestValidationError'
 	}
 }
