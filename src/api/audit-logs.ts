@@ -21,7 +21,7 @@ export interface ListAuditLogsResponse {
 export const createAuditLogApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listAuditLogs: (params?: ListAuditLogsRequest) =>
+		list: (params?: ListAuditLogsRequest) =>
 			fetcher(appendSearchParams(`/api/public/v0/audit-logs`, params ?? {})).then((r) =>
 				jsonResponse<ListAuditLogsResponse>(r)
 			),

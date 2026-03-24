@@ -16,12 +16,12 @@ export interface ListSharedStepsRequest {
 export const createSharedStepApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listSharedSteps: (projectCode: ResourceId, params?: ListSharedStepsRequest) =>
+		list: (projectCode: ResourceId, params?: ListSharedStepsRequest) =>
 			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/shared-step`, params ?? {}))
 				.then((r) => jsonResponse<{ sharedSteps: SharedStep[] }>(r))
 				.then((r) => r.sharedSteps),
 
-		getSharedStep: (projectCode: ResourceId, id: ResourceId) =>
+		get: (projectCode: ResourceId, id: ResourceId) =>
 			fetcher(`/api/public/v0/project/${projectCode}/shared-step/${id}`).then((r) =>
 				jsonResponse<SharedStep>(r)
 			),

@@ -30,7 +30,7 @@ const createCommand: CommandModule<object, TestPlansCreateArgs> = {
 	handler: apiHandler<TestPlansCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.body, '--body', createTestPlanBodySchema)
 		const api = connectApi()
-		const result = await api.testPlans.createTestPlan(args['project-code'], body)
+		const result = await api.testPlans.create(args['project-code'], body)
 		printJson(result)
 	}),
 }

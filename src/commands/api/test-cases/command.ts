@@ -61,7 +61,7 @@ const listCommand: CommandModule<object, TCasesListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.testCases.listTCases(projectCode, {
+		const result = await api.testCases.list(projectCode, {
 			...rest,
 			sortField,
 			sortOrder,
@@ -103,7 +103,7 @@ const getCommand: CommandModule<object, TCasesGetArgs> = {
 			}),
 	handler: apiHandler<TCasesGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.testCases.getTCase(args['project-code'], args['tcase-id'])
+		const result = await api.testCases.get(args['project-code'], args['tcase-id'])
 		printJson(result)
 	}),
 }
@@ -138,7 +138,7 @@ const countCommand: CommandModule<object, TCasesCountArgs> = {
 	handler: apiHandler<TCasesCountArgs>(async (args, connectApi) => {
 		const { 'project-code': projectCode, ...rest } = args
 		const api = connectApi()
-		const result = await api.testCases.countTCases(projectCode, {
+		const result = await api.testCases.count(projectCode, {
 			...rest,
 			folders: args.folders?.split(',').map(Number),
 			tags: args.tags?.split(',').map(Number),
@@ -248,7 +248,7 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 
 		const body = validateWithSchema(merged, '--body', createTCaseBodySchema)
 		const api = connectApi()
-		const result = await api.testCases.createTCase(projectCode, body)
+		const result = await api.testCases.create(projectCode, body)
 		printJson(result)
 	}),
 }
@@ -347,7 +347,7 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 
 		const body = validateWithSchema(merged, '--body', updateTCaseBodySchema)
 		const api = connectApi()
-		const result = await api.testCases.updateTCase(projectCode, tcaseId, body)
+		const result = await api.testCases.update(projectCode, tcaseId, body)
 		printJson(result)
 	}),
 }

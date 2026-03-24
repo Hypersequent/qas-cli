@@ -9,7 +9,7 @@ const listCommand: CommandModule = {
 	builder: (yargs: Argv) => yargs.epilog(help.list.epilog),
 	handler: apiHandler(async (_args, connectApi) => {
 		const api = connectApi()
-		const result = await api.projects.listProjects()
+		const result = await api.projects.list()
 		printJson(result)
 	}),
 }
@@ -33,7 +33,7 @@ const getCommand: CommandModule<object, ProjectsGetArgs> = {
 			.epilog(help.get.epilog),
 	handler: apiHandler<ProjectsGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.projects.getProject(args['project-code'])
+		const result = await api.projects.get(args['project-code'])
 		printJson(result)
 	}),
 }
@@ -99,7 +99,7 @@ const createCommand: CommandModule<object, ProjectsCreateArgs> = {
 			links,
 		})
 		const api = connectApi()
-		const result = await api.projects.createProject(validated)
+		const result = await api.projects.create(validated)
 		printJson(result)
 	}),
 }

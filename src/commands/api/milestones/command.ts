@@ -28,7 +28,7 @@ const listCommand: CommandModule<object, MilestonesListArgs> = {
 	handler: apiHandler<MilestonesListArgs>(async (args, connectApi) => {
 		const { 'project-code': projectCode, ...rest } = args
 		const api = connectApi()
-		const result = await api.milestones.listMilestones(projectCode, rest)
+		const result = await api.milestones.list(projectCode, rest)
 		printJson(result)
 	}),
 }
@@ -64,7 +64,7 @@ const createCommand: CommandModule<object, MilestonesCreateArgs> = {
 			createMilestoneBodySchema
 		)
 		const api = connectApi()
-		const result = await api.milestones.createMilestone(args['project-code'], body)
+		const result = await api.milestones.create(args['project-code'], body)
 		printJson(result)
 	}),
 }

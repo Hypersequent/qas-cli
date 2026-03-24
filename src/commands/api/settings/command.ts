@@ -9,7 +9,7 @@ const listStatusesCommand: CommandModule = {
 	builder: (yargs: Argv) => yargs.epilog(help['list-statuses'].epilog),
 	handler: apiHandler(async (_args, connectApi) => {
 		const api = connectApi()
-		const result = await api.settings.listStatuses()
+		const result = await api.settings.list()
 		printJson(result)
 	}),
 }
@@ -35,7 +35,7 @@ const updateStatusesCommand: CommandModule<object, SettingsUpdateStatusesArgs> =
 	handler: apiHandler<SettingsUpdateStatusesArgs>(async (args, connectApi) => {
 		const statuses = parseAndValidateJsonArg(args.statuses, '--statuses', updateStatusesInputSchema)
 		const api = connectApi()
-		const result = await api.settings.updateStatuses({ statuses })
+		const result = await api.settings.update({ statuses })
 		printJson(result)
 	}),
 }

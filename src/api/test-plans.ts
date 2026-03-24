@@ -27,7 +27,7 @@ export interface CreateTestPlanResponse {
 export const createTestPlanApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		createTestPlan: (projectCode: ResourceId, req: CreateTestPlanRequest) =>
+		create: (projectCode: ResourceId, req: CreateTestPlanRequest) =>
 			fetcher(`/api/public/v0/project/${projectCode}/plan`, {
 				method: 'POST',
 				body: JSON.stringify(req),

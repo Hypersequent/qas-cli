@@ -44,7 +44,7 @@ const listCommand: CommandModule<object, RequirementsListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.requirements.listRequirements(projectCode, {
+		const result = await api.requirements.list(projectCode, {
 			...rest,
 			sortField,
 			sortOrder,

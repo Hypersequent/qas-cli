@@ -11,7 +11,7 @@ export interface CustomField {
 export const createCustomFieldApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listCustomFields: (projectCode: ResourceId) =>
+		list: (projectCode: ResourceId) =>
 			fetcher(`/api/public/v0/project/${projectCode}/custom-field`)
 				.then((r) => jsonResponse<{ customFields: CustomField[] }>(r))
 				.then((r) => r.customFields),

@@ -10,7 +10,7 @@ export interface User {
 export const createUserApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listUsers: () =>
+		list: () =>
 			fetcher(`/api/public/v0/users`)
 				.then((r) => jsonResponse<{ users: User[] }>(r))
 				.then((r) => r.users),

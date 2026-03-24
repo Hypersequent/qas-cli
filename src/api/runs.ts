@@ -75,49 +75,68 @@ export interface ListRunTCasesRequest {
 
 export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
+
+	const getTCases = (projectCode: ResourceId, runId: ResourceId) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
+			.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
+			.then((r) => r.tcases)
+
+	const create = (projectCode: ResourceId, req: CreateRunRequest) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run`, {
+			method: 'POST',
+			body: JSON.stringify(req),
+		}).then((r) => jsonResponse<CreateRunResponse>(r))
+
+	const list = (projectCode: ResourceId, params?: ListRunsRequest) =>
+		fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, params ?? {}))
+			.then((r) => jsonResponse<{ runs: Run[] }>(r))
+			.then((r) => r.runs)
+
+	const clone = (projectCode: ResourceId, req: CloneRunRequest) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run/clone`, {
+			method: 'POST',
+			body: JSON.stringify(req),
+		}).then((r) => jsonResponse<CloneRunResponse>(r))
+
+	const close = (projectCode: ResourceId, runId: ResourceId) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/close`, {
+			method: 'POST',
+		}).then((r) => jsonResponse<MessageResponse>(r))
+
+	const createLog = (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
+			method: 'POST',
+			body: JSON.stringify(req),
+		}).then((r) => jsonResponse<{ id: string }>(r))
+
+	const listTCases = (projectCode: ResourceId, runId: ResourceId, params?: ListRunTCasesRequest) =>
+		fetcher(
+			appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, params ?? {})
+		)
+			.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
+			.then((r) => r.tcases)
+
+	const getTCase = (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
+		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>
+			jsonResponse<RunTCase>(r)
+		)
+
 	return {
-		getRunTCases: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
-				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-				.then((r) => r.tcases),
-
-		createRun: (projectCode: ResourceId, req: CreateRunRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run`, {
-				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<CreateRunResponse>(r)),
-
-		listRuns: (projectCode: ResourceId, params?: ListRunsRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, params ?? {}))
-				.then((r) => jsonResponse<{ runs: Run[] }>(r))
-				.then((r) => r.runs),
-
-		cloneRun: (projectCode: ResourceId, req: CloneRunRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/clone`, {
-				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<CloneRunResponse>(r)),
-
-		closeRun: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/close`, {
-				method: 'POST',
-			}).then((r) => jsonResponse<MessageResponse>(r)),
-
-		createRunLog: (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
-				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<{ id: string }>(r)),
-		listRunTCases: (projectCode: ResourceId, runId: ResourceId, params?: ListRunTCasesRequest) =>
-			fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, params ?? {})
-			)
-				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-				.then((r) => r.tcases),
-
-		getRunTCase: (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>
-				jsonResponse<RunTCase>(r)
-			),
+		getTCases,
+		create,
+		list,
+		clone,
+		close,
+		createLog,
+		listTCases,
+		getTCase,
+		getRunTCases: getTCases,
+		createRun: create,
+		listRuns: list,
+		cloneRun: clone,
+		closeRun: close,
+		createRunLog: createLog,
+		listRunTCases: listTCases,
+		getRunTCase: getTCase,
 	}
 }

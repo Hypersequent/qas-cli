@@ -21,7 +21,7 @@ const listCommand: CommandModule<object, TagsListArgs> = {
 			.epilog(help.list.epilog),
 	handler: apiHandler<TagsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.tags.listTags(args['project-code'])
+		const result = await api.tags.list(args['project-code'])
 		printJson(result)
 	}),
 }

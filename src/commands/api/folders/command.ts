@@ -50,7 +50,7 @@ const listCommand: CommandModule<object, FoldersListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.folders.getFoldersPaginated(projectCode, {
+		const result = await api.folders.getPaginated(projectCode, {
 			...rest,
 			sortField,
 			sortOrder,
@@ -86,7 +86,7 @@ const bulkCreateCommand: CommandModule<object, FoldersBulkCreateArgs> = {
 	handler: apiHandler<FoldersBulkCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.folders, '--folders', bulkCreateFoldersSchema)
 		const api = connectApi()
-		const result = await api.folders.bulkCreateFolders(args['project-code'], body)
+		const result = await api.folders.bulkCreate(args['project-code'], body)
 		printJson(result)
 	}),
 }

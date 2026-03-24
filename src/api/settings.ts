@@ -19,12 +19,12 @@ export interface UpdateStatusesRequest {
 export const createSettingsApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listStatuses: () =>
+		list: () =>
 			fetcher(`/api/public/v0/settings/preferences/status`)
 				.then((r) => jsonResponse<{ statuses: Status[] }>(r))
 				.then((r) => r.statuses),
 
-		updateStatuses: (req: UpdateStatusesRequest) =>
+		update: (req: UpdateStatusesRequest) =>
 			fetcher(`/api/public/v0/settings/preferences/status`, {
 				method: 'POST',
 				body: JSON.stringify(req),

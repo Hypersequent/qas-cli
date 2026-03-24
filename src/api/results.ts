@@ -26,13 +26,13 @@ export interface CreateResultResponse {
 export const createResultApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		createResults: (projectCode: ResourceId, runId: ResourceId, req: CreateResultsRequest) =>
+		createBatch: (projectCode: ResourceId, runId: ResourceId, req: CreateResultsRequest) =>
 			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/result/batch`, {
 				body: JSON.stringify(req),
 				method: 'POST',
 			}).then((r) => jsonResponse<{ ids: number[] }>(r)),
 
-		createResult: (
+		create: (
 			projectCode: ResourceId,
 			runId: ResourceId,
 			tcaseId: ResourceId,

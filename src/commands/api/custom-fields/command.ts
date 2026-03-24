@@ -21,7 +21,7 @@ const listCommand: CommandModule<object, CustomFieldsListArgs> = {
 			.epilog(help.list.epilog),
 	handler: apiHandler<CustomFieldsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.customFields.listCustomFields(args['project-code'])
+		const result = await api.customFields.list(args['project-code'])
 		printJson(result)
 	}),
 }

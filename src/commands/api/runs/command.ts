@@ -84,7 +84,7 @@ const createCommand: CommandModule<object, RunsCreateArgs> = {
 		)
 
 		const api = connectApi()
-		const result = await api.runs.createRun(projectCode, body)
+		const result = await api.runs.create(projectCode, body)
 		printJson(result)
 	}),
 }
@@ -123,7 +123,7 @@ const listCommand: CommandModule<object, RunsListArgs> = {
 			.epilog(help.list.epilog),
 	handler: apiHandler<RunsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.runs.listRuns(args['project-code'], {
+		const result = await api.runs.list(args['project-code'], {
 			closed: args.closed,
 			milestoneIds: args['milestone-ids']?.split(',').map(Number),
 			limit: args.limit,
@@ -192,7 +192,7 @@ const cloneCommand: CommandModule<object, RunsCloneArgs> = {
 		)
 
 		const api = connectApi()
-		const result = await api.runs.cloneRun(projectCode, body)
+		const result = await api.runs.clone(projectCode, body)
 		printJson(result)
 	}),
 }
@@ -222,7 +222,7 @@ const closeCommand: CommandModule<object, RunsCloseArgs> = {
 			.epilog(help.close.epilog),
 	handler: apiHandler<RunsCloseArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.runs.closeRun(args['project-code'], args['run-id'])
+		const result = await api.runs.close(args['project-code'], args['run-id'])
 		printJson(result)
 	}),
 }
@@ -297,7 +297,7 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.runs.listRunTCases(projectCode, runId, {
+		const result = await api.runs.listTCases(projectCode, runId, {
 			...rest,
 			sortField,
 			sortOrder,
@@ -343,11 +343,7 @@ const tcasesGetCommand: CommandModule<object, RunsTCasesGetArgs> = {
 			}),
 	handler: apiHandler<RunsTCasesGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.runs.getRunTCase(
-			args['project-code'],
-			args['run-id'],
-			args['tcase-id']
-		)
+		const result = await api.runs.getTCase(args['project-code'], args['run-id'], args['tcase-id'])
 		printJson(result)
 	}),
 }

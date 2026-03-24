@@ -50,8 +50,8 @@ function generateProjectCode(): string {
 async function createTestProject(baseURL: string, token: string): Promise<TestProject> {
 	const api = createApi(baseURL, token)
 	const code = generateProjectCode()
-	const created = await api.projects.createProject({ code, title: `[CLI] Test ${code}` })
-	const project = await api.projects.getProject(created.id)
+	const created = await api.projects.create({ code, title: `[CLI] Test ${code}` })
+	const project = await api.projects.get(created.id)
 	return { code: project.code, id: project.id }
 }
 

@@ -8,7 +8,7 @@ const listCommand: CommandModule = {
 	builder: (yargs: Argv) => yargs.epilog(help.list.epilog),
 	handler: apiHandler(async (_args, connectApi) => {
 		const api = connectApi()
-		const result = await api.users.listUsers()
+		const result = await api.users.list()
 		printJson(result)
 	}),
 }

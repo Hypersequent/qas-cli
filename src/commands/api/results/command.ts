@@ -95,7 +95,7 @@ const createCommand: CommandModule<object, ResultsCreateArgs> = {
 		)
 
 		const api = connectApi()
-		const result = await api.results.createResult(projectCode, runId, tcaseId, body)
+		const result = await api.results.create(projectCode, runId, tcaseId, body)
 		printJson(result)
 	}),
 }
@@ -132,7 +132,7 @@ const batchCreateCommand: CommandModule<object, ResultsBatchCreateArgs> = {
 	handler: apiHandler<ResultsBatchCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.items, '--items', batchCreateResultsInputSchema)
 		const api = connectApi()
-		const result = await api.results.createResults(args['project-code'], args['run-id'], body)
+		const result = await api.results.createBatch(args['project-code'], args['run-id'], body)
 		printJson(result)
 	}),
 }

@@ -28,7 +28,7 @@ const uploadCommand: CommandModule<object, FilesUploadArgs> = {
 		const blob = new Blob([fileContent])
 
 		const api = connectApi()
-		const result = await api.files.uploadFile(blob, filename)
+		const [result] = await api.files.upload([{ blob, filename }])
 		printJson(result)
 	}),
 }

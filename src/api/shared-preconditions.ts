@@ -16,7 +16,7 @@ export interface ListSharedPreconditionsRequest {
 export const createSharedPreconditionApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		listSharedPreconditions: (projectCode: ResourceId, params?: ListSharedPreconditionsRequest) =>
+		list: (projectCode: ResourceId, params?: ListSharedPreconditionsRequest) =>
 			fetcher(
 				appendSearchParams(
 					`/api/public/v0/project/${projectCode}/shared-precondition`,
@@ -24,7 +24,7 @@ export const createSharedPreconditionApi = (fetcher: typeof fetch) => {
 				)
 			).then((r) => jsonResponse<SharedPrecondition[]>(r)),
 
-		getSharedPrecondition: (projectCode: ResourceId, id: ResourceId) =>
+		get: (projectCode: ResourceId, id: ResourceId) =>
 			fetcher(`/api/public/v0/project/${projectCode}/shared-precondition/${id}`).then((r) =>
 				jsonResponse<SharedPrecondition>(r)
 			),

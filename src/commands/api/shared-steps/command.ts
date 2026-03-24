@@ -44,7 +44,7 @@ const listCommand: CommandModule<object, SharedStepsListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.sharedSteps.listSharedSteps(projectCode, {
+		const result = await api.sharedSteps.list(projectCode, {
 			...rest,
 			sortField,
 			sortOrder,
@@ -78,7 +78,7 @@ const getCommand: CommandModule<object, SharedStepsGetArgs> = {
 			.epilog(help.get.epilog),
 	handler: apiHandler<SharedStepsGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.sharedSteps.getSharedStep(args['project-code'], args.id)
+		const result = await api.sharedSteps.get(args['project-code'], args.id)
 		printJson(result)
 	}),
 }

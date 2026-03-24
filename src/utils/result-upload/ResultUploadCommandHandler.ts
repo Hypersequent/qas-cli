@@ -121,7 +121,7 @@ export class ResultUploadCommandHandler {
 				console.log(chalk.blue(`Detected project code: ${projectCode}`))
 			}
 
-			if (!(await this.api.projects.checkProjectExists(projectCode))) {
+			if (!(await this.api.projects.checkExists(projectCode))) {
 				return printErrorThenExit(`Project ${projectCode} does not exist`)
 			}
 
@@ -215,7 +215,7 @@ export class ResultUploadCommandHandler {
 			)
 
 			for (let page = 1; ; page++) {
-				const response = await this.api.testCases.getTCasesBySeq(projectCode, {
+				const response = await this.api.testCases.getBySeq(projectCode, {
 					seqIds: tcaseMarkers,
 					page,
 					limit: DEFAULT_PAGE_SIZE,
@@ -284,7 +284,7 @@ export class ResultUploadCommandHandler {
 		// Ideally, there shouldn't be the need to fetch more than one page.
 		let defaultFolderId = null
 		for (let page = 1; ; page++) {
-			const response = await this.api.folders.getFoldersPaginated(projectCode, {
+			const response = await this.api.folders.getPaginated(projectCode, {
 				search: DEFAULT_FOLDER_TITLE,
 				page,
 				limit: DEFAULT_PAGE_SIZE,
@@ -306,7 +306,7 @@ export class ResultUploadCommandHandler {
 		const apiTCasesMap: Record<string, TCase> = {}
 		if (defaultFolderId) {
 			for (let page = 1; ; page++) {
-				const response = await this.api.testCases.getTCasesPaginated(projectCode, {
+				const response = await this.api.testCases.getPaginated(projectCode, {
 					folders: [defaultFolderId],
 					page,
 					limit: DEFAULT_PAGE_SIZE,
@@ -350,7 +350,7 @@ export class ResultUploadCommandHandler {
 		}
 
 		// Create new test cases and update the placeholders with the actual test case IDs
-		const { tcases } = await this.api.testCases.createTCases(projectCode, {
+		const { tcases } = await this.api.testCases.createBatch(projectCode, {
 			folderPath: [DEFAULT_FOLDER_TITLE],
 			tcases: finalTCasesToCreate.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
 		})
@@ -406,7 +406,7 @@ export class ResultUploadCommandHandler {
 		console.log(chalk.blue(`Creating a new test run for project: ${projectCode}`))
 
 		try {
-			const response = await this.api.runs.createRun(projectCode, {
+			const response = await this.api.runs.create(projectCode, {
 				title,
 				description: 'Test run created through automation pipeline',
 				type: 'static_struct',

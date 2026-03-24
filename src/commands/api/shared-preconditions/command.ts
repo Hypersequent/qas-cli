@@ -44,7 +44,7 @@ const listCommand: CommandModule<object, SharedPreconditionsListArgs> = {
 			...rest
 		} = args
 		const api = connectApi()
-		const result = await api.sharedPreconditions.listSharedPreconditions(projectCode, {
+		const result = await api.sharedPreconditions.list(projectCode, {
 			...rest,
 			sortField,
 			sortOrder,
@@ -78,10 +78,7 @@ const getCommand: CommandModule<object, SharedPreconditionsGetArgs> = {
 			.epilog(help.get.epilog),
 	handler: apiHandler<SharedPreconditionsGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.sharedPreconditions.getSharedPrecondition(
-			args['project-code'],
-			args.id
-		)
+		const result = await api.sharedPreconditions.get(args['project-code'], args.id)
 		printJson(result)
 	}),
 }
