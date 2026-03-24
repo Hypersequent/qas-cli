@@ -1,9 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs'
 import chalk from 'chalk'
-import { type ArgumentsCamelCase } from 'yargs'
 import { z, ZodError, ZodType } from 'zod'
 import { loadEnvs } from '../../utils/env'
 import { createApi, Api } from '../../api/index'
+import {
+	RequestValidationError,
+	sortFieldParam,
+	sortOrderParam,
+	pageParam,
+	limitParam,
+	type SortOrder,
+} from '../../api/schemas'
+
+export { sortFieldParam, sortOrderParam, pageParam, limitParam, type SortOrder }
 
 const PATH_PARAM_REGEX = /^[a-zA-Z0-9_-]+$/
 const PATH_PARAM_MESSAGE = 'must contain only alphanumeric characters, dashes, and underscores'
@@ -63,27 +72,22 @@ function mustParseJson(value: string, optionName: string) {
 	}
 }
 
-type ApiArgs<T> = T & { $0: never; _: never }
 /**
  * Wraps an API command handler with common setup:
  * 1. Catches and formats errors with actionable messages
  * 2. Provides a `connectApi()` function that lazily loads env vars and creates the API client
  *    (call this after validation so arg errors are reported before missing-env-var errors)
- * 3. Strips field `$0` and `_` to prevent accidental leaks through the API request query.
  */
 export function apiHandler<T>(
-	fn: (args: ApiArgs<T>, connectApi: () => Api) => Promise<void>
-): (args: ArgumentsCamelCase<T>) => Promise<void> {
+	fn: (args: T, connectApi: () => Api) => Promise<void>
+): (args: T) => Promise<void> {
 	return async (args) => {
 		try {
 			const connectApi = () => {
 				loadEnvs()
 				return createApi(process.env.QAS_URL!, process.env.QAS_TOKEN!)
 			}
-			const argsCopy = { ...args } as ApiArgs<T>
-			delete argsCopy.$0
-			delete argsCopy._
-			await fn(argsCopy, connectApi)
+			await fn(args, connectApi)
 		} catch (e) {
 			formatApiError(e)
 			process.exit(1)
@@ -109,6 +113,14 @@ export function parseAndValidateJsonArg<T>(
  * Validates an unknown value against a Zod schema, formatting errors
  * with the CLI option name and path to each invalid field.
  */
+export function parseOptionalJsonField<T>(
+	value: string | undefined,
+	optionName: string,
+	schema: ZodType<T>
+): T | undefined {
+	return value ? parseAndValidateJsonArg(value, optionName, schema) : undefined
+}
+
 export function validateWithSchema<T>(value: unknown, optionName: string, schema: ZodType<T>): T {
 	try {
 		return schema.parse(value)
@@ -129,8 +141,69 @@ function formatZodError(error: ZodError, optionName: string): string {
 	return lines.join('\n')
 }
 
+interface ArgumentValidationIssue {
+	argument: string
+	message: string
+}
+
+export class ArgumentValidationError extends Error {
+	constructor(public readonly issues: ArgumentValidationIssue[]) {
+		super('Validation failed')
+		this.name = 'ValidationError'
+	}
+}
+
+/**
+ * Builds an argument map from CLI argument names.
+ * Single-word args map directly (e.g., "search" → { search: "--search" }).
+ * Hyphenated args map to camelCase (e.g., "sort-field" → { sortField: "--sort-field" }).
+ */
+export function buildArgumentMap(args: string[]): Record<string, string> {
+	const map: Record<string, string> = {}
+	for (const arg of args) {
+		const camelCase = arg.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+		map[camelCase] = `--${arg}`
+	}
+	return map
+}
+
+export function handleValidationError(argumentMap: Record<string, string>): (e: unknown) => never {
+	return (e: unknown) => {
+		if (e instanceof RequestValidationError) {
+			const issues = e.zodError.issues.map((issue) => {
+				const fieldPath = issue.path.join('.')
+				const rootField = String(issue.path[0] ?? '')
+				const argument = argumentMap[rootField] ?? (fieldPath || '(root)')
+				return { argument, message: issue.message }
+			})
+			throw new ArgumentValidationError(issues)
+		}
+		throw e
+	}
+}
+
 function formatApiError(e: unknown): void {
 	const isVerbose = process.argv.some((arg) => arg === '--verbose')
+
+	if (e instanceof ArgumentValidationError) {
+		console.error(`${chalk.red('Error:')} Invalid arguments:`)
+		for (const issue of e.issues) {
+			console.error(`  ${issue.argument}: ${issue.message}`)
+		}
+		return
+	}
+
+	if (e instanceof RequestValidationError) {
+		console.error(`${chalk.red('Error:')} Invalid request parameters:`)
+		for (const issue of e.zodError.issues) {
+			const path = issue.path.length > 0 ? issue.path.join('.') : '(root)'
+			console.error(`  - ${path}: ${issue.message}`)
+		}
+		if (isVerbose) {
+			console.error(chalk.dim('\nRaw value:'), JSON.stringify(e.rawValue, null, 2))
+		}
+		return
+	}
 
 	if (e instanceof Error) {
 		console.error(`${chalk.red('Error:')} ${e.message}`)

@@ -1,12 +1,15 @@
 import { Argv, CommandModule } from 'yargs'
 import {
 	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
 	parseAndValidateJsonArg,
+	parseOptionalJsonField,
 	printJson,
 	validatePathParams,
-	validateWithSchema,
 } from '../utils'
-import { batchCreateResultsInputSchema, createResultBodySchema, resultLinksSchema } from './schemas'
+import { type CreateResultRequest, resultLinksSchema } from '../../../api/results'
+import { batchCreateResultsInputSchema } from './schemas'
 import help from './help'
 
 interface ResultsCreateArgs {
@@ -76,26 +79,16 @@ const createCommand: CommandModule<object, ResultsCreateArgs> = {
 				return true
 			}),
 	handler: apiHandler<ResultsCreateArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'run-id': runId,
-			'tcase-id': tcaseId,
-			'time-taken': timeTaken,
-			links: linksArg,
-			...restArgs
-		} = args
-		const links = linksArg
-			? parseAndValidateJsonArg(linksArg, '--links', resultLinksSchema)
-			: undefined
-
-		const body = validateWithSchema(
-			{ ...restArgs, timeTaken, links },
-			'request body',
-			createResultBodySchema
-		)
-
+		const links = parseOptionalJsonField(args.links, '--links', resultLinksSchema)
 		const api = connectApi()
-		const result = await api.results.create(projectCode, runId, tcaseId, body)
+		const result = await api.results
+			.create(args['project-code'], args['run-id'], args['tcase-id'], {
+				...args,
+				status: args.status as CreateResultRequest['status'],
+				timeTaken: args['time-taken'],
+				links,
+			})
+			.catch(handleValidationError(buildArgumentMap(['status', 'comment', 'time-taken', 'links'])))
 		printJson(result)
 	}),
 }
@@ -132,7 +125,9 @@ const batchCreateCommand: CommandModule<object, ResultsBatchCreateArgs> = {
 	handler: apiHandler<ResultsBatchCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.items, '--items', batchCreateResultsInputSchema)
 		const api = connectApi()
-		const result = await api.results.createBatch(args['project-code'], args['run-id'], body)
+		const result = await api.results
+			.createBatch(args['project-code'], args['run-id'], body)
+			.catch(handleValidationError(buildArgumentMap(['items'])))
 		printJson(result)
 	}),
 }

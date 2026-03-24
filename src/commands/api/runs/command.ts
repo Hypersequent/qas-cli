@@ -1,12 +1,14 @@
 import { Argv, CommandModule } from 'yargs'
 import {
 	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
 	parseAndValidateJsonArg,
 	printJson,
+	type SortOrder,
 	validatePathParams,
-	validateWithSchema,
 } from '../utils'
-import { cloneRunBodySchema, createRunBodySchema, queryPlansSchema } from './schemas'
+import { QueryPlansSchema } from '../../../api/runs'
 import help from './help'
 
 interface RunsCreateArgs {
@@ -67,24 +69,33 @@ const createCommand: CommandModule<object, RunsCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog),
 	handler: apiHandler<RunsCreateArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'query-plans': queryPlansArg,
-			'milestone-id': milestoneId,
-			'configuration-id': configurationId,
-			'assignment-id': assignmentId,
-			...restArgs
-		} = args
-		const queryPlans = parseAndValidateJsonArg(queryPlansArg, '--query-plans', queryPlansSchema)
-
-		const body = validateWithSchema(
-			{ ...restArgs, queryPlans, milestoneId, configurationId, assignmentId },
-			'request body',
-			createRunBodySchema
+		const queryPlans = parseAndValidateJsonArg(
+			args['query-plans'],
+			'--query-plans',
+			QueryPlansSchema
 		)
-
 		const api = connectApi()
-		const result = await api.runs.create(projectCode, body)
+		const result = await api.runs
+			.create(args['project-code'], {
+				...args,
+				milestoneId: args['milestone-id'],
+				configurationId: args['configuration-id'],
+				assignmentId: args['assignment-id'],
+				queryPlans,
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap([
+						'title',
+						'description',
+						'type',
+						'milestone-id',
+						'configuration-id',
+						'assignment-id',
+						'query-plans',
+					])
+				)
+			)
 		printJson(result)
 	}),
 }
@@ -123,11 +134,12 @@ const listCommand: CommandModule<object, RunsListArgs> = {
 			.epilog(help.list.epilog),
 	handler: apiHandler<RunsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.runs.list(args['project-code'], {
-			closed: args.closed,
-			milestoneIds: args['milestone-ids']?.split(',').map(Number),
-			limit: args.limit,
-		})
+		const result = await api.runs
+			.list(args['project-code'], {
+				...args,
+				milestoneIds: args['milestone-ids']?.split(',').map(Number),
+			})
+			.catch(handleValidationError(buildArgumentMap(['closed', 'milestone-ids', 'limit'])))
 		printJson(result)
 	}),
 }
@@ -177,22 +189,19 @@ const cloneCommand: CommandModule<object, RunsCloneArgs> = {
 			})
 			.epilog(help.clone.epilog),
 	handler: apiHandler<RunsCloneArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'run-id': runId,
-			'milestone-id': milestoneId,
-			'assignment-id': assignmentId,
-			...restArgs
-		} = args
-
-		const body = validateWithSchema(
-			{ ...restArgs, runId, milestoneId, assignmentId },
-			'request body',
-			cloneRunBodySchema
-		)
-
 		const api = connectApi()
-		const result = await api.runs.clone(projectCode, body)
+		const result = await api.runs
+			.clone(args['project-code'], {
+				...args,
+				runId: args['run-id'],
+				milestoneId: args['milestone-id'],
+				assignmentId: args['assignment-id'],
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap(['run-id', 'title', 'description', 'milestone-id', 'assignment-id'])
+				)
+			)
 		printJson(result)
 	}),
 }
@@ -289,21 +298,28 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 			})
 			.epilog(help.tcases.list.epilog),
 	handler: apiHandler<RunsTCasesListArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'run-id': runId,
-			'sort-field': sortField,
-			'sort-order': sortOrder,
-			...rest
-		} = args
 		const api = connectApi()
-		const result = await api.runs.listTCases(projectCode, runId, {
-			...rest,
-			sortField,
-			sortOrder,
-			tags: args.tags?.split(',').map(Number),
-			priorities: args.priorities?.split(','),
-		})
+		const result = await api.runs
+			.listTCases(args['project-code'], args['run-id'], {
+				...args,
+				sortField: args['sort-field'],
+				sortOrder: args['sort-order'] as SortOrder,
+				tags: args.tags?.split(',').map(Number),
+				priorities: args.priorities?.split(','),
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap([
+						'search',
+						'tags',
+						'priorities',
+						'limit',
+						'include',
+						'sort-field',
+						'sort-order',
+					])
+				)
+			)
 		printJson(result)
 	}),
 }

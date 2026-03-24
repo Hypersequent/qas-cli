@@ -1,6 +1,12 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson } from '../utils'
-import { createTestPlanBodySchema } from './schemas'
+import {
+	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
+	parseAndValidateJsonArg,
+	printJson,
+} from '../utils'
+import { CreateTestPlanRequestSchema as createTestPlanBodySchema } from '../../../api/test-plans'
 import help from './help'
 
 interface TestPlansCreateArgs {
@@ -30,7 +36,11 @@ const createCommand: CommandModule<object, TestPlansCreateArgs> = {
 	handler: apiHandler<TestPlansCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.body, '--body', createTestPlanBodySchema)
 		const api = connectApi()
-		const result = await api.testPlans.create(args['project-code'], body)
+		const result = await api.testPlans
+			.create(args['project-code'], body)
+			.catch(
+				handleValidationError(buildArgumentMap(['title', 'description', 'milestone-id', 'runs']))
+			)
 		printJson(result)
 	}),
 }

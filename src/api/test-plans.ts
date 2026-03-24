@@ -1,24 +1,19 @@
-import { ResourceId } from './schemas'
+import { z } from 'zod'
+import { ResourceId, validateRequest } from './schemas'
+import { RunSchema } from './runs'
 import { jsonResponse, withJson } from './utils'
 
-export interface CreateTestPlanRequest {
-	title: string
-	description?: string
-	milestoneId?: number
-	runs: Array<{
-		title: string
-		description?: string
-		type: 'static' | 'static_struct' | 'live'
-		configurationId?: string
-		assignmentId?: number
-		queryPlans: Array<{
-			tcaseIds?: string[]
-			folderIds?: number[]
-			tagIds?: number[]
-			priorities?: string[]
-		}>
-	}>
-}
+export const CreateTestPlanRequestSchema = z.object({
+	title: z
+		.string()
+		.min(1, 'title must not be empty')
+		.max(255, 'title must be at most 255 characters'),
+	description: z.string().optional(),
+	milestoneId: z.number().int().positive().optional(),
+	runs: z.array(RunSchema).min(1, 'Must contain at least one run'),
+})
+
+export type CreateTestPlanRequest = z.infer<typeof CreateTestPlanRequestSchema>
 
 export interface CreateTestPlanResponse {
 	id: number
@@ -27,10 +22,12 @@ export interface CreateTestPlanResponse {
 export const createTestPlanApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		create: (projectCode: ResourceId, req: CreateTestPlanRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/plan`, {
+		create: async (projectCode: ResourceId, req: CreateTestPlanRequest) => {
+			const validated = validateRequest(req, CreateTestPlanRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/plan`, {
 				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<CreateTestPlanResponse>(r)),
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<CreateTestPlanResponse>(r))
+		},
 	}
 }

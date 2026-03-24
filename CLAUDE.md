@@ -72,7 +72,7 @@ The `api` command provides direct programmatic access to the QA Sphere public AP
 src/commands/api/<resource>/
 ├── command.ts      # Yargs command definitions (list, get, create, etc.)
 ├── help.ts         # Help text and descriptions
-└── schemas.ts      # Zod schemas for input validation (optional, only for complex JSON args)
+└── schemas.ts      # Zod schemas for CLI-specific validation (optional, only for complex JSON args)
 ```
 
 - `main.ts` — Registers all resource subcommands via `.command()`
@@ -82,6 +82,7 @@ src/commands/api/<resource>/
 
 - **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (via `connectApi()`), so CLI validation errors are reported first
 - **JSON argument flexibility**: Complex args accept inline JSON or `@filename` references (e.g., `--query-plans @plans.json`)
+- **Two-layer validation**: Command-level schemas (in `schemas.ts`) report which CLI argument is invalid (e.g., `--title must not be empty`). API-level schemas (in `src/api/*.ts`) validate request structure and strip unknown fields. For simple commands, skip command-level validation and pass args directly to API functions — the API layer validates. Command-level `validateWithSchema()` is only needed for complex JSON body args (like `--body`)
 - **Zod validation with path-based errors**: Detailed messages like `[0].tcaseIds: not allowed for "live" runs`
 
 ### API Layer (src/api/)
@@ -90,8 +91,8 @@ Composable fetch wrappers using higher-order functions:
 
 - `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson`, `withDevAuth` decorators that wrap `fetch`; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
 - `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from all sub-modules
-- `schemas.ts` — Shared types: `ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`
-- One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function
+- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `pageParam`, `limitParam`)
+- One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
 
 The main `createApi()` composes the fetch chain: `withDevAuth(withApiKey(withBaseUrl(fetch, baseUrl), apiKey))`.
 

@@ -2,13 +2,36 @@ import { Argv, CommandModule } from 'yargs'
 import { z } from 'zod'
 import {
 	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
 	parseAndValidateJsonArg,
+	parseOptionalJsonField,
 	printJson,
+	type SortOrder,
 	validatePathParams,
-	validateWithSchema,
 } from '../utils'
-import { createTCaseBodySchema, stepsArraySchema, updateTCaseBodySchema } from './schemas'
+import {
+	type CreateTCaseRequest,
+	customFieldsSchema,
+	parameterValueSchema,
+	parameterValueWithIdSchema,
+	StepsArraySchema,
+	type UpdateTCaseRequest,
+} from '../../../api/tcases'
 import help from './help'
+
+function mergeBodyWithOverrides(
+	bodyArg: string | undefined,
+	overrides: Record<string, unknown>
+): Record<string, unknown> {
+	const bodyFromJson = bodyArg
+		? parseAndValidateJsonArg(bodyArg, '--body', z.record(z.unknown()))
+		: {}
+	return {
+		...bodyFromJson,
+		...Object.fromEntries(Object.entries(overrides).filter(([, v]) => v !== undefined)),
+	}
+}
 
 interface TCasesListArgs {
 	'project-code': string
@@ -54,22 +77,34 @@ const listCommand: CommandModule<object, TCasesListArgs> = {
 			})
 			.epilog(help.list.epilog),
 	handler: apiHandler<TCasesListArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'sort-field': sortField,
-			'sort-order': sortOrder,
-			...rest
-		} = args
 		const api = connectApi()
-		const result = await api.testCases.list(projectCode, {
-			...rest,
-			sortField,
-			sortOrder,
-			folders: args.folders?.split(',').map(Number),
-			tags: args.tags?.split(',').map(Number),
-			priorities: args.priorities?.split(','),
-			types: args.types?.split(','),
-		})
+		const result = await api.testCases
+			.list(args['project-code'], {
+				...args,
+				sortField: args['sort-field'],
+				sortOrder: args['sort-order'] as SortOrder,
+				folders: args.folders?.split(',').map(Number),
+				tags: args.tags?.split(',').map(Number),
+				priorities: args.priorities?.split(','),
+				types: args.types?.split(','),
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap([
+						'page',
+						'limit',
+						'search',
+						'draft',
+						'include',
+						'sort-field',
+						'sort-order',
+						'folders',
+						'tags',
+						'priorities',
+						'types',
+					])
+				)
+			)
 		printJson(result)
 	}),
 }
@@ -136,14 +171,19 @@ const countCommand: CommandModule<object, TCasesCountArgs> = {
 			})
 			.epilog(help.count.epilog),
 	handler: apiHandler<TCasesCountArgs>(async (args, connectApi) => {
-		const { 'project-code': projectCode, ...rest } = args
 		const api = connectApi()
-		const result = await api.testCases.count(projectCode, {
-			...rest,
-			folders: args.folders?.split(',').map(Number),
-			tags: args.tags?.split(',').map(Number),
-			priorities: args.priorities?.split(','),
-		})
+		const result = await api.testCases
+			.count(args['project-code'], {
+				...args,
+				folders: args.folders?.split(',').map(Number),
+				tags: args.tags?.split(',').map(Number),
+				priorities: args.priorities?.split(','),
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap(['folders', 'tags', 'priorities', 'recursive', 'draft'])
+				)
+			)
 		printJson(result)
 	}),
 }
@@ -159,6 +199,8 @@ interface TCasesCreateArgs {
 	tags?: string
 	'is-draft'?: boolean
 	steps?: string
+	'custom-fields'?: string
+	'parameter-values'?: string
 }
 
 const createCommand: CommandModule<object, TCasesCreateArgs> = {
@@ -210,6 +252,14 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 					type: 'string',
 					describe: help.steps,
 				},
+				'custom-fields': {
+					type: 'string',
+					describe: help['custom-fields'],
+				},
+				'parameter-values': {
+					type: 'string',
+					describe: help['parameter-values'],
+				},
 			})
 			.check((argv) => {
 				return argv.body || argv.title ? true : 'Either --body or --title is required'
@@ -217,38 +267,45 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog),
 	handler: apiHandler<TCasesCreateArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'folder-id': folderId,
-			'is-draft': isDraft,
-			body: bodyArg,
-			steps: stepsArg,
-			tags,
-			...restArgs
-		} = args
-		const bodyFromJson = bodyArg
-			? parseAndValidateJsonArg(bodyArg, '--body', z.record(z.unknown()))
-			: {}
-
-		const steps = stepsArg
-			? parseAndValidateJsonArg(stepsArg, '--steps', stepsArraySchema)
-			: undefined
-
-		const overrides = {
-			...restArgs,
-			folderId,
-			isDraft,
-			tags: tags?.split(','),
-			steps,
-		}
-		const merged = {
-			...bodyFromJson,
-			...Object.fromEntries(Object.entries(overrides).filter(([, v]) => v !== undefined)),
-		}
-
-		const body = validateWithSchema(merged, '--body', createTCaseBodySchema)
+		const body = mergeBodyWithOverrides(args.body, {
+			title: args.title,
+			type: args.type,
+			folderId: args['folder-id'],
+			priority: args.priority,
+			comment: args.comment,
+			isDraft: args['is-draft'],
+			tags: args.tags?.split(','),
+			steps: parseOptionalJsonField(args.steps, '--steps', StepsArraySchema),
+			customFields: parseOptionalJsonField(
+				args['custom-fields'],
+				'--custom-fields',
+				customFieldsSchema
+			),
+			parameterValues: parseOptionalJsonField(
+				args['parameter-values'],
+				'--parameter-values',
+				z.array(parameterValueSchema)
+			),
+		})
 		const api = connectApi()
-		const result = await api.testCases.create(projectCode, body)
+		const result = await api.testCases
+			.create(args['project-code'], body as CreateTCaseRequest)
+			.catch(
+				handleValidationError(
+					buildArgumentMap([
+						'title',
+						'type',
+						'folder-id',
+						'priority',
+						'comment',
+						'is-draft',
+						'tags',
+						'steps',
+						'custom-fields',
+						'parameter-values',
+					])
+				)
+			)
 		printJson(result)
 	}),
 }
@@ -263,6 +320,8 @@ interface TCasesUpdateArgs {
 	tags?: string
 	'is-draft'?: boolean
 	steps?: string
+	'custom-fields'?: string
+	'parameter-values'?: string
 }
 
 const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
@@ -310,44 +369,57 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 					type: 'string',
 					describe: help.steps,
 				},
+				'custom-fields': {
+					type: 'string',
+					describe: help['custom-fields'],
+				},
+				'parameter-values': {
+					type: 'string',
+					describe: help['parameter-values'],
+				},
 			})
 			.check((argv) => {
 				validatePathParams([argv['tcase-id'], '--tcase-id'])
-				return argv.body || argv.title ? true : 'Either --body or --title is required'
+				return true
 			})
 			.epilog(help.update.epilog),
 	handler: apiHandler<TCasesUpdateArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'tcase-id': tcaseId,
-			'is-draft': isDraft,
-			body: bodyArg,
-			steps: stepsArg,
-			tags,
-			...restArgs
-		} = args
-		const bodyFromJson = bodyArg
-			? parseAndValidateJsonArg(bodyArg, '--body', z.record(z.unknown()))
-			: {}
-
-		const steps = stepsArg
-			? parseAndValidateJsonArg(stepsArg, '--steps', stepsArraySchema)
-			: undefined
-
-		const overrides = {
-			...restArgs,
-			isDraft,
-			tags: tags?.split(','),
-			steps,
+		const body = mergeBodyWithOverrides(args.body, {
+			title: args.title,
+			priority: args.priority,
+			comment: args.comment,
+			isDraft: args['is-draft'],
+			tags: args.tags?.split(','),
+			steps: parseOptionalJsonField(args.steps, '--steps', StepsArraySchema),
+			customFields: parseOptionalJsonField(
+				args['custom-fields'],
+				'--custom-fields',
+				customFieldsSchema
+			),
+			parameterValues: parseOptionalJsonField(
+				args['parameter-values'],
+				'--parameter-values',
+				z.array(parameterValueWithIdSchema)
+			),
+		})
+		const updateFields = [
+			'title',
+			'priority',
+			'comment',
+			'is-draft',
+			'tags',
+			'steps',
+			'custom-fields',
+			'parameter-values',
+		]
+		if (Object.keys(body).length === 0) {
+			const fieldList = updateFields.map((f) => `--${f}`).join(', ')
+			throw new Error(`At least one field to update is required (--body, ${fieldList})`)
 		}
-		const merged = {
-			...bodyFromJson,
-			...Object.fromEntries(Object.entries(overrides).filter(([, v]) => v !== undefined)),
-		}
-
-		const body = validateWithSchema(merged, '--body', updateTCaseBodySchema)
 		const api = connectApi()
-		const result = await api.testCases.update(projectCode, tcaseId, body)
+		const result = await api.testCases
+			.update(args['project-code'], args['tcase-id'], body as UpdateTCaseRequest)
+			.catch(handleValidationError(buildArgumentMap(updateFields)))
 		printJson(result)
 	}),
 }

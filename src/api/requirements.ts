@@ -1,4 +1,5 @@
-import { ResourceId } from './schemas'
+import { z } from 'zod'
+import { ResourceId, sortFieldParam, sortOrderParam, validateRequest } from './schemas'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export interface Requirement {
@@ -7,18 +8,24 @@ export interface Requirement {
 	tcaseCount?: number
 }
 
-export interface ListRequirementsRequest {
-	sortField?: string
-	sortOrder?: string
-	include?: string
-}
+export const ListRequirementsRequestSchema = z.object({
+	sortField: sortFieldParam,
+	sortOrder: sortOrderParam,
+	include: z.string().optional(),
+})
+
+export type ListRequirementsRequest = z.infer<typeof ListRequirementsRequestSchema>
 
 export const createRequirementApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		list: (projectCode: ResourceId, params?: ListRequirementsRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/requirement`, params ?? {}))
+		list: async (projectCode: ResourceId, params?: ListRequirementsRequest) => {
+			const validated = params ? validateRequest(params, ListRequirementsRequestSchema) : {}
+			return fetcher(
+				appendSearchParams(`/api/public/v0/project/${projectCode}/requirement`, validated)
+			)
 				.then((r) => jsonResponse<{ requirements: Requirement[] }>(r))
-				.then((r) => r.requirements),
+				.then((r) => r.requirements)
+		},
 	}
 }

@@ -1,5 +1,11 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson } from '../utils'
+import {
+	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
+	parseAndValidateJsonArg,
+	printJson,
+} from '../utils'
 import { updateStatusesInputSchema } from './schemas'
 import help from './help'
 
@@ -35,7 +41,9 @@ const updateStatusesCommand: CommandModule<object, SettingsUpdateStatusesArgs> =
 	handler: apiHandler<SettingsUpdateStatusesArgs>(async (args, connectApi) => {
 		const statuses = parseAndValidateJsonArg(args.statuses, '--statuses', updateStatusesInputSchema)
 		const api = connectApi()
-		const result = await api.settings.update({ statuses })
+		const result = await api.settings
+			.update({ statuses })
+			.catch(handleValidationError(buildArgumentMap(['statuses'])))
 		printJson(result)
 	}),
 }

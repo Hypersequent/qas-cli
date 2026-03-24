@@ -14,7 +14,10 @@ Fields:
   precondition (object) - Either { text: string (supports HTML) } or { sharedPreconditionId: number }.
   pos (number) - Position index within the folder (non-negative integer).
   requirements (object[]) - Array of { text: string, url: string (max 255 chars) }.
-  links (object[]) - Array of { text: string, url: string }.`
+  links (object[]) - Array of { text: string, url: string }.
+  customFields (object) - Map of custom field key to { isDefault: boolean, value?: string }.
+  parameterValues (object[]) - Array of { values: { [paramName]: string } }. For updates, include tcaseId to modify existing filled cases.
+  filledTCaseTitleSuffixParams (string[]) - Parameter names used for filled test case title suffixes.`
 
 export default {
 	// Reusable fields shared across commands
@@ -29,6 +32,13 @@ export default {
 	steps: `JSON array of step objects. Accepts inline JSON or @filename.
 Each step has: description (string, required, supports HTML), expected (string, supports HTML), sharedStepId (number).
 Example: '[{"description": "Click login", "expected": "Page loads"}]'`,
+	'custom-fields': `JSON object mapping custom field keys to values. Accepts inline JSON or @filename.
+Each value has: isDefault (boolean), value (string, omit if isDefault is true).
+Use "qasphere api custom-fields list" to see available custom fields.
+Example: '{"field1": {"isDefault": false, "value": "some value"}}'`,
+	'parameter-values': `JSON array of parameter value sets. Accepts inline JSON or @filename.
+Each entry has: values (object mapping parameter names to values). For updates, include tcaseId to modify existing filled cases.
+Example: '[{"values": {"browser": "Chrome", "os": "Windows"}}]'`,
 
 	// Command-specific groups
 	list: {

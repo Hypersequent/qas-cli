@@ -130,6 +130,68 @@ describe('mocked', () => {
 		})
 	})
 
+	test('updates a test case with custom fields', async ({ project }) => {
+		const body = {
+			customFields: {
+				field1: { isDefault: false, value: 'updated value' },
+				field2: { isDefault: true },
+			},
+		}
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--body',
+			JSON.stringify(body)
+		)
+		expect(lastRequest).toEqual(body)
+	})
+
+	test('updates a test case with parameter values', async ({ project }) => {
+		const body = {
+			parameterValues: [
+				{ tcaseId: 'tc-filled-1', values: { browser: 'Chrome' } },
+				{ values: { browser: 'Safari' } },
+			],
+		}
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--body',
+			JSON.stringify(body)
+		)
+		expect(lastRequest).toEqual(body)
+	})
+
+	test('updates with --custom-fields option', async ({ project }) => {
+		const customFields = { field1: { isDefault: false, value: 'via option' } }
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--custom-fields',
+			JSON.stringify(customFields)
+		)
+		expect(lastRequest).toEqual({ customFields })
+	})
+
+	test('updates with --parameter-values option', async ({ project }) => {
+		const parameterValues = [{ values: { browser: 'Edge' } }]
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--parameter-values',
+			JSON.stringify(parameterValues)
+		)
+		expect(lastRequest).toEqual({ parameterValues })
+	})
+
 	test('updates with body from @file', async ({ project }) => {
 		const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs')
 		const { join } = await import('node:path')
@@ -167,6 +229,52 @@ describe('validation errors', () => {
 		JSON.stringify({ title: 'Updated' }),
 	])
 })
+
+test(
+	'updates a template test case with parameter values on live server',
+	{ tags: ['live'] },
+	async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		const createBody = {
+			title: 'Template ${env}',
+			type: 'template' as const,
+			folderId,
+			priority: 'medium' as const,
+			parameterValues: [{ values: { env: 'staging' } }],
+			filledTCaseTitleSuffixParams: ['env'],
+		}
+		const created = await runCli<{ id: string; seq: number }>(
+			'api',
+			'test-cases',
+			'create',
+			'--project-code',
+			project.code,
+			'--body',
+			JSON.stringify(createBody)
+		)
+		const updatedParams = [{ values: { env: 'staging' } }, { values: { env: 'production' } }]
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			created.id,
+			'--parameter-values',
+			JSON.stringify(updatedParams)
+		)
+		const result = await runCli<TCase>(
+			'api',
+			'test-cases',
+			'get',
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			created.id
+		)
+		expect(result.title).toBe(createBody.title)
+		expect(result.folderId).toBe(createBody.folderId)
+	}
+)
 
 test('updates a test case on live server', { tags: ['live'] }, async ({ project }) => {
 	const folder = await createFolder(project.code)

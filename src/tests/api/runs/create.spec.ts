@@ -197,7 +197,7 @@ describe('validation errors', () => {
 					'--query-plans',
 					'[{"tcaseIds": ["abc"]}]'
 				),
-			/--title must not be empty/
+			/--title.*must not be empty/
 		)
 	})
 
@@ -214,7 +214,7 @@ describe('validation errors', () => {
 					'--query-plans',
 					'[{"tcaseIds": ["abc"]}]'
 				),
-			/--title must be at most 255 characters/
+			/--title.*must be at most 255 characters/
 		)
 	})
 
@@ -233,7 +233,7 @@ describe('validation errors', () => {
 					'--query-plans',
 					'[{"tcaseIds": ["abc"]}]'
 				),
-			/--description must be at most 512 characters/
+			/--description.*must be at most 512 characters/
 		)
 	})
 

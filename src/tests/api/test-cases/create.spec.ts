@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect, beforeAll, afterAll } from 'vitest'
+import type { TCase } from '../../../api/tcases'
 import {
 	test,
 	baseURL,
@@ -230,6 +231,87 @@ describe('mocked', () => {
 		})
 	})
 
+	test('creates a template test case with custom fields', async ({ project }) => {
+		const body = {
+			title: 'With custom fields',
+			type: 'template',
+			folderId: 1,
+			priority: 'medium',
+			customFields: {
+				field1: { isDefault: false, value: 'custom value' },
+				field2: { isDefault: true },
+			},
+		}
+		await runCommand('--project-code', project.code, '--body', JSON.stringify(body))
+		expect(lastRequest).toEqual(body)
+	})
+
+	test('creates a template test case with parameter values', async ({ project }) => {
+		const body = {
+			title: 'Login ${browser}',
+			type: 'template',
+			folderId: 1,
+			priority: 'medium',
+			parameterValues: [
+				{ values: { browser: 'Chrome', os: 'Windows' } },
+				{ values: { browser: 'Firefox', os: 'Linux' } },
+			],
+			filledTCaseTitleSuffixParams: ['browser'],
+		}
+		await runCommand('--project-code', project.code, '--body', JSON.stringify(body))
+		expect(lastRequest).toEqual(body)
+	})
+
+	test('creates a test case with --custom-fields option', async ({ project }) => {
+		const customFields = { field1: { isDefault: false, value: 'test' } }
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'With CF option',
+			'--type',
+			'standalone',
+			'--folder-id',
+			'1',
+			'--priority',
+			'high',
+			'--custom-fields',
+			JSON.stringify(customFields)
+		)
+		expect(lastRequest).toEqual({
+			title: 'With CF option',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'high',
+			customFields,
+		})
+	})
+
+	test('creates a template test case with --parameter-values option', async ({ project }) => {
+		const parameterValues = [{ values: { browser: 'Chrome' } }]
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'Login ${browser}',
+			'--type',
+			'template',
+			'--folder-id',
+			'1',
+			'--priority',
+			'high',
+			'--parameter-values',
+			JSON.stringify(parameterValues)
+		)
+		expect(lastRequest).toEqual({
+			title: 'Login ${browser}',
+			type: 'template',
+			folderId: 1,
+			priority: 'high',
+			parameterValues,
+		})
+	})
+
 	test('creates a test case with individual fields and --tags, --is-draft, --steps', async ({
 		project,
 	}) => {
@@ -280,6 +362,41 @@ test('creates a test case on live server', { tags: ['live'] }, async ({ project 
 	expect(created).toHaveProperty('seq')
 })
 
+test(
+	'creates a template test case with parameter values on live server',
+	{ tags: ['live'] },
+	async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		const body = {
+			title: 'Login ${browser}',
+			type: 'template' as const,
+			folderId,
+			priority: 'medium' as const,
+			parameterValues: [{ values: { browser: 'Chrome' } }, { values: { browser: 'Firefox' } }],
+			filledTCaseTitleSuffixParams: ['browser'],
+		}
+		const created = await runCommand<{ id: string; seq: number }>(
+			'--project-code',
+			project.code,
+			'--body',
+			JSON.stringify(body)
+		)
+		const result = await runCli<TCase>(
+			'api',
+			'test-cases',
+			'get',
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			created.id
+		)
+		expect(result.title).toBe(body.title)
+		expect(result.folderId).toBe(body.folderId)
+		expect(result).toHaveProperty('id')
+	}
+)
+
 describe('validation errors', () => {
 	testRejectsInvalidPathParam(runCommand, 'project-code', [
 		'--body',
@@ -296,7 +413,26 @@ describe('validation errors', () => {
 	test('rejects missing required fields', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--body', '{"title": "Test"}'),
-			/Validation failed/
+			/Invalid arguments/
+		)
+	})
+
+	test('rejects parameterValues on standalone test case', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--body',
+					JSON.stringify({
+						title: 'Test',
+						type: 'standalone',
+						folderId: 1,
+						priority: 'high',
+						parameterValues: [{ values: { browser: 'Chrome' } }],
+					})
+				),
+			/--parameter-values.*only allowed for "template"/
 		)
 	})
 })

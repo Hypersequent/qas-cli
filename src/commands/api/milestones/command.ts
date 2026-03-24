@@ -1,6 +1,5 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, printJson, validateWithSchema } from '../utils'
-import { createMilestoneBodySchema } from './schemas'
+import { apiHandler, buildArgumentMap, handleValidationError, printJson } from '../utils'
 import help from './help'
 
 interface MilestonesListArgs {
@@ -26,9 +25,10 @@ const listCommand: CommandModule<object, MilestonesListArgs> = {
 			})
 			.epilog(help.list.epilog),
 	handler: apiHandler<MilestonesListArgs>(async (args, connectApi) => {
-		const { 'project-code': projectCode, ...rest } = args
 		const api = connectApi()
-		const result = await api.milestones.list(projectCode, rest)
+		const result = await api.milestones
+			.list(args['project-code'], args)
+			.catch(handleValidationError(buildArgumentMap(['archived'])))
 		printJson(result)
 	}),
 }
@@ -58,13 +58,10 @@ const createCommand: CommandModule<object, MilestonesCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog),
 	handler: apiHandler<MilestonesCreateArgs>(async (args, connectApi) => {
-		const body = validateWithSchema(
-			{ title: args.title },
-			'request body',
-			createMilestoneBodySchema
-		)
 		const api = connectApi()
-		const result = await api.milestones.create(args['project-code'], body)
+		const result = await api.milestones
+			.create(args['project-code'], args)
+			.catch(handleValidationError(buildArgumentMap(['title'])))
 		printJson(result)
 	}),
 }

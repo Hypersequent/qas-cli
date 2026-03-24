@@ -54,7 +54,7 @@ describe('validation errors', () => {
 				'process.exit'
 			)
 			const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
-			expect(errorOutput).toMatch(/--title must not be empty/)
+			expect(errorOutput).toMatch(/--title.*must not be empty/)
 		} finally {
 			exitSpy.mockRestore()
 			errorSpy.mockRestore()

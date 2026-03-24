@@ -63,21 +63,21 @@ describe('validation errors', () => {
 	test('rejects code shorter than 2 characters', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'X', '--title', 'Test'),
-			/--code must be at least 2 characters/
+			/--code.*must be at least 2 characters/
 		)
 	})
 
 	test('rejects code longer than 5 characters', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'ABCDEF', '--title', 'Test'),
-			/--code must be at most 5 characters/
+			/--code.*must be at most 5 characters/
 		)
 	})
 
 	test('rejects non-alphanumeric code', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'PR-J', '--title', 'Test'),
-			/--code must contain only alphanumeric characters/
+			/--code.*must contain only alphanumeric characters/
 		)
 	})
 
@@ -101,7 +101,7 @@ describe('validation errors', () => {
 	test('rejects overview-title exceeding 255 characters', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'PRJ', '--title', 'Test', '--overview-title', 'x'.repeat(256)),
-			/--overview-title must be at most 255 characters/
+			/--overview-title.*must be at most 255 characters/
 		)
 	})
 })

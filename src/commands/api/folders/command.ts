@@ -1,6 +1,13 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson } from '../utils'
-import { bulkCreateFoldersSchema } from './schemas'
+import {
+	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
+	parseAndValidateJsonArg,
+	printJson,
+	type SortOrder,
+} from '../utils'
+import { BulkCreateFoldersRequestSchema } from '../../../api/folders'
 import help from './help'
 
 interface FoldersListArgs {
@@ -43,18 +50,14 @@ const listCommand: CommandModule<object, FoldersListArgs> = {
 			})
 			.epilog(help.list.epilog),
 	handler: apiHandler<FoldersListArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'sort-field': sortField,
-			'sort-order': sortOrder,
-			...rest
-		} = args
 		const api = connectApi()
-		const result = await api.folders.getPaginated(projectCode, {
-			...rest,
-			sortField,
-			sortOrder,
-		})
+		const result = await api.folders
+			.getPaginated(args['project-code'], {
+				...args,
+				sortField: args['sort-field'],
+				sortOrder: args['sort-order'] as SortOrder,
+			})
+			.catch(handleValidationError(buildArgumentMap(['page', 'limit', 'sort-field', 'sort-order'])))
 		printJson(result)
 	}),
 }
@@ -84,9 +87,11 @@ const bulkCreateCommand: CommandModule<object, FoldersBulkCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help['bulk-create'].epilog),
 	handler: apiHandler<FoldersBulkCreateArgs>(async (args, connectApi) => {
-		const body = parseAndValidateJsonArg(args.folders, '--folders', bulkCreateFoldersSchema)
+		const body = parseAndValidateJsonArg(args.folders, '--folders', BulkCreateFoldersRequestSchema)
 		const api = connectApi()
-		const result = await api.folders.bulkCreate(args['project-code'], body)
+		const result = await api.folders
+			.bulkCreate(args['project-code'], body)
+			.catch(handleValidationError(buildArgumentMap(['folders'])))
 		printJson(result)
 	}),
 }

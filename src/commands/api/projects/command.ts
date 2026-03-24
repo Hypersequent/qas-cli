@@ -1,6 +1,13 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson, validatePathParams } from '../utils'
-import { createProjectBodySchema, projectLinksSchema } from './schemas'
+import {
+	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
+	parseOptionalJsonField,
+	printJson,
+	validatePathParams,
+} from '../utils'
+import { projectLinksSchema } from '../../../api/projects'
 import help from './help'
 
 const listCommand: CommandModule = {
@@ -82,24 +89,20 @@ const createCommand: CommandModule<object, ProjectsCreateArgs> = {
 				return true
 			}),
 	handler: apiHandler<ProjectsCreateArgs>(async (args, connectApi) => {
-		const {
-			'overview-title': overviewTitle,
-			'overview-description': overviewDescription,
-			links: linksArg,
-			...restArgs
-		} = args
-		const links = linksArg
-			? parseAndValidateJsonArg(linksArg, '--links', projectLinksSchema)
-			: undefined
-
-		const validated = createProjectBodySchema.parse({
-			...restArgs,
-			overviewTitle,
-			overviewDescription,
-			links,
-		})
+		const links = parseOptionalJsonField(args.links, '--links', projectLinksSchema)
 		const api = connectApi()
-		const result = await api.projects.create(validated)
+		const result = await api.projects
+			.create({
+				...args,
+				overviewTitle: args['overview-title'],
+				overviewDescription: args['overview-description'],
+				links,
+			})
+			.catch(
+				handleValidationError(
+					buildArgumentMap(['code', 'title', 'overview-title', 'overview-description', 'links'])
+				)
+			)
 		printJson(result)
 	}),
 }

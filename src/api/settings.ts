@@ -1,4 +1,6 @@
+import { z } from 'zod'
 import { jsonResponse, withJson } from './utils'
+import { validateRequest } from './schemas'
 
 export interface Status {
 	id: string
@@ -7,14 +9,18 @@ export interface Status {
 	isActive: boolean
 }
 
-export interface UpdateStatusesRequest {
-	statuses: Array<{
-		id: string
-		name: string
-		color: string
-		isActive: boolean
-	}>
-}
+export const UpdateStatusesRequestSchema = z.object({
+	statuses: z.array(
+		z.object({
+			id: z.string(),
+			name: z.string(),
+			color: z.string(),
+			isActive: z.boolean(),
+		})
+	),
+})
+
+export type UpdateStatusesRequest = z.infer<typeof UpdateStatusesRequestSchema>
 
 export const createSettingsApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
@@ -24,10 +30,12 @@ export const createSettingsApi = (fetcher: typeof fetch) => {
 				.then((r) => jsonResponse<{ statuses: Status[] }>(r))
 				.then((r) => r.statuses),
 
-		update: (req: UpdateStatusesRequest) =>
-			fetcher(`/api/public/v0/settings/preferences/status`, {
+		update: async (req: UpdateStatusesRequest) => {
+			const validated = validateRequest(req, UpdateStatusesRequestSchema)
+			return fetcher(`/api/public/v0/settings/preferences/status`, {
 				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<{ message: string }>(r)),
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<{ message: string }>(r))
+		},
 	}
 }

@@ -76,7 +76,12 @@ export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	if (response.ok) {
 		return json as T
 	}
-	if (typeof json === 'object' && 'message' in json && typeof json.message === 'string') {
+	if (
+		json !== null &&
+		typeof json === 'object' &&
+		'message' in json &&
+		typeof json.message === 'string'
+	) {
 		throw new Error(json.message)
 	}
 	throw new Error(response.statusText)

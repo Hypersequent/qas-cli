@@ -1,5 +1,11 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, printJson } from '../utils'
+import {
+	apiHandler,
+	buildArgumentMap,
+	handleValidationError,
+	printJson,
+	type SortOrder,
+} from '../utils'
 import help from './help'
 
 interface RequirementsListArgs {
@@ -37,18 +43,14 @@ const listCommand: CommandModule<object, RequirementsListArgs> = {
 			})
 			.epilog(help.list.epilog),
 	handler: apiHandler<RequirementsListArgs>(async (args, connectApi) => {
-		const {
-			'project-code': projectCode,
-			'sort-field': sortField,
-			'sort-order': sortOrder,
-			...rest
-		} = args
 		const api = connectApi()
-		const result = await api.requirements.list(projectCode, {
-			...rest,
-			sortField,
-			sortOrder,
-		})
+		const result = await api.requirements
+			.list(args['project-code'], {
+				...args,
+				sortField: args['sort-field'],
+				sortOrder: args['sort-order'] as SortOrder,
+			})
+			.catch(handleValidationError(buildArgumentMap(['sort-field', 'sort-order', 'include'])))
 		printJson(result)
 	}),
 }

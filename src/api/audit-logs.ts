@@ -1,4 +1,6 @@
+import { z } from 'zod'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
+import { validateRequest } from './schemas'
 
 export interface AuditLog {
 	id: string
@@ -7,10 +9,12 @@ export interface AuditLog {
 	userId: string
 }
 
-export interface ListAuditLogsRequest {
-	after?: string
-	count?: number
-}
+export const ListAuditLogsRequestSchema = z.object({
+	after: z.string().optional(),
+	count: z.number().optional(),
+})
+
+export type ListAuditLogsRequest = z.infer<typeof ListAuditLogsRequestSchema>
 
 export interface ListAuditLogsResponse {
 	after: number
@@ -21,9 +25,11 @@ export interface ListAuditLogsResponse {
 export const createAuditLogApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		list: (params?: ListAuditLogsRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/audit-logs`, params ?? {})).then((r) =>
+		list: async (params?: ListAuditLogsRequest) => {
+			const validated = params ? validateRequest(params, ListAuditLogsRequestSchema) : {}
+			return fetcher(appendSearchParams(`/api/public/v0/audit-logs`, validated)).then((r) =>
 				jsonResponse<ListAuditLogsResponse>(r)
-			),
+			)
+		},
 	}
 }

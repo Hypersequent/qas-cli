@@ -1,5 +1,5 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, printJson } from '../utils'
+import { apiHandler, buildArgumentMap, handleValidationError, printJson } from '../utils'
 import help from './help'
 
 interface AuditLogsListArgs {
@@ -25,7 +25,9 @@ const listCommand: CommandModule<object, AuditLogsListArgs> = {
 			.epilog(help.list.epilog),
 	handler: apiHandler<AuditLogsListArgs>(async (args, connectApi) => {
 		const api = connectApi()
-		const result = await api.auditLogs.list(args)
+		const result = await api.auditLogs
+			.list(args)
+			.catch(handleValidationError(buildArgumentMap(['after', 'count'])))
 		printJson(result)
 	}),
 }

@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	expectValidationError,
 	testRejectsInvalidPathParam,
 } from '../test-helper'
 
@@ -87,6 +88,43 @@ describe('validation errors', () => {
 		'--items',
 		JSON.stringify([{ tcaseId: 'tc1', status: 'passed' }]),
 	])
+
+	test('rejects items with invalid status', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--run-id',
+					'1',
+					'--items',
+					JSON.stringify([{ tcaseId: 'tc1', status: 'invalid-status' }])
+				),
+			/Invalid enum value/
+		)
+	})
+
+	test('rejects items missing required fields', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--run-id',
+					'1',
+					'--items',
+					JSON.stringify([{ status: 'passed' }])
+				),
+			/tcaseId: Required/
+		)
+	})
+
+	test('rejects empty items array', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--run-id', '1', '--items', '[]'),
+			/Must contain at least one result item/
+		)
+	})
 })
 
 test('batch creates results on live server', { tags: ['live'] }, async ({ project }) => {

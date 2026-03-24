@@ -1,4 +1,5 @@
-import { ResourceId } from './schemas'
+import { z } from 'zod'
+import { ResourceId, validateRequest } from './schemas'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export interface Milestone {
@@ -7,26 +8,39 @@ export interface Milestone {
 	archived: boolean
 }
 
-export interface ListMilestonesRequest {
-	archived?: boolean
-}
+export const ListMilestonesRequestSchema = z.object({
+	archived: z.boolean().optional(),
+})
 
-export interface CreateMilestoneRequest {
-	title: string
-}
+export type ListMilestonesRequest = z.infer<typeof ListMilestonesRequestSchema>
+
+export const CreateMilestoneRequestSchema = z.object({
+	title: z
+		.string()
+		.min(1, 'title must not be empty')
+		.max(255, 'title must be at most 255 characters'),
+})
+
+export type CreateMilestoneRequest = z.infer<typeof CreateMilestoneRequestSchema>
 
 export const createMilestoneApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
-		list: (projectCode: ResourceId, params?: ListMilestonesRequest) =>
-			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/milestone`, params ?? {}))
+		list: async (projectCode: ResourceId, params?: ListMilestonesRequest) => {
+			const validated = params ? validateRequest(params, ListMilestonesRequestSchema) : {}
+			return fetcher(
+				appendSearchParams(`/api/public/v0/project/${projectCode}/milestone`, validated)
+			)
 				.then((r) => jsonResponse<{ milestones: Milestone[] }>(r))
-				.then((r) => r.milestones),
+				.then((r) => r.milestones)
+		},
 
-		create: (projectCode: ResourceId, req: CreateMilestoneRequest) =>
-			fetcher(`/api/public/v0/project/${projectCode}/milestone`, {
+		create: async (projectCode: ResourceId, req: CreateMilestoneRequest) => {
+			const validated = validateRequest(req, CreateMilestoneRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/milestone`, {
 				method: 'POST',
-				body: JSON.stringify(req),
-			}).then((r) => jsonResponse<{ id: number }>(r)),
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<{ id: number }>(r))
+		},
 	}
 }

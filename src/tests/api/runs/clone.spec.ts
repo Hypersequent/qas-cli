@@ -64,7 +64,7 @@ describe('validation errors', () => {
 				runCommand('--project-code', 'PRJ', '--run-id', '42', '--title', '')
 			).rejects.toThrow('process.exit')
 			const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
-			expect(errorOutput).toMatch(/--title must not be empty/)
+			expect(errorOutput).toMatch(/--title.*must not be empty/)
 		} finally {
 			exitSpy.mockRestore()
 			errorSpy.mockRestore()
