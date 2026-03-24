@@ -1,0 +1,21 @@
+{
+  "name": "Test cart",
+  "status": "passed",
+  "uuid": "matching-001",
+  "start": 1700000000000,
+  "stop": 1700000000500,
+  "statusDetails": {},
+  "attachments": [],
+  "labels": [
+    {
+      "name": "suite",
+      "value": "ui.cart.spec.ts"
+    }
+  ],
+  "links": [
+    {
+      "type": "tms",
+      "url": "https://qas.eu1.qasphere.com/project/TEST/tcase/2"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "suites": [
+    {
+      "title": "ui.cart.spec.ts",
+      "specs": [
+        {
+          "title": "Test cart TEST-002",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "duration": 1000
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        },
+        {
+          "title": "Test checkout TEST-003",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "duration": 1000
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [
+    {
+      "message": "Error: Global teardown failed: database connection timeout"
+    }
+  ]
+}

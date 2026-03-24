@@ -617,8 +617,9 @@ describe('Allure invalid result file handling', () => {
 
 describe('Run-level log upload', () => {
 	const junitBasePath = './src/tests/fixtures/junit-xml'
+	const allureBasePath = './src/tests/fixtures/allure'
 
-	test('Should upload run-level log when suite-level errors exist', async () => {
+	test('Should upload run-level log when suite-level errors exist (JUnit)', async () => {
 		const numRunLogCalls = countRunLogApiCalls()
 		const numResultUploadCalls = countResultUploadApiCalls()
 		await run(`junit-upload -r ${runURL} --force ${junitBasePath}/suite-level-errors.xml`)
@@ -626,10 +627,46 @@ describe('Run-level log upload', () => {
 		expect(numResultUploadCalls()).toBe(1)
 	})
 
-	test('Should not upload run-level log when no suite-level errors exist', async () => {
+	test('Should not upload run-level log when no suite-level errors exist (JUnit)', async () => {
 		const numRunLogCalls = countRunLogApiCalls()
 		const numResultUploadCalls = countResultUploadApiCalls()
 		await run(`junit-upload -r ${runURL} ${junitBasePath}/matching-tcases.xml`)
+		expect(numRunLogCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+
+	test('Should upload run-level log when global errors exist (Playwright)', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(
+			`playwright-json-upload -r ${runURL} --force ./src/tests/fixtures/playwright-json/global-errors.json`
+		)
+		expect(numRunLogCalls()).toBe(1)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+
+	test('Should not upload run-level log when no global errors exist (Playwright)', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(
+			`playwright-json-upload -r ${runURL} ./src/tests/fixtures/playwright-json/matching-tcases.json`
+		)
+		expect(numRunLogCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+
+	test('Should upload run-level log when container failures exist (Allure)', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`allure-upload -r ${runURL} --force ${allureBasePath}/container-failures`)
+		expect(numRunLogCalls()).toBe(1)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+
+	test('Should not upload run-level log when no container failures exist (Allure)', async () => {
+		const numRunLogCalls = countRunLogApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`allure-upload -r ${runURL} ${allureBasePath}/matching-tcases`)
 		expect(numRunLogCalls()).toBe(0)
 		expect(numResultUploadCalls()).toBe(1)
 	})

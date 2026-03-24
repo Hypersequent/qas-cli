@@ -1,0 +1,15 @@
+{
+  "uuid": "container-001",
+  "children": ["matching-001", "matching-002"],
+  "befores": [
+    {
+      "name": "setup_database",
+      "status": "broken",
+      "statusDetails": {
+        "message": "Failed to initialize database connection",
+        "trace": "java.sql.SQLException: Connection refused\n\tat com.example.Setup.init(Setup.java:15)"
+      }
+    }
+  ],
+  "afters": []
+}

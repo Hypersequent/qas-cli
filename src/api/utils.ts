@@ -26,12 +26,15 @@ export const withJson = (fetcher: typeof fetch): typeof fetch => {
 	}
 }
 
-export const withApiKey = (fetcher: typeof fetch, apiKey: string): typeof fetch => {
+export const withHeaders = (
+	fetcher: typeof fetch,
+	headers: Record<string, string>
+): typeof fetch => {
 	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
 		return fetcher(input, {
 			...init,
 			headers: {
-				Authorization: `ApiKey ${apiKey}`,
+				...headers,
 				...init?.headers,
 			},
 		})

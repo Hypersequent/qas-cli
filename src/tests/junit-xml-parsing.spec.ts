@@ -1,6 +1,6 @@
 import { expect, test, describe } from 'vitest'
 import { readFile } from 'node:fs/promises'
-import { parseJUnitXml } from '../utils/result-upload/junitXmlParser'
+import { parseJUnitXml } from '../utils/result-upload/parsers/junitXmlParser'
 
 const xmlBasePath = './src/tests/fixtures/junit-xml'
 

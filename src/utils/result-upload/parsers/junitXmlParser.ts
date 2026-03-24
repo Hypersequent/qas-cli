@@ -1,10 +1,10 @@
 import escapeHtml from 'escape-html'
 import xml from 'xml2js'
 import z from 'zod'
-import { Attachment, ParseResult, TestCaseResult } from './types'
-import { Parser, ParserOptions } from './ResultUploadCommandHandler'
-import { ResultStatus } from '../../api/schemas'
-import { getAttachments } from './utils'
+import { Attachment, ParseResult, TestCaseResult } from '../types'
+import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
+import { ResultStatus } from '../../../api/schemas'
+import { getAttachments } from '../utils'
 
 // There is no official JUnit XML schema — multiple popular variants exist with varying strictness:
 // - Jenkins/Jest:   https://github.com/jest-community/jest-junit/blob/master/__tests__/lib/junit.xsd
