@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'list', ...args)
@@ -47,6 +48,10 @@ describe('mocked', () => {
 		expect(lastSearchParams!.get('closed')).toBe('true')
 		expect(lastSearchParams!.get('limit')).toBe('10')
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code')
 })
 
 test('lists runs on live server', { tags: ['live'] }, async ({ project }) => {

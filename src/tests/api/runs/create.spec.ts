@@ -13,6 +13,7 @@ import {
 	createFolder,
 	createTCase,
 	expectValidationError,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'create', ...args)
@@ -371,6 +372,15 @@ describe('validation errors', () => {
 			/supports exactly one query plan/
 		)
 	})
+
+	testRejectsInvalidPathParam(runCommand, 'project-code', [
+		'--title',
+		'Test',
+		'--type',
+		'static',
+		'--query-plans',
+		JSON.stringify([{ tcaseIds: ['abc'] }]),
+	])
 
 	test('rejects non-integer folderIds', async () => {
 		await expectValidationError(

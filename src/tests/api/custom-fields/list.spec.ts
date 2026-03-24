@@ -1,6 +1,13 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'custom-fields', 'list', ...args)
@@ -30,4 +37,8 @@ describe('mocked', () => {
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(result).toEqual(mockFields)
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code')
 })

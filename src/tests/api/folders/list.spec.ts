@@ -2,7 +2,15 @@ import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect, vi } from 'vitest'
 import type { Folder } from '../../../api/folders'
 import type { PaginatedResponse } from '../../../api/schemas'
-import { test, baseURL, token, useMockServer, createFolder, runCli } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	createFolder,
+	runCli,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'folders', 'list', ...args)
 
@@ -57,6 +65,8 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code')
+
 	test('rejects invalid sort-field value', async () => {
 		const exitSpy = vi
 			.spyOn(process, 'exit')

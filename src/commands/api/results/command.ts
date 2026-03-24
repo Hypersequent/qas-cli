@@ -1,5 +1,11 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson, validateWithSchema } from '../utils'
+import {
+	apiHandler,
+	parseAndValidateJsonArg,
+	printJson,
+	validatePathParams,
+	validateWithSchema,
+} from '../utils'
 import { batchCreateResultsInputSchema, createResultBodySchema, resultLinksSchema } from './schemas'
 import help from './help'
 
@@ -64,7 +70,11 @@ const createCommand: CommandModule<object, ResultsCreateArgs> = {
 				},
 			})
 			.example(help.examples[0].usage, help.examples[0].description)
-			.epilog(help.create.epilog),
+			.epilog(help.create.epilog)
+			.check((argv) => {
+				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				return true
+			}),
 	handler: apiHandler<ResultsCreateArgs>(async (args, connectApi) => {
 		const {
 			'project-code': projectCode,

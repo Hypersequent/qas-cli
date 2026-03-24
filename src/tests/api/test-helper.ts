@@ -143,6 +143,19 @@ export async function createRun(projectCode: string, tcaseIds: string[]): Promis
 	)
 }
 
+export function testRejectsInvalidPathParam(
+	runCommand: (...args: string[]) => Promise<unknown>,
+	paramName: string,
+	otherRequiredArgs: string[] = []
+) {
+	test(`rejects ${paramName} with special characters`, async () => {
+		await expectValidationError(
+			() => runCommand(`--${paramName}`, 'PRJ/123', ...otherRequiredArgs),
+			/must contain only alphanumeric/
+		)
+	})
+}
+
 export async function expectValidationError(
 	runner: () => Promise<unknown>,
 	expectedPattern: RegExp

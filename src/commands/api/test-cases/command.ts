@@ -1,6 +1,12 @@
 import { Argv, CommandModule } from 'yargs'
 import { z } from 'zod'
-import { apiHandler, parseAndValidateJsonArg, printJson, validateWithSchema } from '../utils'
+import {
+	apiHandler,
+	parseAndValidateJsonArg,
+	printJson,
+	validatePathParams,
+	validateWithSchema,
+} from '../utils'
 import { createTCaseBodySchema, stepsArraySchema, updateTCaseBodySchema } from './schemas'
 import help from './help'
 
@@ -90,7 +96,11 @@ const getCommand: CommandModule<object, TCasesGetArgs> = {
 					describe: help['tcase-id'],
 				},
 			})
-			.epilog(help.get.epilog),
+			.epilog(help.get.epilog)
+			.check((argv) => {
+				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				return true
+			}),
 	handler: apiHandler<TCasesGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.testCases.getTCase(args['project-code'], args['tcase-id'])
@@ -202,10 +212,7 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 				},
 			})
 			.check((argv) => {
-				if (!argv.body && !argv.title) {
-					throw new Error('Either --body or --title is required')
-				}
-				return true
+				return argv.body || argv.title ? true : 'Either --body or --title is required'
 			})
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog),
@@ -305,10 +312,8 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 				},
 			})
 			.check((argv) => {
-				if (!argv.body && !argv.title) {
-					throw new Error('Either --body or --title is required')
-				}
-				return true
+				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				return argv.body || argv.title ? true : 'Either --body or --title is required'
 			})
 			.epilog(help.update.epilog),
 	handler: apiHandler<TCasesUpdateArgs>(async (args, connectApi) => {

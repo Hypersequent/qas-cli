@@ -4,7 +4,14 @@ import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, beforeAll, afterAll, describe, expect } from 'vitest'
 import type { BulkCreateFoldersResponse } from '../../../api/folders'
-import { test, baseURL, token, useMockServer, runCli } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'folders', 'bulk-create', ...args)
@@ -58,6 +65,13 @@ describe('mocked', () => {
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastRequest).toEqual({ folders: [{ path: ['FromFile', 'Nested'] }] })
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', [
+		'--folders',
+		JSON.stringify({ folders: [{ path: ['Suite'] }] }),
+	])
 })
 
 test('bulk creates folders on live server', { tags: ['live'] }, async ({ project }) => {

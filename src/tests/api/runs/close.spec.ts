@@ -9,6 +9,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 import { MessageResponse } from '../../../api/schemas'
 
@@ -40,6 +41,10 @@ describe('mocked', () => {
 		expect(lastParams.runId).toBe('42')
 		expect(result).toEqual(expectedResponse)
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', ['--run-id', '1'])
 })
 
 test('closes a run on live server', { tags: ['live'] }, async ({ project }) => {

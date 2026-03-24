@@ -1,6 +1,13 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect, vi } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'milestones', 'create', ...args)
@@ -35,6 +42,8 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', ['--title', 'Test'])
+
 	test('rejects empty title', async () => {
 		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
 			throw new Error('process.exit')

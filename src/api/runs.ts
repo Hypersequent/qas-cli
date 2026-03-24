@@ -77,52 +77,47 @@ export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		getRunTCases: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`))
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
 				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
 				.then((r) => r.tcases),
 
 		createRun: (projectCode: ResourceId, req: CreateRunRequest) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run`), {
+			fetcher(`/api/public/v0/project/${projectCode}/run`, {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<CreateRunResponse>(r)),
 
 		listRuns: (projectCode: ResourceId, params?: ListRunsRequest) =>
-			fetcher(
-				appendSearchParams(encodeURI(`/api/public/v0/project/${projectCode}/run`), params ?? {})
-			)
+			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, params ?? {}))
 				.then((r) => jsonResponse<{ runs: Run[] }>(r))
 				.then((r) => r.runs),
 
 		cloneRun: (projectCode: ResourceId, req: CloneRunRequest) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run/clone`), {
+			fetcher(`/api/public/v0/project/${projectCode}/run/clone`, {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<CloneRunResponse>(r)),
 
 		closeRun: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/close`), {
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/close`, {
 				method: 'POST',
 			}).then((r) => jsonResponse<MessageResponse>(r)),
 
 		createRunLog: (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/log`), {
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<{ id: string }>(r)),
 		listRunTCases: (projectCode: ResourceId, runId: ResourceId, params?: ListRunTCasesRequest) =>
 			fetcher(
-				appendSearchParams(
-					encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`),
-					params ?? {}
-				)
+				appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, params ?? {})
 			)
 				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
 				.then((r) => r.tcases),
 
 		getRunTCase: (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
-			fetcher(
-				encodeURI(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`)
-			).then((r) => jsonResponse<RunTCase>(r)),
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>
+				jsonResponse<RunTCase>(r)
+			),
 	}
 }

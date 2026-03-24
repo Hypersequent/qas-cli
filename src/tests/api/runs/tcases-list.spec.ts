@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -53,6 +54,10 @@ describe('mocked', () => {
 		expect(lastUrl).not.toBeNull()
 		expect(lastUrl!.searchParams.get('include')).toEqual('folder')
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', ['--run-id', '1'])
 })
 
 test('lists test cases in a run on live server', { tags: ['live'] }, async ({ project }) => {

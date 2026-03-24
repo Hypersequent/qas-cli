@@ -1,6 +1,13 @@
 import { HttpResponse, http } from 'msw'
 import { describe, expect } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'projects', 'get', ...args)
 
@@ -19,6 +26,10 @@ describe('mocked', () => {
 		const result = await runCommand('--project-code', 'PRJ')
 		expect(result).toEqual(mockProject)
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code')
 })
 
 test('gets a project on live server', { tags: ['live'] }, async ({ project }) => {

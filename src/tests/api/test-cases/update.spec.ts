@@ -9,6 +9,7 @@ import {
 	runCli,
 	createFolder,
 	createTCase,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -150,6 +151,21 @@ describe('mocked', () => {
 			rmSync(tempDir, { recursive: true })
 		}
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', [
+		'--tcase-id',
+		'tc1',
+		'--body',
+		JSON.stringify({ title: 'Updated' }),
+	])
+	testRejectsInvalidPathParam(runCommand, 'tcase-id', [
+		'--project-code',
+		'PRJ',
+		'--body',
+		JSON.stringify({ title: 'Updated' }),
+	])
 })
 
 test('updates a test case on live server', { tags: ['live'] }, async ({ project }) => {

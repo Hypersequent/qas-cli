@@ -10,7 +10,7 @@ export const createTagApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		listTags: (projectCode: ResourceId) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tag`))
+			fetcher(`/api/public/v0/project/${projectCode}/tag`)
 				.then((r) => jsonResponse<{ tags: Tag[] }>(r))
 				.then((r) => r.tags),
 	}

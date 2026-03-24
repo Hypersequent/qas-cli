@@ -1,5 +1,11 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson, validateWithSchema } from '../utils'
+import {
+	apiHandler,
+	parseAndValidateJsonArg,
+	printJson,
+	validatePathParams,
+	validateWithSchema,
+} from '../utils'
 import { cloneRunBodySchema, createRunBodySchema, queryPlansSchema } from './schemas'
 import help from './help'
 
@@ -330,7 +336,11 @@ const tcasesGetCommand: CommandModule<object, RunsTCasesGetArgs> = {
 					describe: help.tcases.get['tcase-id'],
 				},
 			})
-			.epilog(help.tcases.get.epilog),
+			.epilog(help.tcases.get.epilog)
+			.check((argv) => {
+				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				return true
+			}),
 	handler: apiHandler<RunsTCasesGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.runs.getRunTCase(

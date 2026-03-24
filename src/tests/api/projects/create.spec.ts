@@ -1,6 +1,14 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli, expectValidationError } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	expectValidationError,
+	testRejectsInvalidPathParam,
+} from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'projects', 'create', ...args)
@@ -72,6 +80,8 @@ describe('validation errors', () => {
 			/--code must contain only alphanumeric characters/
 		)
 	})
+
+	testRejectsInvalidPathParam(runCommand, 'code', ['--title', 'Test'])
 
 	test('rejects links with old "title" field name', async () => {
 		await expectValidationError(

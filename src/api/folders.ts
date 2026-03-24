@@ -32,14 +32,11 @@ export const createFolderApi = (fetcher: typeof fetch) => {
 	return {
 		getFoldersPaginated: (projectCode: ResourceId, request: GetFoldersRequest) =>
 			fetcher(
-				appendSearchParams(
-					encodeURI(`/api/public/v0/project/${projectCode}/tcase/folders`),
-					request
-				)
+				appendSearchParams(`/api/public/v0/project/${projectCode}/tcase/folders`, request)
 			).then((r) => jsonResponse<PaginatedResponse<Folder>>(r)),
 
 		bulkCreateFolders: (projectCode: ResourceId, req: BulkCreateFoldersRequest) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/tcase/folder/bulk`), {
+			fetcher(`/api/public/v0/project/${projectCode}/tcase/folder/bulk`, {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<BulkCreateFoldersResponse>(r)),

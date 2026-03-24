@@ -1,9 +1,23 @@
 import { existsSync, readFileSync } from 'node:fs'
 import chalk from 'chalk'
 import { type ArgumentsCamelCase } from 'yargs'
-import { ZodError, ZodType } from 'zod'
+import { z, ZodError, ZodType } from 'zod'
 import { loadEnvs } from '../../utils/env'
 import { createApi, Api } from '../../api/index'
+
+const PATH_PARAM_REGEX = /^[a-zA-Z0-9_-]+$/
+const PATH_PARAM_MESSAGE = 'must contain only alphanumeric characters, dashes, and underscores'
+
+export const pathParamSchema = z.string().regex(PATH_PARAM_REGEX, PATH_PARAM_MESSAGE)
+
+export function validatePathParams(...params: [string, string][]): void {
+	const errors = params
+		.filter(([value]) => !PATH_PARAM_REGEX.test(value))
+		.map(([, name]) => `${name} ${PATH_PARAM_MESSAGE}`)
+	if (errors.length > 0) {
+		throw new Error(errors.join('\n'))
+	}
+}
 
 export function printJson(data: unknown): void {
 	console.log(JSON.stringify(data, null, 2))

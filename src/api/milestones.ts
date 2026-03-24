@@ -19,17 +19,12 @@ export const createMilestoneApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
 		listMilestones: (projectCode: ResourceId, params?: ListMilestonesRequest) =>
-			fetcher(
-				appendSearchParams(
-					encodeURI(`/api/public/v0/project/${projectCode}/milestone`),
-					params ?? {}
-				)
-			)
+			fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/milestone`, params ?? {}))
 				.then((r) => jsonResponse<{ milestones: Milestone[] }>(r))
 				.then((r) => r.milestones),
 
 		createMilestone: (projectCode: ResourceId, req: CreateMilestoneRequest) =>
-			fetcher(encodeURI(`/api/public/v0/project/${projectCode}/milestone`), {
+			fetcher(`/api/public/v0/project/${projectCode}/milestone`, {
 				method: 'POST',
 				body: JSON.stringify(req),
 			}).then((r) => jsonResponse<{ id: number }>(r)),

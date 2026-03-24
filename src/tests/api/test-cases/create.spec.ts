@@ -11,6 +11,7 @@ import {
 	runCli,
 	createFolder,
 	expectValidationError,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -280,6 +281,11 @@ test('creates a test case on live server', { tags: ['live'] }, async ({ project 
 })
 
 describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', [
+		'--body',
+		JSON.stringify({ title: 'Test', type: 'standalone', folderId: 1, priority: 'high' }),
+	])
+
 	test('rejects invalid JSON', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--body', 'not-json'),

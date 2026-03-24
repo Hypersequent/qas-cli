@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'clone', ...args)
@@ -51,6 +52,8 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', ['--run-id', '1', '--title', 'Test'])
+
 	test('rejects empty title', async () => {
 		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
 			throw new Error('process.exit')

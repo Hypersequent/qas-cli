@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	testRejectsInvalidPathParam,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -77,6 +78,15 @@ describe('mocked', () => {
 		})
 		expect(result).toEqual({ ids: [1, 2] })
 	})
+})
+
+describe('validation errors', () => {
+	testRejectsInvalidPathParam(runCommand, 'project-code', [
+		'--run-id',
+		'1',
+		'--items',
+		JSON.stringify([{ tcaseId: 'tc1', status: 'passed' }]),
+	])
 })
 
 test('batch creates results on live server', { tags: ['live'] }, async ({ project }) => {

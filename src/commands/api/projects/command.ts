@@ -1,5 +1,5 @@
 import { Argv, CommandModule } from 'yargs'
-import { apiHandler, parseAndValidateJsonArg, printJson } from '../utils'
+import { apiHandler, parseAndValidateJsonArg, printJson, validatePathParams } from '../utils'
 import { createProjectBodySchema, projectLinksSchema } from './schemas'
 import help from './help'
 
@@ -76,7 +76,11 @@ const createCommand: CommandModule<object, ProjectsCreateArgs> = {
 				},
 			})
 			.example(help.examples[0].usage, help.examples[0].description)
-			.epilog(help.create.epilog),
+			.epilog(help.create.epilog)
+			.check((argv) => {
+				validatePathParams([argv.code, '--code'])
+				return true
+			}),
 	handler: apiHandler<ProjectsCreateArgs>(async (args, connectApi) => {
 		const {
 			'overview-title': overviewTitle,
