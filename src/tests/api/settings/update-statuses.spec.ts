@@ -21,19 +21,10 @@ describe('mocked', () => {
 	})
 
 	test('updates custom statuses', async () => {
-		await runCommand(
-			'--statuses',
-			'[{"id": "custom1", "name": "Retest", "color": "#FF9800", "isActive": true}]'
-		)
+		const statuses = [{ id: 'custom1', name: 'Retest', color: '#FF9800', isActive: true }]
+		await runCommand('--statuses', JSON.stringify(statuses))
 		expect(lastRequest).toEqual({
-			statuses: [
-				{
-					id: 'custom1',
-					name: 'Retest',
-					color: '#FF9800',
-					isActive: true,
-				},
-			],
+			statuses,
 		})
 	})
 })
