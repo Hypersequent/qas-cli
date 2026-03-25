@@ -89,7 +89,7 @@ export interface CreateRunResponse {
 
 export const ListRunsRequestSchema = z.object({
 	closed: z.boolean().optional(),
-	milestoneIds: z.array(z.number()).optional(),
+	milestoneIds: z.array(z.number().int().positive()).optional(),
 	limit: limitParam,
 })
 
@@ -128,7 +128,7 @@ export interface CloneRunResponse {
 
 export const ListRunTCasesRequestSchema = z.object({
 	search: z.string().optional(),
-	tags: z.array(z.number()).optional(),
+	tags: z.array(z.number().int().positive()).optional(),
 	priorities: z.array(z.string()).optional(),
 	limit: limitParam,
 	include: z.string().optional(),

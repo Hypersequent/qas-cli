@@ -34,7 +34,7 @@ export interface CreateTCasesResponse {
 export const GetTCasesRequestSchema = z.object({
 	page: pageParam,
 	limit: limitParam,
-	folders: z.array(z.number()).optional(),
+	folders: z.array(z.number().int().positive()).optional(),
 })
 
 export type GetTCasesRequest = z.infer<typeof GetTCasesRequestSchema>
@@ -50,8 +50,8 @@ export type GetTCasesBySeqRequest = z.infer<typeof GetTCasesBySeqRequestSchema>
 export const ListTCasesRequestSchema = z.object({
 	page: pageParam,
 	limit: limitParam,
-	folders: z.array(z.number()).optional(),
-	tags: z.array(z.number()).optional(),
+	folders: z.array(z.number().int().positive()).optional(),
+	tags: z.array(z.number().int().positive()).optional(),
 	priorities: z.array(z.string()).optional(),
 	search: z.string().optional(),
 	types: z.array(z.string()).optional(),
@@ -64,9 +64,9 @@ export const ListTCasesRequestSchema = z.object({
 export type ListTCasesRequest = z.infer<typeof ListTCasesRequestSchema>
 
 export const CountTCasesRequestSchema = z.object({
-	folders: z.array(z.number()).optional(),
+	folders: z.array(z.number().int().positive()).optional(),
 	recursive: z.boolean().optional(),
-	tags: z.array(z.number()).optional(),
+	tags: z.array(z.number().int().positive()).optional(),
 	priorities: z.array(z.string()).optional(),
 	draft: z.boolean().optional(),
 })
