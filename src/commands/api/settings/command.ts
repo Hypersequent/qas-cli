@@ -6,8 +6,19 @@ import {
 	parseAndValidateJsonArg,
 	printJson,
 } from '../utils'
-import { updateStatusesInputSchema } from './schemas'
+import { z } from 'zod'
 import help from './help'
+
+const statusItemSchema = z.object({
+	id: z.enum(['custom1', 'custom2', 'custom3', 'custom4']),
+	name: z.string().min(1, 'name must not be empty'),
+	color: z.string(),
+	isActive: z.boolean(),
+})
+
+const updateStatusesInputSchema = z
+	.array(statusItemSchema)
+	.min(1, 'Must contain at least one status')
 
 const listStatusesCommand: CommandModule = {
 	command: 'list-statuses',

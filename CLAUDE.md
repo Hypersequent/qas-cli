@@ -70,9 +70,8 @@ The `api` command provides direct programmatic access to the QA Sphere public AP
 
 ```
 src/commands/api/<resource>/
-├── command.ts      # Yargs command definitions (list, get, create, etc.)
-├── help.ts         # Help text and descriptions
-└── schemas.ts      # Zod schemas for CLI-specific validation (optional, only for complex JSON args)
+├── command.ts      # Yargs command definitions (list, get, create, etc.) and CLI-specific Zod schemas
+└── help.ts         # Help text and descriptions
 ```
 
 - `main.ts` — Registers all resource subcommands via `.command()`
@@ -82,8 +81,7 @@ src/commands/api/<resource>/
 
 - **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (via `connectApi()`), so CLI validation errors are reported first
 - **JSON argument flexibility**: Complex args accept inline JSON or `@filename` references (e.g., `--query-plans @plans.json`)
-- **Two-layer validation**: Command-level schemas (in `schemas.ts`) report which CLI argument is invalid (e.g., `--title must not be empty`). API-level schemas (in `src/api/*.ts`) validate request structure and strip unknown fields. For simple commands, skip command-level validation and pass args directly to API functions — the API layer validates. Command-level `validateWithSchema()` is only needed for complex JSON body args (like `--body`)
-- **Zod validation with path-based errors**: Detailed messages like `[0].tcaseIds: not allowed for "live" runs`
+- **Validation flow**: API-level Zod schemas (in `src/api/*.ts`) validate request structure and strip unknown fields. All commands catch `RequestValidationError` via `.catch(handleValidationError(buildArgumentMap([...])))` to reformat API error paths into CLI argument names (e.g., `--query-plans: [0].tcaseIds: not allowed for "live" runs`). Complex JSON args (e.g., `--query-plans`, `--body`, `--steps`) are pre-validated with `parseAndValidateJsonArg()` / `parseOptionalJsonField()` for early feedback before the API call
 
 ### API Layer (src/api/)
 

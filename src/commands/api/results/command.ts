@@ -8,9 +8,22 @@ import {
 	printJson,
 	validatePathParams,
 } from '../utils'
-import { type CreateResultRequest, resultLinksSchema } from '../../../api/results'
-import { batchCreateResultsInputSchema } from './schemas'
+import { z } from 'zod'
+import {
+	type CreateResultRequest,
+	CreateResultsRequestSchema,
+	resultLinksSchema,
+} from '../../../api/results'
 import help from './help'
+
+/**
+ * Accepts either `{ items: [...] }` or a bare array of result items.
+ * A bare array is automatically wrapped into the `{ items }` shape.
+ */
+const batchCreateResultsInputSchema = z
+	.unknown()
+	.transform((val) => (Array.isArray(val) ? { items: val } : val))
+	.pipe(CreateResultsRequestSchema)
 
 interface ResultsCreateArgs {
 	'project-code': string
