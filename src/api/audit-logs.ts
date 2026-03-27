@@ -2,16 +2,25 @@ import { z } from 'zod'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
 import { validateRequest } from './schemas'
 
+export interface AuditLogUser {
+	id: number
+	name: string
+	email: string
+}
+
 export interface AuditLog {
-	id: string
+	id: number
+	user: AuditLogUser | null
 	action: string
-	timestamp: string
-	userId: string
+	ip: string
+	userAgent: string
+	createdAt: string
+	meta?: Record<string, unknown>
 }
 
 export const ListAuditLogsRequestSchema = z.object({
-	after: z.string().optional(),
-	count: z.number().optional(),
+	after: z.number().int().nonnegative().optional(),
+	count: z.number().int().positive().optional(),
 })
 
 export type ListAuditLogsRequest = z.infer<typeof ListAuditLogsRequestSchema>

@@ -12,6 +12,8 @@ import {
 } from '../utils'
 import {
 	type CreateTCaseRequest,
+	type CountTCasesRequest,
+	type ListTCasesRequest,
 	customFieldsSchema,
 	parameterValueSchema,
 	parameterValueWithIdSchema,
@@ -85,8 +87,8 @@ const listCommand: CommandModule<object, TCasesListArgs> = {
 				sortOrder: args['sort-order'] as SortOrder,
 				folders: args.folders?.split(',').map(Number),
 				tags: args.tags?.split(',').map(Number),
-				priorities: args.priorities?.split(','),
-				types: args.types?.split(','),
+				priorities: args.priorities?.split(',') as ListTCasesRequest['priorities'],
+				types: args.types?.split(',') as ListTCasesRequest['types'],
 				include: args.include?.split(','),
 			})
 			.catch(
@@ -178,7 +180,7 @@ const countCommand: CommandModule<object, TCasesCountArgs> = {
 				...args,
 				folders: args.folders?.split(',').map(Number),
 				tags: args.tags?.split(',').map(Number),
-				priorities: args.priorities?.split(','),
+				priorities: args.priorities?.split(',') as CountTCasesRequest['priorities'],
 			})
 			.catch(
 				handleValidationError(

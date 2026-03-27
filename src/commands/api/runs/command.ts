@@ -9,7 +9,7 @@ import {
 	validateIntId,
 	validateResourceId,
 } from '../utils'
-import { QueryPlansSchema } from '../../../api/runs'
+import { QueryPlansSchema, type ListRunTCasesRequest } from '../../../api/runs'
 import help from './help'
 
 interface RunsCreateArgs {
@@ -313,7 +313,7 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 				sortField: args['sort-field'],
 				sortOrder: args['sort-order'] as SortOrder,
 				tags: args.tags?.split(',').map(Number),
-				priorities: args.priorities?.split(','),
+				priorities: args.priorities?.split(',') as ListRunTCasesRequest['priorities'],
 			})
 			.catch(
 				handleValidationError(

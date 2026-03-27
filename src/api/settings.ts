@@ -2,24 +2,6 @@ import { z } from 'zod'
 import { jsonResponse, withJson } from './utils'
 import { validateRequest } from './schemas'
 
-export interface Status {
-	id: string
-	name: string
-	color: string
-	isActive: boolean
-}
-
-export const UpdateStatusesRequestSchema = z.object({
-	statuses: z.array(
-		z.object({
-			id: z.string(),
-			name: z.string(),
-			color: z.string(),
-			isActive: z.boolean(),
-		})
-	),
-})
-
 export const STATUS_COLORS = [
 	'blue',
 	'gray',
@@ -32,6 +14,26 @@ export const STATUS_COLORS = [
 	'purple',
 	'pink',
 ] as const
+
+export const CUSTOM_STATUS_IDS = ['custom1', 'custom2', 'custom3', 'custom4'] as const
+
+export interface Status {
+	id: string
+	name: string
+	color: string
+	isActive: boolean
+}
+
+export const UpdateStatusesRequestSchema = z.object({
+	statuses: z.array(
+		z.object({
+			id: z.enum(CUSTOM_STATUS_IDS),
+			name: z.string().min(1, 'name must not be empty'),
+			color: z.enum(STATUS_COLORS),
+			isActive: z.boolean(),
+		})
+	),
+})
 
 export type UpdateStatusesRequest = z.infer<typeof UpdateStatusesRequestSchema>
 

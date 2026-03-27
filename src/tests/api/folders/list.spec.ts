@@ -1,5 +1,5 @@
 import { HttpResponse, http, type PathParams } from 'msw'
-import { afterEach, describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect } from 'vitest'
 import type { Folder } from '../../../api/folders'
 import type { PaginatedResponse } from '../../../api/schemas'
 import {
@@ -10,6 +10,7 @@ import {
 	createFolder,
 	runCli,
 	testRejectsInvalidIdentifier,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'folders', 'list', ...args)
@@ -68,19 +69,10 @@ describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 
 	test('rejects invalid sort-field value', async () => {
-		const exitSpy = vi
-			.spyOn(process, 'exit')
-			.mockImplementation((() => {}) as unknown as typeof process.exit)
-		const stderrSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-		try {
-			await runCommand('--project-code', 'PRJ', '--sort-field', 'invalid_field')
-			expect(exitSpy).toHaveBeenCalledWith(1)
-		} finally {
-			exitSpy.mockRestore()
-			stderrSpy.mockRestore()
-			logSpy.mockRestore()
-		}
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--sort-field', 'invalid_field'),
+			/sort-field|choices|invalid_field/i
+		)
 	})
 })
 

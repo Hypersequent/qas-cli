@@ -3,7 +3,7 @@ import { apiHandler, buildArgumentMap, handleValidationError, printJson } from '
 import help from './help'
 
 interface AuditLogsListArgs {
-	after?: string
+	after?: number
 	count?: number
 }
 
@@ -14,7 +14,7 @@ const listCommand: CommandModule<object, AuditLogsListArgs> = {
 		yargs
 			.options({
 				after: {
-					type: 'string',
+					type: 'number',
 					describe: help.list.after,
 				},
 				count: {

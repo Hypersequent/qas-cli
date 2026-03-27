@@ -3,6 +3,7 @@ import {
 	MessageResponse,
 	ResourceId,
 	limitParam,
+	priorityEnum,
 	sortFieldParam,
 	sortOrderParam,
 	validateRequest,
@@ -129,7 +130,7 @@ export interface CloneRunResponse {
 export const ListRunTCasesRequestSchema = z.object({
 	search: z.string().optional(),
 	tags: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(z.string()).optional(),
+	priorities: z.array(priorityEnum).optional(),
 	include: z.string().optional(),
 	sortField: sortFieldParam,
 	sortOrder: sortOrderParam,

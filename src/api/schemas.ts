@@ -54,3 +54,5 @@ export const sortOrderParam = z.enum(['asc', 'desc']).optional()
 export type SortOrder = z.infer<typeof sortOrderParam>
 export const pageParam = z.number().int().positive().optional()
 export const limitParam = z.number().int().positive().optional()
+export const priorityEnum = z.enum(['low', 'medium', 'high'])
+export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])

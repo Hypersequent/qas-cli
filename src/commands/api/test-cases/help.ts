@@ -54,7 +54,6 @@ Example: '[{"values": {"browser": "Chrome", "os": "Windows"}}]'`,
 		priorities: 'Comma-separated priorities to filter by (e.g., "low,high").',
 		search: 'Search text to filter test cases.',
 		types: 'Comma-separated test case types to filter by (e.g., "standalone,template").',
-		recursive: 'If true, include test cases in subfolders when filtering by folders.',
 		'sort-field': 'Field to sort by.',
 		'sort-order': 'Sort direction (asc or desc).',
 		include:

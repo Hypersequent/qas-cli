@@ -4,8 +4,10 @@ import {
 	ResourceId,
 	limitParam,
 	pageParam,
+	priorityEnum,
 	sortFieldParam,
 	sortOrderParam,
+	tcaseTypeEnum,
 	validateRequest,
 } from './schemas'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
@@ -134,9 +136,9 @@ export const ListTCasesRequestSchema = z.object({
 	limit: limitParam,
 	folders: z.array(z.number().int().positive()).optional(),
 	tags: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(z.string()).optional(),
+	priorities: z.array(priorityEnum).optional(),
 	search: z.string().optional(),
-	types: z.array(z.string()).optional(),
+	types: z.array(tcaseTypeEnum).optional(),
 	draft: z.boolean().optional(),
 	sortField: sortFieldParam,
 	sortOrder: sortOrderParam,
@@ -149,7 +151,7 @@ export const CountTCasesRequestSchema = z.object({
 	folders: z.array(z.number().int().positive()).optional(),
 	recursive: z.boolean().optional(),
 	tags: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(z.string()).optional(),
+	priorities: z.array(priorityEnum).optional(),
 	draft: z.boolean().optional(),
 })
 

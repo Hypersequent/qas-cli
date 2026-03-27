@@ -190,13 +190,13 @@ export function buildArgumentMap(args: string[]): Record<string, string> {
 	return map
 }
 
-export function handleValidationError(argumentMap: Record<string, string>): (e: unknown) => never {
+export function handleValidationError(argumentMap?: Record<string, string>): (e: unknown) => never {
 	return (e: unknown) => {
 		if (e instanceof RequestValidationError) {
 			const issues = e.zodError.issues.map((issue) => {
 				const fieldPath = issue.path.join('.')
 				const rootField = String(issue.path[0] ?? '')
-				const argument = argumentMap[rootField] ?? (fieldPath || '(root)')
+				const argument = argumentMap?.[rootField] ?? (fieldPath || '(root)')
 				return { argument, message: issue.message }
 			})
 			throw new ArgumentValidationError(issues)

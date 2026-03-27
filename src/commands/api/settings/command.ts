@@ -8,10 +8,10 @@ import {
 } from '../utils'
 import { z } from 'zod'
 import help from './help'
-import { STATUS_COLORS } from '../../../api/settings'
+import { CUSTOM_STATUS_IDS, STATUS_COLORS } from '../../../api/settings'
 
 const statusItemSchema = z.object({
-	id: z.enum(['custom1', 'custom2', 'custom3', 'custom4']),
+	id: z.enum(CUSTOM_STATUS_IDS),
 	name: z.string().min(1, 'name must not be empty'),
 	color: z.enum(STATUS_COLORS, { message: `color must be one of ${STATUS_COLORS.join(', ')}` }),
 	isActive: z.boolean(),

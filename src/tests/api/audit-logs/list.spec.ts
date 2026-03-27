@@ -32,9 +32,9 @@ describe('mocked', () => {
 	})
 
 	test('passes pagination params', async () => {
-		await runCommand('--after', 'cursor123', '--count', '10')
+		await runCommand('--after', '100', '--count', '10')
 		expect(lastSearchParams).not.toBeNull()
-		expect(lastSearchParams!.get('after')).toBe('cursor123')
+		expect(lastSearchParams!.get('after')).toBe('100')
 		expect(lastSearchParams!.get('count')).toBe('10')
 	})
 })
