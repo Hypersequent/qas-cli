@@ -8,12 +8,13 @@
 
 - [Description](#description)
 - [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Via NPX](#via-npx)
+  - [Via NPM](#via-npm)
 - [Shell Completion](#shell-completion)
 - [Environment](#environment)
 - [Command: `api`](#command-api)
-  - [Conventions](#conventions)
-  - [Resource Reference](#resource-reference)
-  - [Examples](#examples)
+  - [API Command Tree](#api-command-tree)
 - [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
   - [Options](#options)
   - [Run Name Template Placeholders](#run-name-template-placeholders)
@@ -106,8 +107,6 @@ The `api` command provides direct access to the QA Sphere public API from the co
 ```
 qasphere api <resource> <action> [options]
 ```
-
-All commands output JSON to stdout, errors to stderr.
 
 ```
 qasphere api
