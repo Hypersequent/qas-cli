@@ -172,7 +172,7 @@ interface ArgumentValidationIssue {
 export class ArgumentValidationError extends Error {
 	constructor(public readonly issues: ArgumentValidationIssue[]) {
 		super('Validation failed')
-		this.name = 'ValidationError'
+		this.name = 'ArgumentValidationError'
 	}
 }
 
