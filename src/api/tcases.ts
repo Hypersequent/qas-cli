@@ -79,7 +79,7 @@ const preconditionSchema = z.union([
 ])
 
 const stepSchema = z.object({
-	description: z.string(),
+	description: z.string().optional(),
 	expected: z.string().optional(),
 	sharedStepId: z.number().int().positive().optional(),
 })

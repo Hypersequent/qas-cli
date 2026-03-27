@@ -10,7 +10,8 @@ Fields:
   tags (string[]) - Array of tag names.
   isDraft (boolean) - Whether the test case is a draft.
   steps (object[]) - Array of step objects, each with:
-    description (string, required, supports HTML), expected (string, supports HTML), sharedStepId (number).
+    description (string, supports HTML), expected (string, supports HTML), sharedStepId (number).
+    If sharedStepId is provided, description and expected are ignored.
   precondition (object) - Either { text: string (supports HTML) } or { sharedPreconditionId: number }.
   pos (number) - Position index within the folder (non-negative integer).
   requirements (object[]) - Array of { text: string, url: string (max 255 chars) }.
@@ -30,7 +31,8 @@ export default {
 	tags: 'Comma-separated tag names (e.g., "smoke,regression").',
 	'is-draft': 'Whether the test case is a draft.',
 	steps: `JSON array of step objects. Accepts inline JSON or @filename.
-Each step has: description (string, required, supports HTML), expected (string, supports HTML), sharedStepId (number).
+Each step has: description (string, supports HTML), expected (string, supports HTML), sharedStepId (number).
+If sharedStepId is provided, description and expected are ignored.
 Example: '[{"description": "Click login", "expected": "Page loads"}]'`,
 	'custom-fields': `JSON object mapping custom field keys to values. Accepts inline JSON or @filename.
 Each value has: isDefault (boolean), value (string, omit if isDefault is true).
