@@ -87,10 +87,14 @@ const bulkCreateCommand: CommandModule<object, FoldersBulkCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help['bulk-create'].epilog),
 	handler: apiHandler<FoldersBulkCreateArgs>(async (args, connectApi) => {
-		const body = parseAndValidateJsonArg(args.folders, '--folders', BulkCreateFoldersRequestSchema)
+		const folders = parseAndValidateJsonArg(
+			args.folders,
+			'--folders',
+			BulkCreateFoldersRequestSchema
+		)
 		const api = connectApi()
 		const result = await api.folders
-			.bulkCreate(args['project-code'], body)
+			.bulkCreate(args['project-code'], folders)
 			.catch(handleValidationError(buildArgumentMap(['folders'])))
 		printJson(result)
 	}),

@@ -253,7 +253,6 @@ interface RunsTCasesListArgs {
 	search?: string
 	tags?: string
 	priorities?: string
-	limit?: number
 	include?: string
 	'sort-field'?: string
 	'sort-order'?: string
@@ -287,10 +286,6 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 					type: 'string',
 					describe: help.tcases.list.priorities,
 				},
-				limit: {
-					type: 'number',
-					describe: help.tcases.list.limit,
-				},
 				include: {
 					type: 'string',
 					describe: help.tcases.list.include,
@@ -322,15 +317,7 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 			})
 			.catch(
 				handleValidationError(
-					buildArgumentMap([
-						'search',
-						'tags',
-						'priorities',
-						'limit',
-						'include',
-						'sort-field',
-						'sort-order',
-					])
+					buildArgumentMap(['search', 'tags', 'priorities', 'include', 'sort-field', 'sort-order'])
 				)
 			)
 		printJson(result)

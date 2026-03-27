@@ -47,20 +47,21 @@ describe('mocked', () => {
 	})
 
 	test('bulk creates folders', async ({ project }) => {
+		const request = [{ path: ['Suite', 'Auth'] }]
 		const result = await runCommand(
 			'--project-code',
 			project.code,
 			'--folders',
-			'{"folders": [{"path": ["Suite", "Auth"]}]}'
+			JSON.stringify(request)
 		)
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({ folders: [{ path: ['Suite', 'Auth'] }] })
+		expect(lastRequest).toEqual({ folders: request })
 		expect(result).toEqual({ ids: [[1]] })
 	})
 
 	test('bulk creates folders from @file', async ({ project }) => {
 		const filePath = join(tempDir, 'folders.json')
-		writeFileSync(filePath, JSON.stringify({ folders: [{ path: ['FromFile', 'Nested'] }] }))
+		writeFileSync(filePath, JSON.stringify([{ path: ['FromFile', 'Nested'] }]))
 		await runCommand('--project-code', project.code, '--folders', `@${filePath}`)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastRequest).toEqual({ folders: [{ path: ['FromFile', 'Nested'] }] })
@@ -70,7 +71,7 @@ describe('mocked', () => {
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', [
 		'--folders',
-		JSON.stringify({ folders: [{ path: ['Suite'] }] }),
+		JSON.stringify([{ path: ['Suite'] }]),
 	])
 })
 
@@ -79,7 +80,7 @@ test('bulk creates folders on live server', { tags: ['live'] }, async ({ project
 		'--project-code',
 		project.code,
 		'--folders',
-		JSON.stringify({ folders: [{ path: ['LiveTest', 'Auth'] }] })
+		JSON.stringify([{ path: ['LiveTest', 'Auth'] }])
 	)
 	expect(result).toHaveProperty('ids')
 	expect(Array.isArray(result.ids)).toBe(true)

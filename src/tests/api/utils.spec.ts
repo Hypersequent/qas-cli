@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { tmpdir } from 'node:os'
-import { describe, test, expect, beforeAll, afterAll } from 'vitest'
+import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest'
 import { z } from 'zod'
 import {
 	parseAndValidateJsonArg,
@@ -10,6 +10,7 @@ import {
 	validateProjectCode,
 	validateResourceId,
 } from '../../commands/api/utils'
+import { withBaseUrl } from '../../api/utils'
 
 describe('parseAndValidateJsonArg', () => {
 	let tempDir: string
@@ -260,5 +261,28 @@ describe('validateWithSchema', () => {
 		expect(() => validateWithSchema([{ id: 'ok' }, { id: 123 }], '--items', arraySchema)).toThrow(
 			/1\.id:/
 		)
+	})
+})
+
+describe('withBaseUrl', () => {
+	test('strips trailing slashes from base URL', async () => {
+		const mockFetcher = vi.fn().mockResolvedValue(new Response('ok'))
+		const fetcher = withBaseUrl(mockFetcher as unknown as typeof fetch, 'https://host.com/')
+		await fetcher('/api/test')
+		expect(mockFetcher).toHaveBeenCalledWith('https://host.com/api/test', undefined)
+	})
+
+	test('strips multiple trailing slashes', async () => {
+		const mockFetcher = vi.fn().mockResolvedValue(new Response('ok'))
+		const fetcher = withBaseUrl(mockFetcher as unknown as typeof fetch, 'https://host.com///')
+		await fetcher('/api/test')
+		expect(mockFetcher).toHaveBeenCalledWith('https://host.com/api/test', undefined)
+	})
+
+	test('works with base URL without trailing slash', async () => {
+		const mockFetcher = vi.fn().mockResolvedValue(new Response('ok'))
+		const fetcher = withBaseUrl(mockFetcher as unknown as typeof fetch, 'https://host.com')
+		await fetcher('/api/test')
+		expect(mockFetcher).toHaveBeenCalledWith('https://host.com/api/test', undefined)
 	})
 })

@@ -130,7 +130,6 @@ export const ListRunTCasesRequestSchema = z.object({
 	search: z.string().optional(),
 	tags: z.array(z.number().int().positive()).optional(),
 	priorities: z.array(z.string()).optional(),
-	limit: limitParam,
 	include: z.string().optional(),
 	sortField: sortFieldParam,
 	sortOrder: sortOrderParam,

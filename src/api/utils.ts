@@ -1,7 +1,8 @@
 export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
+	const normalizedBase = baseUrl.replace(/\/+$/, '')
 	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
 		if (typeof input === 'string') {
-			return fetcher(baseUrl + input, init)
+			return fetcher(normalizedBase + input, init)
 		}
 		return fetcher(input, init)
 	}

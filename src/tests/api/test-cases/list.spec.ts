@@ -11,6 +11,7 @@ import {
 	createFolder,
 	createTCase,
 	testRejectsInvalidIdentifier,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -63,6 +64,13 @@ describe('mocked', () => {
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
+
+	test('rejects --page 0', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--page', '0'),
+			/--page.*must be greater than 0/i
+		)
+	})
 })
 
 describe('live', { tags: ['live'] }, () => {

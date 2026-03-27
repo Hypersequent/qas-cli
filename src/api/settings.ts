@@ -20,6 +20,19 @@ export const UpdateStatusesRequestSchema = z.object({
 	),
 })
 
+export const STATUS_COLORS = [
+	'blue',
+	'gray',
+	'red',
+	'orange',
+	'yellow',
+	'green',
+	'teal',
+	'indigo',
+	'purple',
+	'pink',
+] as const
+
 export type UpdateStatusesRequest = z.infer<typeof UpdateStatusesRequestSchema>
 
 export const createSettingsApi = (fetcher: typeof fetch) => {

@@ -29,16 +29,14 @@ export const GetFoldersRequestSchema = z.object({
 
 export type GetFoldersRequest = z.infer<typeof GetFoldersRequestSchema>
 
-export const BulkCreateFoldersRequestSchema = z.object({
-	folders: z
-		.array(
-			z.object({
-				path: z.array(z.string()).min(1, 'path must have at least one element'),
-				comment: z.string().optional(),
-			})
-		)
-		.min(1, 'Must contain at least one folder'),
-})
+export const BulkCreateFoldersRequestSchema = z
+	.array(
+		z.object({
+			path: z.array(z.string()).min(1, 'path must have at least one element'),
+			comment: z.string().optional(),
+		})
+	)
+	.min(1, 'Must contain at least one folder')
 
 export type BulkCreateFoldersRequest = z.infer<typeof BulkCreateFoldersRequestSchema>
 
@@ -60,7 +58,7 @@ export const createFolderApi = (fetcher: typeof fetch) => {
 			const validated = validateRequest(req, BulkCreateFoldersRequestSchema)
 			return fetcher(`/api/public/v0/project/${projectCode}/tcase/folder/bulk`, {
 				method: 'POST',
-				body: JSON.stringify(validated),
+				body: JSON.stringify({ folders: validated }),
 			}).then((r) => jsonResponse<BulkCreateFoldersResponse>(r))
 		},
 	}

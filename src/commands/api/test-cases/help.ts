@@ -57,7 +57,8 @@ Example: '[{"values": {"browser": "Chrome", "os": "Windows"}}]'`,
 		recursive: 'If true, include test cases in subfolders when filtering by folders.',
 		'sort-field': 'Field to sort by.',
 		'sort-order': 'Sort direction (asc or desc).',
-		include: 'Comma-separated additional fields to include (e.g., "tags,requirements").',
+		include:
+			'Comma-separated additional fields to include.\nValid values: steps, tags, requirements, customFields, parameterValues, folder, path, project.',
 	},
 
 	get: {

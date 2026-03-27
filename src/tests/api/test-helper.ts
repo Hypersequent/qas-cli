@@ -101,7 +101,7 @@ export async function createFolder(projectCode: string): Promise<{ ids: number[]
 		'--project-code',
 		projectCode,
 		'--folders',
-		JSON.stringify({ folders: [{ path: [`CLITest_${uid}`] }] })
+		JSON.stringify([{ path: [`CLITest_${uid}`] }])
 	)
 }
 

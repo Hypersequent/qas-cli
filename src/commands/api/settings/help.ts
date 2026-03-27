@@ -1,3 +1,4 @@
+import { STATUS_COLORS } from '../../../api/settings'
 import { apiDocsEpilog } from '../utils'
 
 export default {
@@ -10,15 +11,16 @@ export default {
 		command: 'Update custom result statuses.',
 		statuses: `JSON array of custom status objects.
 Accepts inline JSON or @filename.
-Each status has: id (custom1-4), name (string), color (hex string), isActive (boolean).
-Example: '[{"id": "custom1", "name": "Retest", "color": "#FF9800", "isActive": true}]'`,
+Each status has: id (custom1-4), name (string), color (named color), isActive (boolean).
+Valid colors: ${STATUS_COLORS.join(', ')}.
+Example: '[{"id": "custom1", "name": "Retest", "color": "orange", "isActive": true}]'`,
 		epilog: apiDocsEpilog('settings', 'update-custom-statuses'),
 	},
 
 	examples: [
 		{
 			usage:
-				'$0 api settings update-statuses --statuses \'[{"id": "custom1", "name": "Retest", "color": "#FF9800", "isActive": true}]\'',
+				'$0 api settings update-statuses --statuses \'[{"id": "custom1", "name": "Retest", "color": "orange", "isActive": true}]\'',
 			description: 'Activate a custom status',
 		},
 	],
