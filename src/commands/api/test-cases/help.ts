@@ -6,7 +6,6 @@ Fields:
   type ("standalone" | "template") - Test case type.
   folderId (number) - ID of the folder to place the test case in.
   priority ("low" | "medium" | "high") - Priority level.
-  comment (string) - Comment or description (supports HTML).
   tags (string[]) - Array of tag names.
   isDraft (boolean) - Whether the test case is a draft.
   steps (object[]) - Array of step objects, each with:
@@ -27,7 +26,9 @@ export default {
 	draft: 'Filter by draft status (true or false).',
 	title: 'Test case title (1-511 characters).',
 	priority: 'Priority level (low, medium, or high).',
-	comment: 'Comment or description (supports HTML).',
+	'precondition-text':
+		'Precondition text (supports HTML). Mutually exclusive with --precondition-id.',
+	'precondition-id': 'Shared precondition ID. Mutually exclusive with --precondition-text.',
 	tags: 'Comma-separated tag names (e.g., "smoke,regression").',
 	'is-draft': 'Whether the test case is a draft.',
 	steps: `JSON array of step objects. Accepts inline JSON or @filename.

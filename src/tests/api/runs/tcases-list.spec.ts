@@ -60,21 +60,48 @@ describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', ['--run-id', '1'])
 })
 
-test('lists test cases in a run on live server', { tags: ['live'] }, async ({ project }) => {
-	const folder = await createFolder(project.code)
-	const folderId = folder.ids[0][0]
-	const tcase = await createTCase(project.code, folderId)
-	const run = await createRun(project.code, [tcase.id])
-	const result = await runCli<RunTCase[]>(
-		'api',
-		'runs',
-		'tcases',
-		'list',
-		'--project-code',
-		project.code,
-		'--run-id',
-		String(run.id)
-	)
-	expect(Array.isArray(result)).toBe(true)
-	expect(result.length).toBeGreaterThanOrEqual(1)
+describe('live', { tags: ['live'] }, () => {
+	test('lists test cases in a run', async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		const tcase = await createTCase(project.code, folderId)
+		const run = await createRun(project.code, [tcase.id])
+		const result = await runCli<RunTCase[]>(
+			'api',
+			'runs',
+			'tcases',
+			'list',
+			'--project-code',
+			project.code,
+			'--run-id',
+			String(run.id)
+		)
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(1)
+	})
+
+	test('lists test cases in a run with include', async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		const tcase = await createTCase(project.code, folderId)
+		const run = await createRun(project.code, [tcase.id])
+		const result = await runCli<RunTCase[]>(
+			'api',
+			'runs',
+			'tcases',
+			'list',
+			'--project-code',
+			project.code,
+			'--run-id',
+			String(run.id),
+			'--include',
+			'folder'
+		)
+		expect(Array.isArray(result)).toBe(true)
+		expect(result.length).toBe(1)
+		const rtcase = result[0]
+		expect(rtcase).toHaveProperty('folder')
+		expect(rtcase.folder).toHaveProperty('id')
+		expect(rtcase.folder).toHaveProperty('title')
+	})
 })

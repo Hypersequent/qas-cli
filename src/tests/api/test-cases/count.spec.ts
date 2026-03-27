@@ -62,6 +62,5 @@ test('counts test cases on live server', { tags: ['live'] }, async ({ project })
 		'--project-code',
 		project.code
 	)
-	expect(result).toHaveProperty('count')
-	expect(result.count).toBeGreaterThanOrEqual(1)
+	expect(result.count).toBe(1)
 })

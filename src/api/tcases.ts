@@ -9,15 +9,97 @@ import {
 	validateRequest,
 } from './schemas'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
+import type { Folder } from './folders'
+import type { Project, ProjectLink } from './projects'
+import type { Tag } from './tags'
+
+export interface TCaseFile {
+	id: string
+	fileName: string
+	mimeType: string
+	size: number
+	url?: string
+}
+
+export interface TCaseRequirement {
+	id: string
+	text: string
+	url: string
+}
+
+export interface TCaseSubStep {
+	id: number
+	type: string
+	version: number
+	isLatest: boolean
+	description?: string
+	expected?: string
+	deletedAt?: string
+}
+
+export interface TCaseStep {
+	id: number
+	type: string
+	version: number
+	isLatest: boolean
+	title?: string
+	subSteps?: TCaseSubStep[]
+	description?: string
+	expected?: string
+	deletedAt?: string
+}
+
+export interface TCasePrecondition {
+	projectId: string
+	id: number
+	version: number
+	title?: string
+	type: string
+	text: string
+	isLatest: boolean
+	createdAt: string
+	updatedAt: string
+	deletedAt?: string
+}
+
+export interface TCaseParameterValues {
+	tcaseId: string
+	tcaseVersion: number
+	values: Record<string, string>
+}
 
 export interface TCase {
 	id: string
-	legacyId?: string
-	seq: number
-	title: string
+	legacyId: string
 	version: number
-	projectId: string
+	type: string
+	title: string
+	seq: number
 	folderId: number
+	pos: number
+	priority: string
+	comment: string
+	precondition: TCasePrecondition
+	files: TCaseFile[]
+	links: ProjectLink[]
+	authorId: number
+	isDraft: boolean
+	isLatestVersion: boolean
+	isEmpty: boolean
+	templateTCaseId?: string
+	numFilledTCases?: number
+	createdAt: string
+	updatedAt: string
+
+	// Fields included via `include` parameter or in get response
+	customFields?: Record<string, { value: string; isDefault: boolean }>
+	tags?: Tag[]
+	steps?: TCaseStep[]
+	requirements?: TCaseRequirement[]
+	parameterValues?: TCaseParameterValues
+	folder?: Folder
+	path?: Folder[]
+	project?: Project
 }
 
 export const CreateTCasesBatchRequestSchema = z.object({
@@ -58,7 +140,7 @@ export const ListTCasesRequestSchema = z.object({
 	draft: z.boolean().optional(),
 	sortField: sortFieldParam,
 	sortOrder: sortOrderParam,
-	include: z.string().optional(),
+	include: z.array(z.string()).optional(),
 })
 
 export type ListTCasesRequest = z.infer<typeof ListTCasesRequestSchema>

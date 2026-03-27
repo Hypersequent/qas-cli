@@ -2,10 +2,22 @@ import { z } from 'zod'
 import { ResourceId, validateRequest } from './schemas'
 import { jsonResponse, withJson } from './utils'
 
+export interface ProjectLink {
+	text: string
+	url: string
+}
+
 export interface Project {
 	id: string
 	code: string
 	title: string
+	description: string
+	overviewTitle: string
+	overviewDescription: string
+	links: ProjectLink[]
+	createdAt: string
+	updatedAt: string
+	archivedAt: string | null
 }
 
 export const projectLinksSchema = z.array(

@@ -5,6 +5,7 @@ import { appendSearchParams, jsonResponse, withJson } from './utils'
 export interface Requirement {
 	id: number
 	text: string
+	url: string
 	tcaseCount?: number
 }
 

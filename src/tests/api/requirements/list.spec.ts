@@ -1,5 +1,6 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
+import type { Requirement } from '../../../api/requirements'
 import {
 	test,
 	baseURL,
@@ -38,4 +39,34 @@ describe('mocked', () => {
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
+})
+
+describe('live', { tags: ['live'] }, () => {
+	test('lists requirements', async ({ project }) => {
+		const result = await runCli<Requirement[]>(
+			'api',
+			'requirements',
+			'list',
+			'--project-code',
+			project.code
+		)
+		expect(Array.isArray(result)).toBe(true)
+	})
+
+	test('lists requirements with include', async ({ project }) => {
+		const result = await runCli<Requirement[]>(
+			'api',
+			'requirements',
+			'list',
+			'--project-code',
+			project.code,
+			'--include',
+			'tcaseCount'
+		)
+		expect(Array.isArray(result)).toBe(true)
+		for (const req of result) {
+			expect(req).toHaveProperty('tcaseCount')
+			expect(typeof req.tcaseCount).toBe('number')
+		}
+	})
 })

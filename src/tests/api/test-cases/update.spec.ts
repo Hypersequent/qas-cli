@@ -10,6 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	testRejectsInvalidIdentifier,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -38,7 +39,6 @@ describe('mocked', () => {
 
 	test('updates a test case with new field names', async ({ project }) => {
 		const body = JSON.stringify({
-			comment: 'Updated comment',
 			isDraft: false,
 			tags: ['smoke'],
 			steps: [{ description: 'Step 1', expected: 'Result 1' }],
@@ -48,11 +48,31 @@ describe('mocked', () => {
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastParams.id).toBe('tc1')
 		expect(lastRequest).toEqual({
-			comment: 'Updated comment',
 			isDraft: false,
 			tags: ['smoke'],
 			steps: [{ description: 'Step 1', expected: 'Result 1' }],
 			precondition: { text: 'Logged in' },
+		})
+	})
+
+	test('updates with --precondition-text', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--precondition-text',
+			'User is logged in'
+		)
+		expect(lastRequest).toEqual({
+			precondition: { text: 'User is logged in' },
+		})
+	})
+
+	test('updates with --precondition-id', async ({ project }) => {
+		await runCommand('--project-code', project.code, '--tcase-id', 'tc1', '--precondition-id', '42')
+		expect(lastRequest).toEqual({
+			precondition: { sharedPreconditionId: 42 },
 		})
 	})
 
@@ -86,7 +106,7 @@ describe('mocked', () => {
 	test('individual fields override json body', async ({ project }) => {
 		const body = JSON.stringify({
 			title: 'From body',
-			comment: 'Body comment',
+			precondition: { text: 'Body precondition' },
 			priority: 'low',
 		})
 		await runCommand(
@@ -103,7 +123,7 @@ describe('mocked', () => {
 		)
 		expect(lastRequest).toEqual({
 			title: 'Overridden',
-			comment: 'Body comment',
+			precondition: { text: 'Body precondition' },
 			priority: 'high',
 		})
 	})
@@ -228,6 +248,23 @@ describe('validation errors', () => {
 		'--body',
 		JSON.stringify({ title: 'Updated' }),
 	])
+
+	test('rejects --precondition-text and --precondition-id together', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--tcase-id',
+					'tc1',
+					'--precondition-text',
+					'Some text',
+					'--precondition-id',
+					'42'
+				),
+			/--precondition-text and --precondition-id are mutually exclusive/
+		)
+	})
 })
 
 test(
@@ -280,7 +317,7 @@ test('updates a test case on live server', { tags: ['live'] }, async ({ project 
 	const folder = await createFolder(project.code)
 	const folderId = folder.ids[0][0]
 	const created = await createTCase(project.code, folderId)
-	await runCommand(
+	const updateResult = await runCommand<{ message: string }>(
 		'--project-code',
 		project.code,
 		'--tcase-id',
@@ -288,6 +325,8 @@ test('updates a test case on live server', { tags: ['live'] }, async ({ project 
 		'--body',
 		JSON.stringify({ title: 'Updated Title' })
 	)
+	expect(typeof updateResult.message).toBe('string')
+
 	const result = await runCli<TCase>(
 		'api',
 		'test-cases',

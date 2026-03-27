@@ -101,188 +101,66 @@ QAS_URL=https://qas.eu1.qasphere.com
 
 The `api` command provides direct access to the QA Sphere public API from the command line. Outputting JSON to stdout for easy scripting and piping.
 
+### API Command Tree
+
 ```
 qasphere api <resource> <action> [options]
 ```
 
-### Conventions
+All commands output JSON to stdout, errors to stderr.
 
-- **JSON output** — All commands print JSON to stdout; errors go to stderr.
-- **`--project-code`** — Specified per-command (not global). Some endpoints (audit-logs, users, settings) are org-scoped and don't need it.
-- **Comma-separated arrays** — Options like `--milestone-ids`, `--tags`, `--priorities`, `--folders` accept comma-separated values: `--tags 1,2,3`.
-- **JSON body arguments** — Options like `--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links` accept either inline JSON or `@filename` to read from a file relative to the current directory: `--body @tcase.json`.
-- **`--verbose`** — Add to any command for full stack traces on errors.
-- **Result statuses** — `passed`, `failed`, `blocked`, `skipped`, `open`, `custom1`, `custom2`, `custom3`, `custom4`.
-- **HTML fields** — Some fields support HTML content (e.g., run descriptions, result comments, test case comments/steps, folder comments, project overview descriptions). See [HTML support](https://docs.qasphere.com/api/html-support.md) for allowed tags.
-
-### Resource Reference
-
-Each table shows required options in **bold**. Optional options are listed in the description. Run `qasphere api <resource> <action> --help` for full option details.
-
-#### audit-logs
-
-| Subcommand | Required Options | Description                                              |
-| ---------- | ---------------- | -------------------------------------------------------- |
-| `list`     | _(none)_         | List audit logs. Optional: `--after` (cursor), `--count` |
-
-#### custom-fields
-
-| Subcommand | Required Options | Description                     |
-| ---------- | ---------------- | ------------------------------- |
-| `list`     | `--project-code` | List custom fields in a project |
-
-#### files
-
-| Subcommand | Required Options | Description              |
-| ---------- | ---------------- | ------------------------ |
-| `upload`   | `--file <path>`  | Upload a file attachment |
-
-#### folders
-
-| Subcommand    | Required Options                            | Description                                                                                              |
-| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `list`        | `--project-code`                            | List folders. Optional: `--page`, `--limit`, `--sort-field`, `--sort-order`                              |
-| `bulk-create` | `--project-code`, `--folders <json\|@file>` | Create or update folders in bulk. Format: `[{"path": ["Parent", "Child"]}]`. Comment field supports HTML |
-
-#### milestones
-
-| Subcommand | Required Options            | Description                             |
-| ---------- | --------------------------- | --------------------------------------- |
-| `list`     | `--project-code`            | List milestones. Optional: `--archived` |
-| `create`   | `--project-code`, `--title` | Create a milestone                      |
-
-#### projects
-
-| Subcommand | Required Options    | Description                                                                                       |
-| ---------- | ------------------- | ------------------------------------------------------------------------------------------------- |
-| `list`     | _(none)_            | List all projects                                                                                 |
-| `get`      | `--project-code`    | Get a project by code                                                                             |
-| `create`   | `--code`, `--title` | Create a project. Optional: `--links <json\|@file>`, `--overview-title`, `--overview-description` |
-
-#### requirements
-
-| Subcommand | Required Options | Description                                                              |
-| ---------- | ---------------- | ------------------------------------------------------------------------ |
-| `list`     | `--project-code` | List requirements. Optional: `--sort-field`, `--sort-order`, `--include` |
-
-#### results
-
-| Subcommand     | Required Options                                       | Description                                                                            |
-| -------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `create`       | `--project-code`, `--run-id`, `--tcase-id`, `--status` | Create a single result. Optional: `--comment`, `--time-taken`, `--links <json\|@file>` |
-| `batch-create` | `--project-code`, `--run-id`, `--items <json\|@file>`  | Create results in batch. Format: `[{"tcaseId": "abc", "status": "passed"}]`            |
-
-#### runs
-
-| Subcommand    | Required Options                                                     | Description                                                                                                                                       |
-| ------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`      | `--project-code`, `--title`, `--type`, `--query-plans <json\|@file>` | Create a test run. Types: `static`, `static_struct`, `live`. Optional: `--description`, `--milestone-id`, `--configuration-id`, `--assignment-id` |
-| `list`        | `--project-code`                                                     | List test runs. Optional: `--closed`, `--milestone-ids`, `--limit`                                                                                |
-| `clone`       | `--project-code`, `--run-id`, `--title`                              | Clone a test run. Optional: `--description`, `--milestone-id`, `--assignment-id`                                                                  |
-| `close`       | `--project-code`, `--run-id`                                         | Close a test run                                                                                                                                  |
-| `tcases list` | `--project-code`, `--run-id`                                         | List test cases in a run. Optional: `--search`, `--tags`, `--priorities`, `--limit`, `--include`, `--sort-field`, `--sort-order`                  |
-| `tcases get`  | `--project-code`, `--run-id`, `--tcase-id`                           | Get a test case in a run                                                                                                                          |
-
-#### settings
-
-| Subcommand        | Required Options           | Description                                                                                                |
-| ----------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `list-statuses`   | _(none)_                   | List all result statuses (standard + custom)                                                               |
-| `update-statuses` | `--statuses <json\|@file>` | Update custom statuses. Format: `[{"id": "custom1", "name": "...", "color": "#FF9800", "isActive": true}]` |
-
-#### shared-preconditions
-
-| Subcommand | Required Options         | Description                                                                      |
-| ---------- | ------------------------ | -------------------------------------------------------------------------------- |
-| `list`     | `--project-code`         | List shared preconditions. Optional: `--sort-field`, `--sort-order`, `--include` |
-| `get`      | `--project-code`, `--id` | Get a shared precondition. Response `text` field contains HTML                   |
-
-#### shared-steps
-
-| Subcommand | Required Options         | Description                                                                         |
-| ---------- | ------------------------ | ----------------------------------------------------------------------------------- |
-| `list`     | `--project-code`         | List shared steps. Optional: `--sort-field`, `--sort-order`, `--include`            |
-| `get`      | `--project-code`, `--id` | Get a shared step. Response `description`, `expected`, and sub-step fields are HTML |
-
-#### tags
-
-| Subcommand | Required Options | Description            |
-| ---------- | ---------------- | ---------------------- |
-| `list`     | `--project-code` | List tags in a project |
-
-#### test-cases
-
-| Subcommand | Required Options                                       | Description                                                                                                                                                          |
-| ---------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list`     | `--project-code`                                       | List test cases. Optional: `--page`, `--limit`, `--folders`, `--tags`, `--priorities`, `--search`, `--types`, `--draft`, `--sort-field`, `--sort-order`, `--include` |
-| `get`      | `--project-code`, `--tcase-id`                         | Get a single test case                                                                                                                                               |
-| `count`    | `--project-code`                                       | Count test cases matching filters. Optional: `--folders`, `--recursive`, `--tags`, `--priorities`, `--draft`                                                         |
-| `create`   | `--project-code`, `--body <json\|@file>`               | Create a test case. Body: `{"title": "...", "type": "standalone"}`. Comment, step description/expected, and precondition text support HTML                           |
-| `update`   | `--project-code`, `--tcase-id`, `--body <json\|@file>` | Update a test case. Same HTML fields as create                                                                                                                       |
-
-#### test-plans
-
-| Subcommand | Required Options                         | Description                                                 |
-| ---------- | ---------------------------------------- | ----------------------------------------------------------- |
-| `create`   | `--project-code`, `--body <json\|@file>` | Create a test plan. Body: `{"title": "...", "runs": [...]}` |
-
-#### users
-
-| Subcommand | Required Options | Description                        |
-| ---------- | ---------------- | ---------------------------------- |
-| `list`     | _(none)_         | List all users in the organization |
-
-### Examples
-
-**List all test cases in a project, filtered by tag:**
-
-```bash
-qasphere api test-cases list --project-code PRJ --tags 1,2 --limit 50
 ```
-
-**Create a test run with specific test cases:**
-
-```bash
-qasphere api runs create \
-  --project-code PRJ \
-  --title "Sprint 42 Regression" \
-  --type static \
-  --query-plans '[{"tcaseIds": ["abc123", "def456"]}]'
-```
-
-**Submit results for a run in batch:**
-
-```bash
-qasphere api results batch-create \
-  --project-code PRJ \
-  --run-id 15 \
-  --items '[{"tcaseId": "abc123", "status": "passed"}, {"tcaseId": "def456", "status": "failed", "comment": "Assertion error on line 42"}]'
-```
-
-**Create a test run from a JSON file and close it after uploading results:**
-
-```bash
-# Create the run
-qasphere api runs create \
-  --project-code PRJ \
-  --title "Nightly Build" \
-  --type static \
-  --query-plans @plans.json
-
-# Upload results from a file
-qasphere api results batch-create \
-  --project-code PRJ \
-  --run-id 15 \
-  --items @results.json
-
-# Close the run
-qasphere api runs close --project-code PRJ --run-id 15
-```
-
-**List open runs for a milestone:**
-
-```bash
-qasphere api runs list --project-code PRJ --closed false --milestone-ids 1,2
+qasphere api
+├── audit-logs
+│   └── list                                    # List audit log entries
+├── custom-fields
+│   └── list --project-code                     # List custom fields
+├── files
+│   └── upload --file                           # Upload a file attachment
+├── folders
+│   ├── list --project-code                     # List folders
+│   └── bulk-create --project-code --folders    # Create/update folders
+├── milestones
+│   ├── list --project-code                     # List milestones
+│   └── create --project-code --title           # Create milestone
+├── projects
+│   ├── list                                    # List all projects
+│   ├── get --project-code                      # Get project by code
+│   └── create --code --title                   # Create project
+├── requirements
+│   └── list --project-code                     # List requirements
+├── results
+│   ├── create --project-code --run-id --tcase-id --status  # Create result
+│   └── batch-create --project-code --run-id --items        # Batch create results
+├── runs
+│   ├── create --project-code --title --type --query-plans  # Create run
+│   ├── list --project-code                     # List runs
+│   ├── clone --project-code --run-id --title   # Clone run
+│   ├── close --project-code --run-id           # Close run
+│   └── tcases
+│       ├── list --project-code --run-id        # List test cases in run
+│       └── get --project-code --run-id --tcase-id  # Get test case in run
+├── settings
+│   ├── list-statuses                           # List result statuses
+│   └── update-statuses --statuses              # Update custom statuses
+├── shared-preconditions
+│   ├── list --project-code                     # List shared preconditions
+│   └── get --project-code --id                 # Get shared precondition
+├── shared-steps
+│   ├── list --project-code                     # List shared steps
+│   └── get --project-code --id                 # Get shared step
+├── tags
+│   └── list --project-code                     # List tags
+├── test-cases
+│   ├── list --project-code                     # List test cases
+│   ├── get --project-code --tcase-id           # Get test case
+│   ├── count --project-code                    # Count test cases
+│   ├── create --project-code --body            # Create test case
+│   └── update --project-code --tcase-id --body # Update test case
+├── test-plans
+│   └── create --project-code --body            # Create test plan
+└── users
+    └── list                                    # List all users
 ```
 
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`

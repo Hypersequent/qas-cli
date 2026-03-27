@@ -65,18 +65,63 @@ describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 })
 
-test('lists test cases on live server', { tags: ['live'] }, async ({ project }) => {
-	const folder = await createFolder(project.code)
-	const folderId = folder.ids[0][0]
-	await createTCase(project.code, folderId)
-	const result = await runCli<PaginatedResponse<TCase>>(
-		'api',
-		'test-cases',
-		'list',
-		'--project-code',
-		project.code
-	)
-	expect(result).toHaveProperty('data')
-	expect(Array.isArray(result.data)).toBe(true)
-	expect(result.data.length).toBeGreaterThanOrEqual(1)
+describe('live', { tags: ['live'] }, () => {
+	function expectBaseFields(tcase: TCase) {
+		expect(tcase).toHaveProperty('id')
+		expect(tcase).toHaveProperty('legacyId')
+		expect(tcase).toHaveProperty('version')
+		expect(tcase).toHaveProperty('type')
+		expect(tcase).toHaveProperty('title')
+		expect(tcase).toHaveProperty('seq')
+		expect(tcase).toHaveProperty('folderId')
+		expect(tcase).toHaveProperty('pos')
+		expect(tcase).toHaveProperty('priority')
+		expect(tcase).toHaveProperty('authorId')
+		expect(tcase).toHaveProperty('isDraft')
+		expect(tcase).toHaveProperty('isLatestVersion')
+		expect(tcase).toHaveProperty('isEmpty')
+		expect(tcase).toHaveProperty('createdAt')
+		expect(tcase).toHaveProperty('updatedAt')
+	}
+
+	test('lists test cases', async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		await createTCase(project.code, folderId)
+		const result = await runCli<PaginatedResponse<TCase>>(
+			'api',
+			'test-cases',
+			'list',
+			'--project-code',
+			project.code
+		)
+
+		expect(result).toHaveProperty('total')
+		expect(result).toHaveProperty('page')
+		expect(result).toHaveProperty('limit')
+		expect(Array.isArray(result.data)).toBe(true)
+		expect(result.data.length).toBe(1)
+		expectBaseFields(result.data[0])
+	})
+
+	test('lists test cases with include', async ({ project }) => {
+		const folder = await createFolder(project.code)
+		const folderId = folder.ids[0][0]
+		await createTCase(project.code, folderId)
+		const result = await runCli<PaginatedResponse<TCase>>(
+			'api',
+			'test-cases',
+			'list',
+			'--project-code',
+			project.code,
+			'--include',
+			'tags,requirements'
+		)
+
+		expect(result.data.length).toBe(1)
+		const tcase = result.data[0]
+		expectBaseFields(tcase)
+		expect(Array.isArray(tcase.tags)).toBe(true)
+		expect(Array.isArray(tcase.requirements)).toBe(true)
+	})
 })

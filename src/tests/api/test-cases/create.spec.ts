@@ -73,7 +73,6 @@ describe('mocked', () => {
 			type: 'standalone',
 			folderId: 1,
 			priority: 'high',
-			comment: 'A description',
 			tags: ['smoke', 'regression'],
 			isDraft: true,
 			steps: [{ description: 'Click button', expected: 'Dialog opens' }],
@@ -86,7 +85,6 @@ describe('mocked', () => {
 			type: 'standalone',
 			folderId: 1,
 			priority: 'high',
-			comment: 'A description',
 			tags: ['smoke', 'regression'],
 			isDraft: true,
 			steps: [{ description: 'Click button', expected: 'Dialog opens' }],
@@ -210,7 +208,7 @@ describe('mocked', () => {
 			type: 'standalone',
 			folderId: 1,
 			priority: 'low',
-			comment: 'Body comment',
+			precondition: { text: 'Body precondition' },
 		})
 		await runCommand(
 			'--project-code',
@@ -227,7 +225,50 @@ describe('mocked', () => {
 			type: 'standalone',
 			folderId: 1,
 			priority: 'high',
-			comment: 'Body comment',
+			precondition: { text: 'Body precondition' },
+		})
+	})
+
+	test('--precondition-text overrides body precondition', async ({ project }) => {
+		const body = JSON.stringify({
+			title: 'Test',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'high',
+			precondition: { text: 'Body precondition' },
+		})
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--body',
+			body,
+			'--precondition-text',
+			'CLI precondition'
+		)
+		expect(lastRequest).toEqual({
+			title: 'Test',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'high',
+			precondition: { text: 'CLI precondition' },
+		})
+	})
+
+	test('--precondition-id overrides body precondition', async ({ project }) => {
+		const body = JSON.stringify({
+			title: 'Test',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'high',
+			precondition: { text: 'Body precondition' },
+		})
+		await runCommand('--project-code', project.code, '--body', body, '--precondition-id', '42')
+		expect(lastRequest).toEqual({
+			title: 'Test',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'high',
+			precondition: { sharedPreconditionId: 42 },
 		})
 	})
 
@@ -347,7 +388,7 @@ describe('mocked', () => {
 test('creates a test case on live server', { tags: ['live'] }, async ({ project }) => {
 	const folder = await createFolder(project.code)
 	const folderId = folder.ids[0][0]
-	const created = await runCommand(
+	const created = await runCommand<{ id: string; seq: number }>(
 		'--project-code',
 		project.code,
 		'--body',
@@ -358,8 +399,8 @@ test('creates a test case on live server', { tags: ['live'] }, async ({ project 
 			priority: 'medium',
 		})
 	)
-	expect(created).toHaveProperty('id')
-	expect(created).toHaveProperty('seq')
+	expect(typeof created.id).toBe('string')
+	expect(created.seq).toBe(1)
 })
 
 test(
@@ -414,6 +455,29 @@ describe('validation errors', () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--body', '{"title": "Test"}'),
 			/Invalid arguments/
+		)
+	})
+
+	test('rejects --precondition-text and --precondition-id together', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'standalone',
+					'--folder-id',
+					'1',
+					'--priority',
+					'high',
+					'--precondition-text',
+					'Some text',
+					'--precondition-id',
+					'42'
+				),
+			/--precondition-text and --precondition-id are mutually exclusive/
 		)
 	})
 

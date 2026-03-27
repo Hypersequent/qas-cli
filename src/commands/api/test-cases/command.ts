@@ -87,6 +87,7 @@ const listCommand: CommandModule<object, TCasesListArgs> = {
 				tags: args.tags?.split(',').map(Number),
 				priorities: args.priorities?.split(','),
 				types: args.types?.split(','),
+				include: args.include?.split(','),
 			})
 			.catch(
 				handleValidationError(
@@ -195,7 +196,8 @@ interface TCasesCreateArgs {
 	type?: string
 	'folder-id'?: number
 	priority?: string
-	comment?: string
+	'precondition-text'?: string
+	'precondition-id'?: number
 	tags?: string
 	'is-draft'?: boolean
 	steps?: string
@@ -236,9 +238,13 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 					choices: ['low', 'medium', 'high'],
 					describe: help.priority,
 				},
-				comment: {
+				'precondition-text': {
 					type: 'string',
-					describe: help.comment,
+					describe: help['precondition-text'],
+				},
+				'precondition-id': {
+					type: 'number',
+					describe: help['precondition-id'],
 				},
 				tags: {
 					type: 'string',
@@ -262,17 +268,25 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 				},
 			})
 			.check((argv) => {
+				if (argv['precondition-text'] && argv['precondition-id']) {
+					throw new Error('--precondition-text and --precondition-id are mutually exclusive')
+				}
 				return argv.body || argv.title ? true : 'Either --body or --title is required'
 			})
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog),
 	handler: apiHandler<TCasesCreateArgs>(async (args, connectApi) => {
+		const precondition = args['precondition-text']
+			? { text: args['precondition-text'] }
+			: args['precondition-id']
+				? { sharedPreconditionId: args['precondition-id'] }
+				: undefined
 		const body = mergeBodyWithOverrides(args.body, {
 			title: args.title,
 			type: args.type,
 			folderId: args['folder-id'],
 			priority: args.priority,
-			comment: args.comment,
+			precondition,
 			isDraft: args['is-draft'],
 			tags: args.tags?.split(','),
 			steps: parseOptionalJsonField(args.steps, '--steps', StepsArraySchema),
@@ -297,7 +311,6 @@ const createCommand: CommandModule<object, TCasesCreateArgs> = {
 						'type',
 						'folder-id',
 						'priority',
-						'comment',
 						'is-draft',
 						'tags',
 						'steps',
@@ -316,7 +329,8 @@ interface TCasesUpdateArgs {
 	body?: string
 	title?: string
 	priority?: string
-	comment?: string
+	'precondition-text'?: string
+	'precondition-id'?: number
 	tags?: string
 	'is-draft'?: boolean
 	steps?: string
@@ -353,9 +367,13 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 					choices: ['low', 'medium', 'high'],
 					describe: help.priority,
 				},
-				comment: {
+				'precondition-text': {
 					type: 'string',
-					describe: help.comment,
+					describe: help['precondition-text'],
+				},
+				'precondition-id': {
+					type: 'number',
+					describe: help['precondition-id'],
 				},
 				tags: {
 					type: 'string',
@@ -379,15 +397,23 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 				},
 			})
 			.check((argv) => {
+				if (argv['precondition-text'] && argv['precondition-id']) {
+					throw new Error('--precondition-text and --precondition-id are mutually exclusive')
+				}
 				validateResourceId([argv['tcase-id'], '--tcase-id'])
 				return true
 			})
 			.epilog(help.update.epilog),
 	handler: apiHandler<TCasesUpdateArgs>(async (args, connectApi) => {
+		const precondition = args['precondition-text']
+			? { text: args['precondition-text'] }
+			: args['precondition-id']
+				? { sharedPreconditionId: args['precondition-id'] }
+				: undefined
 		const body = mergeBodyWithOverrides(args.body, {
 			title: args.title,
 			priority: args.priority,
-			comment: args.comment,
+			precondition,
 			isDraft: args['is-draft'],
 			tags: args.tags?.split(','),
 			steps: parseOptionalJsonField(args.steps, '--steps', StepsArraySchema),
@@ -405,7 +431,6 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 		const updateFields = [
 			'title',
 			'priority',
-			'comment',
 			'is-draft',
 			'tags',
 			'steps',

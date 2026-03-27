@@ -1,5 +1,6 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
+import type { SharedStep } from '../../../api/shared-steps'
 import {
 	test,
 	baseURL,
@@ -38,4 +39,34 @@ describe('mocked', () => {
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
+})
+
+describe('live', { tags: ['live'] }, () => {
+	test('lists shared steps', async ({ project }) => {
+		const result = await runCli<SharedStep[]>(
+			'api',
+			'shared-steps',
+			'list',
+			'--project-code',
+			project.code
+		)
+		expect(Array.isArray(result)).toBe(true)
+	})
+
+	test('lists shared steps with include', async ({ project }) => {
+		const result = await runCli<SharedStep[]>(
+			'api',
+			'shared-steps',
+			'list',
+			'--project-code',
+			project.code,
+			'--include',
+			'tcaseCount'
+		)
+		expect(Array.isArray(result)).toBe(true)
+		for (const step of result) {
+			expect(step).toHaveProperty('tcaseCount')
+			expect(typeof step.tcaseCount).toBe('number')
+		}
+	})
 })

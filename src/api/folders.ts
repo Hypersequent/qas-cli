@@ -12,9 +12,11 @@ import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export interface Folder {
 	id: number
-	parentId: number
-	pos: number
 	title: string
+	comment: string
+	pos: number
+	parentId: number
+	projectId: string
 }
 
 export const GetFoldersRequestSchema = z.object({

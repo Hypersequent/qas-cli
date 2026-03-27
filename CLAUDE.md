@@ -77,6 +77,8 @@ src/commands/api/<resource>/
 - `main.ts` — Registers all resource subcommands via `.command()`
 - `utils.ts` — Shared helpers: `apiHandler<T>()` wraps handlers with lazy env loading and error handling; `printJson()` outputs formatted JSON; `parseJsonArg()` supports inline JSON or `@filename`; `parseAndValidateJsonArg()` and `validateWithSchema()` validate with Zod and produce detailed error messages; `apiDocsEpilog()` appends API doc links
 
+Important note: Online documentation is available at https://docs.qasphere.com. Most leaf pages have a markdown version available by appending `.md` in the URL. Use the markdown version before falling back to the original URL if the markdown version returns >= 400 status.
+
 **Key design patterns**:
 
 - **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (via `connectApi()`), so CLI validation errors are reported first
