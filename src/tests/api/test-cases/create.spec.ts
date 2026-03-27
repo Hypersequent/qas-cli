@@ -12,7 +12,7 @@ import {
 	runCli,
 	createFolder,
 	expectValidationError,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -398,7 +398,7 @@ test(
 )
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code', [
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', [
 		'--body',
 		JSON.stringify({ title: 'Test', type: 'standalone', folderId: 1, priority: 'high' }),
 	])

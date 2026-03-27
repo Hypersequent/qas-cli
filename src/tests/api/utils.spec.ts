@@ -3,7 +3,13 @@ import { join, relative } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, test, expect, beforeAll, afterAll } from 'vitest'
 import { z } from 'zod'
-import { parseAndValidateJsonArg, validateWithSchema } from '../../commands/api/utils'
+import {
+	parseAndValidateJsonArg,
+	validateWithSchema,
+	validateIntId,
+	validateProjectCode,
+	validateResourceId,
+} from '../../commands/api/utils'
 
 describe('parseAndValidateJsonArg', () => {
 	let tempDir: string
@@ -128,6 +134,101 @@ describe('parseAndValidateJsonArg', () => {
 		expect(() => parseAndValidateJsonArg('{"code": "ab"}', '--data', schema)).toThrow(
 			/must contain only uppercase letters/
 		)
+	})
+})
+
+describe('validateResourceId', () => {
+	test('accepts alphanumeric, dashes, and underscores', () => {
+		expect(() => validateResourceId(['abc-123_DEF', '--tcase-id'])).not.toThrow()
+	})
+
+	test('accepts multiple params', () => {
+		expect(() => validateResourceId(['abc', '--tcase-id'], ['def-123', '--other-id'])).not.toThrow()
+	})
+
+	test('rejects special characters', () => {
+		expect(() => validateResourceId(['abc!@#', '--tcase-id'])).toThrow(
+			/--tcase-id must contain only alphanumeric characters, dashes, and underscores/
+		)
+	})
+
+	test('rejects empty string', () => {
+		expect(() => validateResourceId(['', '--tcase-id'])).toThrow(/--tcase-id/)
+	})
+
+	test('reports all failing params', () => {
+		expect(() =>
+			validateResourceId(['valid', '--a'], ['in valid', '--b'], ['al$o bad', '--c'])
+		).toThrow(/--b.*\n.*--c/s)
+	})
+})
+
+describe('validateProjectCode', () => {
+	test('accepts alphanumeric characters', () => {
+		expect(() => validateProjectCode(['PRJ1', '--project-code'])).not.toThrow()
+	})
+
+	test('accepts lowercase letters and digits', () => {
+		expect(() => validateProjectCode(['abc123', '--code'])).not.toThrow()
+	})
+
+	test('rejects dashes', () => {
+		expect(() => validateProjectCode(['PRJ-1', '--project-code'])).toThrow(
+			/--project-code must contain only latin letters and digits/
+		)
+	})
+
+	test('rejects underscores', () => {
+		expect(() => validateProjectCode(['PRJ_1', '--project-code'])).toThrow(
+			/--project-code must contain only latin letters and digits/
+		)
+	})
+
+	test('rejects special characters', () => {
+		expect(() => validateProjectCode(['PRJ!', '--code'])).toThrow(
+			/--code must contain only latin letters and digits/
+		)
+	})
+
+	test('rejects empty string', () => {
+		expect(() => validateProjectCode(['', '--project-code'])).toThrow(/--project-code/)
+	})
+
+	test('reports all failing params', () => {
+		expect(() => validateProjectCode(['GOOD', '--a'], ['BA-D', '--b'], ['WOR$E', '--c'])).toThrow(
+			/--b.*\n.*--c/s
+		)
+	})
+})
+
+describe('validateIntId', () => {
+	test('accepts positive integers', () => {
+		expect(() => validateIntId([1, '--run-id'])).not.toThrow()
+		expect(() => validateIntId([100, '--run-id'])).not.toThrow()
+	})
+
+	test('accepts multiple params', () => {
+		expect(() => validateIntId([1, '--run-id'], [5, '--id'])).not.toThrow()
+	})
+
+	test('rejects zero', () => {
+		expect(() => validateIntId([0, '--run-id'])).toThrow(/--run-id must be a positive integer/)
+	})
+
+	test('rejects negative numbers', () => {
+		expect(() => validateIntId([-5, '--run-id'])).toThrow(/--run-id must be a positive integer/)
+	})
+
+	test('rejects non-integer numbers', () => {
+		expect(() => validateIntId([1.5, '--run-id'])).toThrow(/--run-id must be a positive integer/)
+	})
+
+	test('rejects NaN', () => {
+		expect(() => validateIntId([NaN, '--run-id'])).toThrow(/--run-id must be a positive integer/)
+	})
+
+	test('reports all failing params', () => {
+		expect(() => validateIntId([1, '--a'], [-1, '--b'], [0, '--c'])).toThrow(/--b.*\n.*--c/s)
 	})
 })
 

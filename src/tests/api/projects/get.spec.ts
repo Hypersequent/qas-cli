@@ -6,7 +6,7 @@ import {
 	token,
 	useMockServer,
 	runCli,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'projects', 'get', ...args)
@@ -29,7 +29,7 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code')
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 })
 
 test('gets a project on live server', { tags: ['live'] }, async ({ project }) => {

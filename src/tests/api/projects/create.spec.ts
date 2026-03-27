@@ -7,7 +7,7 @@ import {
 	useMockServer,
 	runCli,
 	expectValidationError,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -77,11 +77,11 @@ describe('validation errors', () => {
 	test('rejects non-alphanumeric code', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'PR-J', '--title', 'Test'),
-			/--code.*must contain only alphanumeric characters/
+			/--code.*must contain only latin letters and digits/
 		)
 	})
 
-	testRejectsInvalidPathParam(runCommand, 'code', ['--title', 'Test'])
+	testRejectsInvalidIdentifier(runCommand, 'code', 'code', ['--title', 'Test'])
 
 	test('rejects links with old "title" field name', async () => {
 		await expectValidationError(

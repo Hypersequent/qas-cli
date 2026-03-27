@@ -6,7 +6,8 @@ import {
 	parseAndValidateJsonArg,
 	printJson,
 	type SortOrder,
-	validatePathParams,
+	validateIntId,
+	validateResourceId,
 } from '../utils'
 import { QueryPlansSchema } from '../../../api/runs'
 import help from './help'
@@ -187,7 +188,11 @@ const cloneCommand: CommandModule<object, RunsCloneArgs> = {
 					describe: help.clone['assignment-id'],
 				},
 			})
-			.epilog(help.clone.epilog),
+			.epilog(help.clone.epilog)
+			.check((argv) => {
+				validateIntId([argv['run-id'], '--run-id'])
+				return true
+			}),
 	handler: apiHandler<RunsCloneArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.runs
@@ -228,7 +233,11 @@ const closeCommand: CommandModule<object, RunsCloseArgs> = {
 					describe: help['run-id'],
 				},
 			})
-			.epilog(help.close.epilog),
+			.epilog(help.close.epilog)
+			.check((argv) => {
+				validateIntId([argv['run-id'], '--run-id'])
+				return true
+			}),
 	handler: apiHandler<RunsCloseArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.runs.close(args['project-code'], args['run-id'])
@@ -296,7 +305,11 @@ const tcasesListCommand: CommandModule<object, RunsTCasesListArgs> = {
 					describe: help.tcases.list['sort-order'],
 				},
 			})
-			.epilog(help.tcases.list.epilog),
+			.epilog(help.tcases.list.epilog)
+			.check((argv) => {
+				validateIntId([argv['run-id'], '--run-id'])
+				return true
+			}),
 	handler: apiHandler<RunsTCasesListArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.runs
@@ -354,7 +367,8 @@ const tcasesGetCommand: CommandModule<object, RunsTCasesGetArgs> = {
 			})
 			.epilog(help.tcases.get.epilog)
 			.check((argv) => {
-				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				validateIntId([argv['run-id'], '--run-id'])
+				validateResourceId([argv['tcase-id'], '--tcase-id'])
 				return true
 			}),
 	handler: apiHandler<RunsTCasesGetArgs>(async (args, connectApi) => {

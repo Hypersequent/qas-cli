@@ -8,7 +8,7 @@ import {
 	parseOptionalJsonField,
 	printJson,
 	type SortOrder,
-	validatePathParams,
+	validateResourceId,
 } from '../utils'
 import {
 	type CreateTCaseRequest,
@@ -133,7 +133,7 @@ const getCommand: CommandModule<object, TCasesGetArgs> = {
 			})
 			.epilog(help.get.epilog)
 			.check((argv) => {
-				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				validateResourceId([argv['tcase-id'], '--tcase-id'])
 				return true
 			}),
 	handler: apiHandler<TCasesGetArgs>(async (args, connectApi) => {
@@ -379,7 +379,7 @@ const updateCommand: CommandModule<object, TCasesUpdateArgs> = {
 				},
 			})
 			.check((argv) => {
-				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				validateResourceId([argv['tcase-id'], '--tcase-id'])
 				return true
 			})
 			.epilog(help.update.epilog),

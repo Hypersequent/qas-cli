@@ -10,7 +10,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'list', ...args)
@@ -51,7 +51,7 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code')
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 })
 
 test('lists runs on live server', { tags: ['live'] }, async ({ project }) => {

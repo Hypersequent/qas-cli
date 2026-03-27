@@ -9,7 +9,7 @@ import {
 	runCli,
 	createFolder,
 	createTCase,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -41,8 +41,8 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code', ['--tcase-id', 'tc1'])
-	testRejectsInvalidPathParam(runCommand, 'tcase-id', ['--project-code', 'PRJ'])
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', ['--tcase-id', 'tc1'])
+	testRejectsInvalidIdentifier(runCommand, 'tcase-id', 'resource', ['--project-code', 'PRJ'])
 })
 
 test('gets a test case on live server', { tags: ['live'] }, async ({ project }) => {

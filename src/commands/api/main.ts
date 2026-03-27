@@ -1,5 +1,5 @@
 import { Argv, CommandModule } from 'yargs'
-import { validatePathParams } from './utils'
+import { validateProjectCode } from './utils'
 import { auditLogsCommand } from './audit-logs/command'
 import { customFieldsCommand } from './custom-fields/command'
 import { filesCommand } from './files/command'
@@ -42,7 +42,7 @@ export const apiCommand: CommandModule = {
 			.check((argv) => {
 				const projectCode = argv['project-code'] as string | undefined
 				if (projectCode) {
-					validatePathParams([projectCode, '--project-code'])
+					validateProjectCode([projectCode, '--project-code'])
 				}
 				return true
 			}),

@@ -13,7 +13,7 @@ import {
 	createFolder,
 	createTCase,
 	expectValidationError,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'create', ...args)
@@ -373,7 +373,7 @@ describe('validation errors', () => {
 		)
 	})
 
-	testRejectsInvalidPathParam(runCommand, 'project-code', [
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', [
 		'--title',
 		'Test',
 		'--type',

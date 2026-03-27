@@ -4,6 +4,7 @@ import {
 	buildArgumentMap,
 	handleValidationError,
 	printJson,
+	validateIntId,
 	type SortOrder,
 } from '../utils'
 import help from './help'
@@ -77,7 +78,11 @@ const getCommand: CommandModule<object, SharedStepsGetArgs> = {
 					describe: help.get.id,
 				},
 			})
-			.epilog(help.get.epilog),
+			.epilog(help.get.epilog)
+			.check((argv) => {
+				validateIntId([argv.id, '--id'])
+				return true
+			}),
 	handler: apiHandler<SharedStepsGetArgs>(async (args, connectApi) => {
 		const api = connectApi()
 		const result = await api.sharedSteps.get(args['project-code'], args.id)

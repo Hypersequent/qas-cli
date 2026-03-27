@@ -11,7 +11,7 @@ import {
 	createTCase,
 	createRun,
 	expectValidationError,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -82,7 +82,7 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code', [
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', [
 		'--run-id',
 		'1',
 		'--items',

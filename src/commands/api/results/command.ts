@@ -6,7 +6,8 @@ import {
 	parseAndValidateJsonArg,
 	parseOptionalJsonField,
 	printJson,
-	validatePathParams,
+	validateIntId,
+	validateResourceId,
 } from '../utils'
 import { z } from 'zod'
 import {
@@ -88,7 +89,8 @@ const createCommand: CommandModule<object, ResultsCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog)
 			.check((argv) => {
-				validatePathParams([argv['tcase-id'], '--tcase-id'])
+				validateIntId([argv['run-id'], '--run-id'])
+				validateResourceId([argv['tcase-id'], '--tcase-id'])
 				return true
 			}),
 	handler: apiHandler<ResultsCreateArgs>(async (args, connectApi) => {
@@ -134,7 +136,11 @@ const batchCreateCommand: CommandModule<object, ResultsBatchCreateArgs> = {
 					describe: help['batch-create'].items,
 				},
 			})
-			.epilog(help['batch-create'].epilog),
+			.epilog(help['batch-create'].epilog)
+			.check((argv) => {
+				validateIntId([argv['run-id'], '--run-id'])
+				return true
+			}),
 	handler: apiHandler<ResultsBatchCreateArgs>(async (args, connectApi) => {
 		const body = parseAndValidateJsonArg(args.items, '--items', batchCreateResultsInputSchema)
 		const api = connectApi()

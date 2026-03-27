@@ -9,7 +9,7 @@ import {
 	useMockServer,
 	createFolder,
 	runCli,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'folders', 'list', ...args)
@@ -65,7 +65,7 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code')
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 
 	test('rejects invalid sort-field value', async () => {
 		const exitSpy = vi

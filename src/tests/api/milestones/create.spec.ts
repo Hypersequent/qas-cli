@@ -6,7 +6,7 @@ import {
 	token,
 	useMockServer,
 	runCli,
-	testRejectsInvalidPathParam,
+	testRejectsInvalidIdentifier,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -42,7 +42,7 @@ describe('mocked', () => {
 })
 
 describe('validation errors', () => {
-	testRejectsInvalidPathParam(runCommand, 'project-code', ['--title', 'Test'])
+	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', ['--title', 'Test'])
 
 	test('rejects empty title', async () => {
 		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {

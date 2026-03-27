@@ -5,7 +5,7 @@ import {
 	handleValidationError,
 	parseOptionalJsonField,
 	printJson,
-	validatePathParams,
+	validateProjectCode,
 } from '../utils'
 import { projectLinksSchema } from '../../../api/projects'
 import help from './help'
@@ -85,7 +85,7 @@ const createCommand: CommandModule<object, ProjectsCreateArgs> = {
 			.example(help.examples[0].usage, help.examples[0].description)
 			.epilog(help.create.epilog)
 			.check((argv) => {
-				validatePathParams([argv.code, '--code'])
+				validateProjectCode([argv.code, '--code'])
 				return true
 			}),
 	handler: apiHandler<ProjectsCreateArgs>(async (args, connectApi) => {

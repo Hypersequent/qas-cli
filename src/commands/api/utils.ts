@@ -14,15 +14,35 @@ import {
 
 export { sortFieldParam, sortOrderParam, pageParam, limitParam, type SortOrder }
 
-const PATH_PARAM_REGEX = /^[a-zA-Z0-9_-]+$/
-const PATH_PARAM_MESSAGE = 'must contain only alphanumeric characters, dashes, and underscores'
+const RESOURCE_ID_REGEX = /^[a-zA-Z0-9_-]+$/
+const RESOURCE_ID_MESSAGE = 'must contain only alphanumeric characters, dashes, and underscores'
 
-export const pathParamSchema = z.string().regex(PATH_PARAM_REGEX, PATH_PARAM_MESSAGE)
+export const resourceIdSchema = z.string().regex(RESOURCE_ID_REGEX, RESOURCE_ID_MESSAGE)
 
-export function validatePathParams(...params: [string, string][]): void {
+export function validateResourceId(...params: [string, string][]): void {
 	const errors = params
-		.filter(([value]) => !PATH_PARAM_REGEX.test(value))
-		.map(([, name]) => `${name} ${PATH_PARAM_MESSAGE}`)
+		.filter(([value]) => !RESOURCE_ID_REGEX.test(value))
+		.map(([, name]) => `${name} ${RESOURCE_ID_MESSAGE}`)
+	if (errors.length > 0) {
+		throw new Error(errors.join('\n'))
+	}
+}
+
+const PROJECT_CODE_REGEX = /^[a-zA-Z0-9]+$/
+
+export function validateProjectCode(...params: [string, string][]): void {
+	const errors = params
+		.filter(([value]) => !PROJECT_CODE_REGEX.test(value))
+		.map(([, name]) => `${name} must contain only latin letters and digits`)
+	if (errors.length > 0) {
+		throw new Error(errors.join('\n'))
+	}
+}
+
+export function validateIntId(...params: [number, string][]): void {
+	const errors = params
+		.filter(([value]) => !Number.isInteger(value) || value <= 0)
+		.map(([, name]) => `${name} must be a positive integer`)
 	if (errors.length > 0) {
 		throw new Error(errors.join('\n'))
 	}
@@ -51,8 +71,11 @@ function parseJsonArg(value: string, optionName: string): unknown {
 		const content = readFileSync(filePath, 'utf-8')
 		try {
 			return JSON.parse(content)
-		} catch {
-			throw new Error(`Failed to parse JSON from file ${filePath} for ${optionName}`)
+		} catch (e) {
+			const errorMessage = e instanceof Error ? e.message : String(e)
+			throw new Error(
+				`Failed to parse JSON from file ${filePath} for ${optionName}: ${errorMessage}`
+			)
 		}
 	}
 

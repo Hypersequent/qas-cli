@@ -46,12 +46,7 @@ Results are matched to QA Sphere test cases via markers:
 qasphere api <resource> <action> [options]
 ```
 
-All commands output JSON to stdout, errors to stderr. Conventions:
-
-- **Comma-separated arrays**: `--tags 1,2,3`, `--milestone-ids 1,2`
-- **JSON arguments**: inline JSON or `@filename` — e.g., `--body @tcase.json`
-- **Result statuses**: `passed`, `failed`, `blocked`, `skipped`, `open`, `custom1`–`custom4`
-- **Run types**: `static`, `static_struct`, `live`
+All commands output JSON to stdout, errors to stderr.
 
 ```
 qasphere api
@@ -107,7 +102,9 @@ qasphere api
     └── list                                    # List all users
 ```
 
-Use `qasphere api <resource> <action> -h` to see the full command signature, all options, and examples.
+Each subcommand accepts `-h` option to show all available subcommands if any.
+Use `qasphere api <resource> <action> -h` to see the full command signature, all options, examples, and online documentation link.
+When fetching the online documentation, the link URL can be appended with `.md` to view it in markdown. Use the markdown version first before falling back to the original URL if the endpoint returned a >= 400 status.
 
 ## Common Workflows
 
@@ -145,6 +142,6 @@ qasphere api test-cases create \
 
 ## Important Notes
 
-- JSON args (`--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links`) accept `@filename` to read from file.
+- JSON args (`--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links`) accepts raw JSON strings or a file path `@path/to/file` to read from file relative to the current working directory.
 - Use `--force` on upload commands to continue past invalid test cases or missing attachments.
 - Use `--verbose` for stack traces on errors.
