@@ -7,8 +7,8 @@ const runCommand = <T = unknown>(...args: string[]) =>
 
 describe('mocked', () => {
 	const mockStatuses = [
-		{ id: 'passed', name: 'Passed', color: '#4CAF50', isActive: true },
-		{ id: 'custom1', name: 'Retest', color: '#FF9800', isActive: true },
+		{ id: 'passed', name: 'Passed', color: 'blue', isActive: true },
+		{ id: 'custom1', name: 'Retest', color: 'orange', isActive: true },
 	]
 
 	useMockServer(
