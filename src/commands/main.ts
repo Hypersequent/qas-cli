@@ -1,4 +1,5 @@
 import yargs from 'yargs'
+import { ApiCommandModule } from './api'
 import { ResultUploadCommandModule } from './resultUpload'
 import { qasEnvs, qasEnvFile } from '../utils/env'
 import { CLI_VERSION } from '../utils/version'
@@ -11,6 +12,7 @@ export const run = (args: string | string[]) =>
 Required variables: ${qasEnvs.join(', ')}
   These should be either exported as env vars or defined in a ${qasEnvFile} file.`
 		)
+		.command(new ApiCommandModule())
 		.command(new ResultUploadCommandModule('junit-upload'))
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
 		.command(new ResultUploadCommandModule('allure-upload'))
@@ -40,7 +42,7 @@ Required variables: ${qasEnvs.join(', ')}
 						msg.startsWith('Not enough non-option arguments')
 					) {
 						yi.showHelp()
-						process.exit(0)
+						process.exit(1)
 					}
 				} else if (err && err.message) {
 					console.error(err.message)

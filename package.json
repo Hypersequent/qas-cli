@@ -7,6 +7,8 @@
   "types": "./build/bin/qasphere.d.ts",
   "scripts": {
     "test": "vitest run",
+    "test:api-manifest": "vitest run src/tests/api-manifest.spec.ts",
+    "test:e2e:api": "vitest run src/tests/api.e2e.spec.ts",
     "test:watch": "vitest",
     "build": "npm run clean && tsc && ts-add-js-extension --dir=./build && chmod +x build/bin/qasphere.js",
     "clean": "rm -rf ./build",
