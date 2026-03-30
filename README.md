@@ -136,7 +136,7 @@ qasphere api
 │   ├── list --project-code                     # List runs
 │   ├── clone --project-code --run-id --title   # Clone run
 │   ├── close --project-code --run-id           # Close run
-│   └── tcases
+│   └── test-cases
 │       ├── list --project-code --run-id        # List test cases in run
 │       └── get --project-code --run-id --tcase-id  # Get test case in run
 ├── settings

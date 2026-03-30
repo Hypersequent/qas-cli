@@ -76,7 +76,7 @@ qasphere api
 │   ├── list --project-code                     # List runs
 │   ├── clone --project-code --run-id --title   # Clone run
 │   ├── close --project-code --run-id           # Close run
-│   └── tcases
+│   └── test-cases
 │       ├── list --project-code --run-id        # List test cases in run
 │       └── get --project-code --run-id --tcase-id  # Get test case in run
 ├── settings
@@ -142,6 +142,6 @@ qasphere api test-cases create \
 
 ## Important Notes
 
-- JSON args (`--body`, `--query-plans`, `--items`, `--folders`, `--statuses`, `--links`) accepts raw JSON strings or a file path `@path/to/file` to read from file relative to the current working directory.
+- For commands with JSON body mode, use `--body` for inline JSON or `--body-file` to read from a file. Individual fields can also be set via dedicated options (e.g., `--title`, `--status`).
 - Use `--force` on upload commands to continue past invalid test cases or missing attachments.
 - Use `--verbose` for stack traces on errors.

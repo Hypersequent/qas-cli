@@ -64,32 +64,32 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
 
 ### API Command (src/commands/api/)
 
-The `api` command provides direct programmatic access to the QA Sphere public API: `qasphere api <resource> <action> [options]`. Each resource (e.g., `projects`, `runs`, `test-cases`) is a subcommand with its own actions. Some resources have nested subgroups (e.g., `qasphere api runs tcases list`).
+The `api` command provides direct programmatic access to the QA Sphere public API: `qasphere api <resource> <action> [options]`. Each resource (e.g., `projects`, `runs`, `test-cases`) is a subcommand with its own actions. Some resources have nested subgroups (e.g., `qasphere api runs test-cases list`).
 
-**File structure per resource**:
+**Architecture**: The API command uses a manifest-based pattern. Each resource defines its endpoints as declarative `ApiEndpointSpec` objects (in `src/commands/api/manifests/`), and shared infrastructure handles yargs registration, validation, and execution.
 
-```
-src/commands/api/<resource>/
-├── command.ts      # Yargs command definitions (list, get, create, etc.) and CLI-specific Zod schemas
-└── help.ts         # Help text and descriptions
-```
+**Key files**:
 
-- `main.ts` — Registers all resource subcommands via `.command()`
-- `utils.ts` — Shared helpers: `apiHandler<T>()` wraps handlers with lazy env loading and error handling; `printJson()` outputs formatted JSON; `parseJsonArg()` supports inline JSON or `@filename`; `parseAndValidateJsonArg()` and `validateWithSchema()` validate with Zod and produce detailed error messages; `apiDocsEpilog()` appends API doc links
+- `types.ts` — Defines `ApiEndpointSpec` as a discriminated union on `bodyMode` (`'none'` | `'json'` | `'file'`), plus supporting types (`ApiPathParamSpec`, `ApiFieldSpec`, `ApiQueryOptionSpec`, `ExecuteFn`)
+- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`)
+- `builder.ts` — `buildCommandsFromSpecs()` builds a yargs command tree from the flat specs array, handling nested command paths automatically. Creates yargs options from path params, query options, field options, and body mode
+- `executor.ts` — `executeCommand()` orchestrates execution: collects and validates path params → processes body (based on `bodyMode` discriminant) → collects and validates query options → connects to API (lazy env loading) → executes with error mapping
+- `main.ts` — Registers the `api` command, delegates to `buildCommandsFromSpecs()`
+- `utils.ts` — Shared helpers: `printJson()`, `apiDocsEpilog()`, `formatApiError()`, `ArgumentValidationError`, `kebabToCamelCase()`, body parsing (`parseBodyInput`, `mergeBodyWithFields`), validation (`validateFieldValues`, `validateOptionValues`), collection helpers (`collectFieldValues`, `collectPathParamValues`, `collectQueryValues`), and `handleApiValidationError()` for reformatting API errors into CLI argument names
 
 Important note: Online documentation is available at https://docs.qasphere.com. Most leaf pages have a markdown version available by appending `.md` in the URL. Use the markdown version before falling back to the original URL if the markdown version returns >= 400 status.
 
 **Key design patterns**:
 
-- **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (via `connectApi()`), so CLI validation errors are reported first
-- **JSON argument flexibility**: Complex args accept inline JSON or `@filename` references (e.g., `--query-plans @plans.json`)
-- **Validation flow**: API-level Zod schemas (in `src/api/*.ts`) validate request structure and strip unknown fields. All commands catch `RequestValidationError` via `.catch(handleValidationError(buildArgumentMap([...])))` to reformat API error paths into CLI argument names (e.g., `--query-plans: [0].tcaseIds: not allowed for "live" runs`). Complex JSON args (e.g., `--query-plans`, `--body`, `--steps`) are pre-validated with `parseAndValidateJsonArg()` / `parseOptionalJsonField()` for early feedback before the API call
+- **Manifest-based declarations**: Each endpoint is a plain object (`ApiEndpointSpec`) declaring its command path, params, options, body mode, and execute function. The builder and executor handle all yargs wiring, validation, and error handling generically
+- **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (inside `executeCommand()`), so CLI validation errors are reported first
+- **Validation flow**: Path params and query options are validated against optional Zod schemas. For `json` body mode, individual field values are validated (with JSON parsing for complex fields), then merged with `--body`/`--body-file` input. API-level `RequestValidationError` is caught and reformatted into CLI argument names (e.g., `--query-plans: [0].tcaseIds: not allowed for "live" runs`)
 
 ### API Layer (src/api/)
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson`, `withDevAuth` decorators that wrap `fetch`; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
+- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson`, `withDevAuth` decorators that wrap `fetch`; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings; `resourceIdSchema` for validating resource identifiers; `printJson()` for formatted JSON output
 - `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from all sub-modules
 - `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `pageParam`, `limitParam`)
 - One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
@@ -128,6 +128,7 @@ Tests for the `api` command are organized by resource under `src/tests/api/`, wi
 - `useMockServer(...handlers)` — Sets up MSW server with lifecycle hooks (before/after each test)
 - `runCli(...args)` — Invokes the CLI programmatically via `run(args)`, captures and parses JSON output. Useful only if the command prints JSON.
 - `test` fixture — Extended Vitest `test` that provides a `project` fixture (mock project in mocked mode, real project with cleanup in live mode)
+- `expectValidationError(runner, pattern)` — Asserts a command exits with a validation error matching the given regex
 - Helper functions for live tests: `createFolder()`, `createTCase()`, `createRun()`
 
 **Global setup** (`src/tests/global-setup.ts`): Authenticates against the live API (if env vars are set) and provides a session token for test project cleanup.
