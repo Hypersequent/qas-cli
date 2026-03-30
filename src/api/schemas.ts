@@ -56,3 +56,6 @@ export const pageParam = z.number().int().positive().optional()
 export const limitParam = z.number().int().positive().optional()
 export const priorityEnum = z.enum(['low', 'medium', 'high'])
 export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
+export const resourceIdSchema = z
+	.string()
+	.regex(/^[a-zA-Z0-9_-]+$/, 'must contain only alphanumeric characters, dashes, and underscores')

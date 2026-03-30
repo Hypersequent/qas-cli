@@ -1,6 +1,3 @@
-import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
 import type { CreateRunRequest, CreateRunResponse } from '../../../api/runs'
@@ -14,6 +11,7 @@ import {
 	createTCase,
 	expectValidationError,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'create', ...args)
@@ -98,35 +96,6 @@ describe('mocked', () => {
 			})
 		})
 
-		test('reads --query-plans from a file using @filename', async ({ project }) => {
-			const tmpDir = mkdtempSync(join(tmpdir(), 'qas-test-'))
-			const filePath = join(tmpDir, 'plans.json')
-			writeFileSync(filePath, JSON.stringify([{ tcaseIds: ['x1', 'x2'] }]))
-
-			try {
-				const result = await runCommand(
-					'--project-code',
-					project.code,
-					'--title',
-					'From File',
-					'--type',
-					'static',
-					'--query-plans',
-					`@${filePath}`
-				)
-
-				expect(lastParams.projectCode).toBe(project.code)
-				expect(lastCreateRunRequest).toEqual({
-					title: 'From File',
-					type: 'static',
-					queryPlans: [{ tcaseIds: ['x1', 'x2'] }],
-				})
-				expect(result).toEqual({ id: 42 })
-			} finally {
-				rmSync(tmpDir, { recursive: true })
-			}
-		})
-
 		test('includes optional milestone-id, configuration-id, and assignment-id', async ({
 			project,
 		}) => {
@@ -181,6 +150,30 @@ describe('mocked', () => {
 			})
 		})
 	})
+
+	const validBody = { title: 'Body Run', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] }
+
+	testBodyInput(
+		runCommand,
+		() => lastCreateRunRequest,
+		(h) => {
+			const requiredArgs = ['--project-code', 'PRJ']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: validBody,
+				flags: ['--title', 'Overridden'],
+				expectedRequest: { ...validBody, title: 'Overridden' },
+				requiredArgs,
+			})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody(
+				{ title: '', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] },
+				/must not be empty/,
+				requiredArgs
+			)
+		}
+	)
 })
 
 describe('validation errors', () => {

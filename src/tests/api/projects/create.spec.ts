@@ -7,7 +7,7 @@ import {
 	useMockServer,
 	runCli,
 	expectValidationError,
-	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -57,6 +57,23 @@ describe('mocked', () => {
 			})
 		})
 	})
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { code: 'PRJ', title: 'My Project' }
+			h.testInlineBody(validBody, validBody)
+			h.testBodyFile(validBody, validBody)
+			h.testFieldOverride({
+				body: { code: 'PRJ', title: 'Original' },
+				flags: ['--title', 'Overridden'],
+				expectedRequest: { code: 'PRJ', title: 'Overridden' },
+			})
+			h.testInvalidJson()
+			h.testInvalidBody({ code: 'X', title: 'Test' }, /must be at least 2 characters/)
+		}
+	)
 })
 
 describe('validation errors', () => {
@@ -77,11 +94,16 @@ describe('validation errors', () => {
 	test('rejects non-alphanumeric code', async () => {
 		await expectValidationError(
 			() => runCommand('--code', 'PR-J', '--title', 'Test'),
-			/--code.*must contain only latin letters and digits/
+			/--code.*must contain only alphanumeric characters/
 		)
 	})
 
-	testRejectsInvalidIdentifier(runCommand, 'code', 'code', ['--title', 'Test'])
+	test('rejects code with special characters', async () => {
+		await expectValidationError(
+			() => runCommand('--code', 'PRJ/123', '--title', 'Test'),
+			/--code.*must contain only alphanumeric characters/
+		)
+	})
 
 	test('rejects links with old "title" field name', async () => {
 		await expectValidationError(
@@ -94,7 +116,7 @@ describe('validation errors', () => {
 					'--links',
 					'[{"title": "Docs", "url": "https://example.com"}]'
 				),
-			/Validation failed/
+			/--links.*Required/
 		)
 	})
 

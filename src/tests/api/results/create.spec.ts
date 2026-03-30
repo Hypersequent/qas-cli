@@ -12,6 +12,7 @@ import {
 	createTCase,
 	createRun,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -98,6 +99,26 @@ describe('mocked', () => {
 		expect(lastParams.tcaseId).toBe('tc1')
 		expect(lastRequest).toEqual({ status: 'failed', comment: 'Bug found', timeTaken: 5000 })
 	})
+
+	const requiredArgs = ['--project-code', 'PRJ', '--run-id', '1', '--tcase-id', 'tc1']
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { status: 'passed' }
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: { status: 'passed' },
+				flags: ['--status', 'failed'],
+				expectedRequest: { status: 'failed' },
+				requiredArgs,
+			})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ status: 'invalid-status' }, /Invalid enum value/, requiredArgs)
+		}
+	)
 })
 
 describe('validation errors', () => {

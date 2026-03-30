@@ -11,6 +11,7 @@ import {
 	createTCase,
 	testRejectsInvalidIdentifier,
 	expectValidationError,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -212,27 +213,24 @@ describe('mocked', () => {
 		expect(lastRequest).toEqual({ parameterValues })
 	})
 
-	test('updates with body from @file', async ({ project }) => {
-		const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs')
-		const { join } = await import('node:path')
-		const { tmpdir } = await import('node:os')
-		const tempDir = mkdtempSync(join(tmpdir(), 'qas-update-tcase-'))
-		try {
-			const filePath = join(tempDir, 'update.json')
-			writeFileSync(filePath, JSON.stringify({ title: 'From file', priority: 'high' }))
-			await runCommand(
-				'--project-code',
-				project.code,
-				'--tcase-id',
-				'tc1',
-				'--body',
-				`@${filePath}`
-			)
-			expect(lastRequest).toEqual({ title: 'From file', priority: 'high' })
-		} finally {
-			rmSync(tempDir, { recursive: true })
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { title: 'Updated' }
+			const requiredArgs = ['--project-code', 'PRJ', '--tcase-id', 'tc1']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: { title: 'Original', priority: 'low' },
+				flags: ['--title', 'Overridden'],
+				expectedRequest: { title: 'Overridden', priority: 'low' },
+				requiredArgs,
+			})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ title: '' }, /must not be empty/, requiredArgs)
 		}
-	})
+	)
 })
 
 describe('validation errors', () => {
@@ -262,7 +260,7 @@ describe('validation errors', () => {
 					'--precondition-id',
 					'42'
 				),
-			/--precondition-text and --precondition-id are mutually exclusive/
+			/precondition-text and precondition-id are mutually exclusive/
 		)
 	})
 })

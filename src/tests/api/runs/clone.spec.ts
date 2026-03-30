@@ -11,6 +11,7 @@ import {
 	createTCase,
 	createRun,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'runs', 'clone', ...args)
@@ -49,6 +50,25 @@ describe('mocked', () => {
 		expect(lastRequest).toEqual({ runId: 42, title: 'Cloned Run' })
 		expect(result).toEqual({ id: 99 })
 	})
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { runId: 1, title: 'Clone' }
+			const requiredArgs = ['--project-code', 'PRJ']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: { runId: 1, title: 'Original' },
+				flags: ['--title', 'Overridden'],
+				expectedRequest: { runId: 1, title: 'Overridden' },
+				requiredArgs,
+			})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ runId: 1, title: '' }, /must not be empty/, requiredArgs)
+		}
+	)
 })
 
 describe('validation errors', () => {

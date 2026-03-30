@@ -14,7 +14,7 @@ import {
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
-	runCli<T>('api', 'runs', 'tcases', 'list', ...args)
+	runCli<T>('api', 'runs', 'test-cases', 'list', ...args)
 
 describe('mocked', () => {
 	const mockTCases = [{ id: 'tc1', title: 'Test', seq: 1 }]

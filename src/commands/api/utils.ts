@@ -1,8 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import chalk from 'chalk'
-import { z, ZodError, ZodType } from 'zod'
-import { loadEnvs } from '../../utils/env'
-import { createApi, Api } from '../../api/index'
+import type { ZodType } from 'zod'
 import {
 	RequestValidationError,
 	sortFieldParam,
@@ -11,42 +9,9 @@ import {
 	limitParam,
 	type SortOrder,
 } from '../../api/schemas'
+import type { ApiFieldSpec, ApiPathParamSpec } from './types'
 
 export { sortFieldParam, sortOrderParam, pageParam, limitParam, type SortOrder }
-
-const RESOURCE_ID_REGEX = /^[a-zA-Z0-9_-]+$/
-const RESOURCE_ID_MESSAGE = 'must contain only alphanumeric characters, dashes, and underscores'
-
-export const resourceIdSchema = z.string().regex(RESOURCE_ID_REGEX, RESOURCE_ID_MESSAGE)
-
-export function validateResourceId(...params: [string, string][]): void {
-	const errors = params
-		.filter(([value]) => !RESOURCE_ID_REGEX.test(value))
-		.map(([, name]) => `${name} ${RESOURCE_ID_MESSAGE}`)
-	if (errors.length > 0) {
-		throw new Error(errors.join('\n'))
-	}
-}
-
-const PROJECT_CODE_REGEX = /^[a-zA-Z0-9]+$/
-
-export function validateProjectCode(...params: [string, string][]): void {
-	const errors = params
-		.filter(([value]) => !PROJECT_CODE_REGEX.test(value))
-		.map(([, name]) => `${name} must contain only latin letters and digits`)
-	if (errors.length > 0) {
-		throw new Error(errors.join('\n'))
-	}
-}
-
-export function validateIntId(...params: [number, string][]): void {
-	const errors = params
-		.filter(([value]) => !Number.isInteger(value) || value <= 0)
-		.map(([, name]) => `${name} must be a positive integer`)
-	if (errors.length > 0) {
-		throw new Error(errors.join('\n'))
-	}
-}
 
 export function printJson(data: unknown): void {
 	console.log(JSON.stringify(data, null, 2))
@@ -54,115 +19,6 @@ export function printJson(data: unknown): void {
 
 export const apiDocsEpilog = (resource: string, hash?: string) =>
 	`API documentation: https://docs.qasphere.com/api/${resource}${hash ? `#${hash}` : ''}`
-
-/**
- * Parses a CLI argument that accepts either inline JSON or a @filename reference.
- * Provides detailed error messages for AI agents and human users.
- */
-function parseJsonArg(value: string, optionName: string): unknown {
-	if (value.startsWith('@')) {
-		const filePath = value.slice(1)
-		if (!filePath) {
-			throw new Error(`${optionName} "@" must be followed by a file path (e.g., @plans.json)`)
-		}
-		if (!existsSync(filePath)) {
-			throw new Error(`File not found for ${optionName}: ${filePath}`)
-		}
-		const content = readFileSync(filePath, 'utf-8')
-		try {
-			return JSON.parse(content)
-		} catch (e) {
-			const errorMessage = e instanceof Error ? e.message : String(e)
-			throw new Error(
-				`Failed to parse JSON from file ${filePath} for ${optionName}: ${errorMessage}`
-			)
-		}
-	}
-
-	return mustParseJson(value, optionName)
-}
-
-function mustParseJson(value: string, optionName: string) {
-	try {
-		return JSON.parse(value)
-	} catch (e) {
-		throw new Error(
-			`Failed to parse ${optionName} as JSON: ${e instanceof Error ? e.message : String(e)}\n` +
-				`  Provide valid inline JSON or use @filename to read from a file.\n` +
-				`  Inline example: ${optionName} '[{"tcaseIds": ["abc"]}]'\n` +
-				`  File example:   ${optionName} @plans.json`
-		)
-	}
-}
-
-/**
- * Wraps an API command handler with common setup:
- * 1. Catches and formats errors with actionable messages
- * 2. Provides a `connectApi()` function that lazily loads env vars and creates the API client
- *    (call this after validation so arg errors are reported before missing-env-var errors)
- */
-export function apiHandler<T>(
-	fn: (args: T, connectApi: () => Api) => Promise<void>
-): (args: T) => Promise<void> {
-	return async (args) => {
-		try {
-			const connectApi = () => {
-				loadEnvs()
-				return createApi(process.env.QAS_URL!, process.env.QAS_TOKEN!)
-			}
-			await fn(args, connectApi)
-		} catch (e) {
-			formatApiError(e)
-			process.exit(1)
-		}
-	}
-}
-
-/**
- * Parses a JSON CLI argument and validates it against a Zod schema.
- * Produces detailed error messages showing exactly which fields failed
- * and what was expected, suitable for AI agents and human users.
- */
-export function parseAndValidateJsonArg<T>(
-	value: string,
-	optionName: string,
-	schema: ZodType<T>
-): T {
-	const parsed = parseJsonArg(value, optionName)
-	return validateWithSchema(parsed, optionName, schema)
-}
-
-/**
- * Validates an unknown value against a Zod schema, formatting errors
- * with the CLI option name and path to each invalid field.
- */
-export function parseOptionalJsonField<T>(
-	value: string | undefined,
-	optionName: string,
-	schema: ZodType<T>
-): T | undefined {
-	return value ? parseAndValidateJsonArg(value, optionName, schema) : undefined
-}
-
-export function validateWithSchema<T>(value: unknown, optionName: string, schema: ZodType<T>): T {
-	try {
-		return schema.parse(value)
-	} catch (e) {
-		if (e instanceof ZodError) {
-			throw new Error(formatZodError(e, optionName))
-		}
-		throw e
-	}
-}
-
-function formatZodError(error: ZodError, optionName: string): string {
-	const lines = [`Validation failed for ${optionName}:`]
-	for (const issue of error.issues) {
-		const path = issue.path.length > 0 ? issue.path.join('.') : '(root)'
-		lines.push(`  - ${path}: ${issue.message}`)
-	}
-	return lines.join('\n')
-}
 
 interface ArgumentValidationIssue {
 	argument: string
@@ -176,36 +32,7 @@ export class ArgumentValidationError extends Error {
 	}
 }
 
-/**
- * Builds an argument map from CLI argument names.
- * Single-word args map directly (e.g., "search" → { search: "--search" }).
- * Hyphenated args map to camelCase (e.g., "sort-field" → { sortField: "--sort-field" }).
- */
-export function buildArgumentMap(args: string[]): Record<string, string> {
-	const map: Record<string, string> = {}
-	for (const arg of args) {
-		const camelCase = arg.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
-		map[camelCase] = `--${arg}`
-	}
-	return map
-}
-
-export function handleValidationError(argumentMap?: Record<string, string>): (e: unknown) => never {
-	return (e: unknown) => {
-		if (e instanceof RequestValidationError) {
-			const issues = e.zodError.issues.map((issue) => {
-				const fieldPath = issue.path.join('.')
-				const rootField = String(issue.path[0] ?? '')
-				const argument = argumentMap?.[rootField] ?? (fieldPath || '(root)')
-				return { argument, message: issue.message }
-			})
-			throw new ArgumentValidationError(issues)
-		}
-		throw e
-	}
-}
-
-function formatApiError(e: unknown): void {
+export function formatApiError(e: unknown): void {
 	const isVerbose = process.argv.some((arg) => arg === '--verbose')
 
 	if (e instanceof ArgumentValidationError) {
@@ -228,6 +55,21 @@ function formatApiError(e: unknown): void {
 		return
 	}
 
+	if (e instanceof TypeError && e.message === 'fetch failed') {
+		const cause = (e as TypeError & { cause?: { code?: string; message?: string } }).cause
+		const hint =
+			cause?.code === 'ECONNREFUSED'
+				? 'Connection refused. Is QAS_URL correct and the server running?'
+				: cause?.code === 'ENOTFOUND'
+					? 'Host not found. Check QAS_URL for typos.'
+					: 'Network error. Check your connection and QAS_URL.'
+		console.error(`${chalk.red('Error:')} ${hint}`)
+		if (isVerbose && cause) {
+			console.error(chalk.dim(`  ${cause.message ?? String(cause)}`))
+		}
+		return
+	}
+
 	if (e instanceof Error) {
 		console.error(`${chalk.red('Error:')} ${e.message}`)
 		if (isVerbose && e.stack) {
@@ -236,4 +78,237 @@ function formatApiError(e: unknown): void {
 	} else {
 		console.error(`${chalk.red('Error:')} ${String(e)}`)
 	}
+}
+
+/**
+ * Converts object keys from kebab-case to camelCase.
+ * Example: { 'folder-id': 1, 'is-draft': false } → { folderId: 1, isDraft: false }
+ */
+export function kebabToCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
+	const result: Record<string, unknown> = {}
+	for (const [key, value] of Object.entries(obj)) {
+		const camelKey = key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+		result[camelKey] = value
+	}
+	return result
+}
+
+/**
+ * Parses a JSON string field value.
+ * Returns the parsed value, or throws with a descriptive error.
+ */
+function parseJsonFieldValue(value: unknown, fieldName: string): unknown {
+	if (typeof value !== 'string') return value
+
+	try {
+		return JSON.parse(value)
+	} catch (e) {
+		const msg = e instanceof Error ? e.message : String(e)
+		throw new Error(`Failed to parse --${fieldName} as JSON: ${msg}`)
+	}
+}
+
+/**
+ * Validates individual field values against their Zod schemas.
+ * For fields with jsonParse: true, parses JSON strings before validation.
+ * Collects all errors and returns them as an array of issues.
+ * Updates the values record in place with parsed JSON values.
+ * Only validates fields that are present (not undefined) in the provided values.
+ */
+export function validateFieldValues(
+	values: Record<string, unknown>,
+	fieldOptions: ApiFieldSpec[]
+): ArgumentValidationIssue[] {
+	const issues: ArgumentValidationIssue[] = []
+
+	for (const field of fieldOptions) {
+		if (!(field.name in values)) continue
+		if (!field.schema) continue
+
+		let value = values[field.name]
+
+		// Parse JSON string fields before validation
+		if (field.jsonParse && typeof value === 'string') {
+			try {
+				value = parseJsonFieldValue(value, field.name)
+				values[field.name] = value
+			} catch (e) {
+				issues.push({
+					argument: `--${field.name}`,
+					message: e instanceof Error ? e.message : String(e),
+				})
+				continue
+			}
+		}
+
+		const result = field.schema.safeParse(value)
+		if (result.success) {
+			// Store validated (and possibly transformed) value back
+			values[field.name] = result.data
+		} else {
+			for (const issue of result.error.issues) {
+				const path = issue.path.length > 0 ? `.${issue.path.join('.')}` : ''
+				issues.push({
+					argument: `--${field.name}${path}`,
+					message: issue.message,
+				})
+			}
+		}
+	}
+
+	return issues
+}
+
+/**
+ * Validates named option values against their optional Zod schemas.
+ * Works for both path params and query options.
+ */
+export function validateOptionValues(
+	values: Record<string, unknown>,
+	options: { name: string; schema?: ZodType }[]
+): ArgumentValidationIssue[] {
+	const issues: ArgumentValidationIssue[] = []
+
+	for (const opt of options) {
+		if (!opt.schema) continue
+		if (!(opt.name in values)) continue
+
+		const value = values[opt.name]
+		const result = opt.schema.safeParse(value)
+		if (!result.success) {
+			for (const issue of result.error.issues) {
+				issues.push({
+					argument: `--${opt.name}`,
+					message: issue.message,
+				})
+			}
+		}
+	}
+
+	return issues
+}
+
+/**
+ * Parses JSON body input from --body (inline JSON) or --body-file (file path).
+ * Returns the parsed object, or undefined if neither is provided.
+ */
+export function parseBodyInput(args: Record<string, unknown>): unknown {
+	const bodyStr = args['body'] as string | undefined
+	const bodyFile = args['body-file'] as string | undefined
+
+	if (bodyStr !== undefined) {
+		try {
+			return JSON.parse(bodyStr)
+		} catch (e) {
+			const errorMessage = e instanceof Error ? e.message : String(e)
+			throw new Error(
+				`Failed to parse --body as JSON: ${errorMessage}\n` +
+					`  Provide valid inline JSON or use --body-file to read from a file.\n` +
+					`  Inline example: --body '{"title": "Test"}'\n` +
+					`  File example:   --body-file body.json`
+			)
+		}
+	}
+
+	if (bodyFile) {
+		if (!existsSync(bodyFile)) {
+			throw new Error(`File not found for --body-file: ${bodyFile}`)
+		}
+		const content = readFileSync(bodyFile, 'utf-8')
+		try {
+			return JSON.parse(content)
+		} catch (e) {
+			const errorMessage = e instanceof Error ? e.message : String(e)
+			throw new Error(`Failed to parse JSON from file ${bodyFile} for --body-file: ${errorMessage}`)
+		}
+	}
+
+	return undefined
+}
+
+/**
+ * Merges a base body object (from --body/--body-file) with transformed field values.
+ * Field values override body values. Undefined values are stripped from fields.
+ */
+export function mergeBodyWithFields(
+	bodyObj: unknown,
+	transformedFields: Record<string, unknown>
+): Record<string, unknown> {
+	const base = (bodyObj ?? {}) as Record<string, unknown>
+	const fields = Object.fromEntries(
+		Object.entries(transformedFields).filter(([, v]) => v !== undefined)
+	)
+	return { ...base, ...fields }
+}
+
+/**
+ * Catches RequestValidationError from the API layer and reformats it.
+ * Maps root field names to CLI argument names when an argumentMap is provided,
+ * otherwise prefixes with --body.
+ */
+export function handleApiValidationError(e: unknown, argumentMap?: Record<string, string>): never {
+	if (e instanceof RequestValidationError) {
+		const issues = e.zodError.issues.map((issue) => {
+			const fieldPath = issue.path.join('.')
+			const rootField = String(issue.path[0])
+			const argument = argumentMap?.[rootField] ?? '--body'
+			const message =
+				issue.path.length > 1
+					? `${fieldPath}: ${issue.message}`
+					: issue.path.length === 1 && !argumentMap?.[rootField]
+						? `body.${fieldPath}: ${issue.message}`
+						: issue.message
+			return { argument, message }
+		})
+		throw new ArgumentValidationError(issues)
+	}
+	throw e
+}
+
+/**
+ * Collects provided field values from args based on fieldOptions.
+ * Only includes fields that were actually provided (not undefined).
+ */
+export function collectFieldValues(
+	args: Record<string, unknown>,
+	fieldOptions: ApiFieldSpec[]
+): Record<string, unknown> {
+	const values: Record<string, unknown> = {}
+	for (const field of fieldOptions) {
+		if (args[field.name] !== undefined) {
+			values[field.name] = args[field.name]
+		}
+	}
+	return values
+}
+
+/**
+ * Collects path param values from args.
+ */
+export function collectPathParamValues(
+	args: Record<string, unknown>,
+	pathParams: ApiPathParamSpec[]
+): Record<string, string | number> {
+	const values: Record<string, string | number> = {}
+	for (const param of pathParams) {
+		values[param.name] = args[param.name] as string | number
+	}
+	return values
+}
+
+/**
+ * Collects query option values from args based on queryOptions.
+ * Only includes values that were actually provided.
+ */
+export function collectQueryValues(
+	args: Record<string, unknown>,
+	queryOptions: { name: string }[]
+): Record<string, unknown> {
+	const values: Record<string, unknown> = {}
+	for (const opt of queryOptions) {
+		if (args[opt.name] !== undefined) {
+			values[opt.name] = args[opt.name]
+		}
+	}
+	return values
 }

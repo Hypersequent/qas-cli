@@ -1,4 +1,13 @@
-import { inject, test as baseTest, vi, expect, beforeAll, afterAll, afterEach } from 'vitest'
+import {
+	inject,
+	test as baseTest,
+	describe,
+	vi,
+	expect,
+	beforeAll,
+	afterAll,
+	afterEach,
+} from 'vitest'
 import { setupServer, type SetupServerApi } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import { createApi } from '../../api/index'
@@ -181,6 +190,78 @@ export async function expectValidationError(
 		exitSpy.mockRestore()
 		errorSpy.mockRestore()
 	}
+}
+
+interface BodyInputHelpers {
+	testInlineBody: (validBody: unknown, expectedRequest: unknown, requiredArgs?: string[]) => void
+	testBodyFile: (validBody: unknown, expectedRequest: unknown, requiredArgs?: string[]) => void
+	testFieldOverride: (opts: {
+		body: unknown
+		flags: string[]
+		expectedRequest: unknown
+		requiredArgs?: string[]
+	}) => void
+	testInvalidJson: (requiredArgs?: string[]) => void
+	testInvalidBody: (invalidBody: unknown, expectedPattern: RegExp, requiredArgs?: string[]) => void
+}
+
+export function testBodyInput(
+	runCommand: (...args: string[]) => Promise<unknown>,
+	getLastRequest: () => unknown,
+	fn: (helpers: BodyInputHelpers) => void
+): void {
+	const helpers: BodyInputHelpers = {
+		testInlineBody(validBody, expectedRequest, requiredArgs = []) {
+			test('accepts inline --body JSON', async () => {
+				await runCommand(...requiredArgs, '--body', JSON.stringify(validBody))
+				expect(getLastRequest()).toEqual(expectedRequest)
+			})
+		},
+
+		testBodyFile(validBody, expectedRequest, requiredArgs = []) {
+			test('accepts --body-file', async () => {
+				const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs')
+				const { join } = await import('node:path')
+				const { tmpdir } = await import('node:os')
+				const dir = mkdtempSync(join(tmpdir(), 'qas-body-test-'))
+				try {
+					const filePath = join(dir, 'body.json')
+					writeFileSync(filePath, JSON.stringify(validBody))
+					await runCommand(...requiredArgs, '--body-file', filePath)
+					expect(getLastRequest()).toEqual(expectedRequest)
+				} finally {
+					rmSync(dir, { recursive: true })
+				}
+			})
+		},
+
+		testFieldOverride({ body, flags, expectedRequest, requiredArgs = [] }) {
+			test('individual field overrides --body', async () => {
+				await runCommand(...requiredArgs, '--body', JSON.stringify(body), ...flags)
+				expect(getLastRequest()).toEqual(expectedRequest)
+			})
+		},
+
+		testInvalidJson(requiredArgs = []) {
+			test('rejects invalid JSON in --body', async () => {
+				await expectValidationError(
+					() => runCommand(...requiredArgs, '--body', 'not-json'),
+					/Failed to parse --body as JSON/
+				)
+			})
+		},
+
+		testInvalidBody(invalidBody, expectedPattern, requiredArgs = []) {
+			test('rejects --body with invalid field value', async () => {
+				await expectValidationError(
+					() => runCommand(...requiredArgs, '--body', JSON.stringify(invalidBody)),
+					expectedPattern
+				)
+			})
+		},
+	}
+
+	describe('body input', () => fn(helpers))
 }
 
 export const test = baseTest.extend<{ project: TestProject }>({

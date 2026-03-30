@@ -7,6 +7,7 @@ import {
 	useMockServer,
 	runCli,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -39,6 +40,25 @@ describe('mocked', () => {
 		expect(result).toEqual({ id: 1 })
 		expect(lastRequest).toEqual({ title: 'v1.0' })
 	})
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { title: 'v1.0' }
+			const requiredArgs = ['--project-code', 'PRJ']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: { title: 'Original' },
+				flags: ['--title', 'Overridden'],
+				expectedRequest: { title: 'Overridden' },
+				requiredArgs,
+			})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ title: '' }, /must not be empty/, requiredArgs)
+		}
+	)
 })
 
 describe('validation errors', () => {

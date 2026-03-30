@@ -1,8 +1,5 @@
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
-import { beforeEach, describe, expect, beforeAll, afterAll } from 'vitest'
+import { beforeEach, describe, expect } from 'vitest'
 import type { TCase } from '../../../api/tcases'
 import {
 	test,
@@ -13,6 +10,7 @@ import {
 	createFolder,
 	expectValidationError,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -21,8 +19,6 @@ const runCommand = <T = unknown>(...args: string[]) =>
 describe('mocked', () => {
 	let lastRequest: unknown = null
 	let lastParams: PathParams = {}
-	let tempDir: string
-
 	useMockServer(
 		http.post(
 			`${baseURL}/api/public/v0/project/:projectCode/tcase`,
@@ -34,14 +30,6 @@ describe('mocked', () => {
 			}
 		)
 	)
-
-	beforeAll(() => {
-		tempDir = mkdtempSync(join(tmpdir(), 'qas-create-tcase-'))
-	})
-
-	afterAll(() => {
-		rmSync(tempDir, { recursive: true })
-	})
 
 	beforeEach(() => {
 		lastRequest = null
@@ -119,26 +107,33 @@ describe('mocked', () => {
 		})
 	})
 
-	test('creates a test case with body from @file', async ({ project }) => {
-		const filePath = join(tempDir, 'tcase.json')
-		writeFileSync(
-			filePath,
-			JSON.stringify({
-				title: 'From file',
-				type: 'standalone',
-				folderId: 1,
-				priority: 'low',
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { title: 'Body Test', type: 'standalone', folderId: 1, priority: 'high' }
+			const requiredArgs = ['--project-code', 'PRJ']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testFieldOverride({
+				body: validBody,
+				flags: ['--title', 'Overridden'],
+				expectedRequest: {
+					title: 'Overridden',
+					type: 'standalone',
+					folderId: 1,
+					priority: 'high',
+				},
+				requiredArgs,
 			})
-		)
-		await runCommand('--project-code', project.code, '--body', `@${filePath}`)
-		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({
-			title: 'From file',
-			type: 'standalone',
-			folderId: 1,
-			priority: 'low',
-		})
-	})
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody(
+				{ title: '', type: 'standalone', folderId: 1, priority: 'high' },
+				/must not be empty/,
+				requiredArgs
+			)
+		}
+	)
 
 	test('creates a test case with sharedPreconditionId', async ({ project }) => {
 		const body = JSON.stringify({
@@ -477,7 +472,7 @@ describe('validation errors', () => {
 					'--precondition-id',
 					'42'
 				),
-			/--precondition-text and --precondition-id are mutually exclusive/
+			/precondition-text and precondition-id are mutually exclusive/
 		)
 	})
 
@@ -496,7 +491,7 @@ describe('validation errors', () => {
 						parameterValues: [{ values: { browser: 'Chrome' } }],
 					})
 				),
-			/--parameter-values.*only allowed for "template"/
+			/parameterValues.*only allowed for "template"/
 		)
 	})
 })

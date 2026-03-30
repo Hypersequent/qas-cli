@@ -1,8 +1,5 @@
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { HttpResponse, http, type PathParams } from 'msw'
-import { beforeEach, beforeAll, afterAll, describe, expect } from 'vitest'
+import { beforeEach, describe, expect } from 'vitest'
 import type { BulkCreateFoldersResponse } from '../../../api/folders'
 import {
 	test,
@@ -11,6 +8,7 @@ import {
 	useMockServer,
 	runCli,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -19,8 +17,6 @@ const runCommand = <T = unknown>(...args: string[]) =>
 describe('mocked', () => {
 	let lastRequest: unknown = null
 	let lastParams: PathParams = {}
-	let tempDir: string
-
 	useMockServer(
 		http.post(
 			`${baseURL}/api/public/v0/project/:projectCode/tcase/folder/bulk`,
@@ -32,14 +28,6 @@ describe('mocked', () => {
 			}
 		)
 	)
-
-	beforeAll(() => {
-		tempDir = mkdtempSync(join(tmpdir(), 'qas-bulk-create-'))
-	})
-
-	afterAll(() => {
-		rmSync(tempDir, { recursive: true })
-	})
 
 	beforeEach(() => {
 		lastRequest = null
@@ -59,13 +47,18 @@ describe('mocked', () => {
 		expect(result).toEqual({ ids: [[1]] })
 	})
 
-	test('bulk creates folders from @file', async ({ project }) => {
-		const filePath = join(tempDir, 'folders.json')
-		writeFileSync(filePath, JSON.stringify([{ path: ['FromFile', 'Nested'] }]))
-		await runCommand('--project-code', project.code, '--folders', `@${filePath}`)
-		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({ folders: [{ path: ['FromFile', 'Nested'] }] })
-	})
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { folders: [{ path: ['Suite', 'Auth'] }] }
+			const requiredArgs = ['--project-code', 'PRJ']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ folders: [] }, /Must contain at least one folder/, requiredArgs)
+		}
+	)
 })
 
 describe('validation errors', () => {

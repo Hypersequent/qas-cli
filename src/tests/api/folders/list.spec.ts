@@ -74,6 +74,20 @@ describe('validation errors', () => {
 			/sort-field|choices|invalid_field/i
 		)
 	})
+
+	test('rejects --page with non-integer', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--page', '1.5'),
+			/--page.*integer/i
+		)
+	})
+
+	test('rejects --limit 0', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--limit', '0'),
+			/--limit.*must be greater than 0/i
+		)
+	})
 })
 
 test('lists folders on live server', { tags: ['live'] }, async ({ project }) => {

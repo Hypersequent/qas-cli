@@ -1,6 +1,14 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
-import { test, baseURL, token, useMockServer, runCli, expectValidationError } from '../test-helper'
+import {
+	test,
+	baseURL,
+	token,
+	useMockServer,
+	runCli,
+	expectValidationError,
+	testBodyInput,
+} from '../test-helper'
 import type { Status } from '../../../api/settings'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -30,6 +38,23 @@ describe('mocked', () => {
 			statuses,
 		})
 	})
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = {
+				statuses: [{ id: 'custom1', name: 'Retest', color: 'orange', isActive: true }],
+			}
+			h.testInlineBody(validBody, validBody)
+			h.testBodyFile(validBody, validBody)
+			h.testInvalidJson()
+			h.testInvalidBody(
+				{ statuses: [{ id: 'custom1', name: '', color: 'orange', isActive: true }] },
+				/name must not be empty/
+			)
+		}
+	)
 })
 
 describe('validation errors', () => {

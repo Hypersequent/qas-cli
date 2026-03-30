@@ -12,6 +12,7 @@ import {
 	createRun,
 	expectValidationError,
 	testRejectsInvalidIdentifier,
+	testBodyInput,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -79,6 +80,19 @@ describe('mocked', () => {
 		})
 		expect(result).toEqual({ ids: [1, 2] })
 	})
+
+	testBodyInput(
+		runCommand,
+		() => lastRequest,
+		(h) => {
+			const validBody = { items: [{ tcaseId: 'tc1', status: 'passed' }] }
+			const requiredArgs = ['--project-code', 'PRJ', '--run-id', '1']
+			h.testInlineBody(validBody, validBody, requiredArgs)
+			h.testBodyFile(validBody, validBody, requiredArgs)
+			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ items: [] }, /Must contain at least one result item/, requiredArgs)
+		}
+	)
 })
 
 describe('validation errors', () => {

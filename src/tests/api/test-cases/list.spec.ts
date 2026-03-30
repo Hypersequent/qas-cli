@@ -71,6 +71,27 @@ describe('validation errors', () => {
 			/--page.*must be greater than 0/i
 		)
 	})
+
+	test('rejects --page -1', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--page', '-1'),
+			/--page.*must be greater than 0/i
+		)
+	})
+
+	test('rejects --limit 0', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--limit', '0'),
+			/--limit.*must be greater than 0/i
+		)
+	})
+
+	test('rejects invalid --sort-order', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--sort-order', 'invalid'),
+			/sort-order.*Choices.*asc.*desc/
+		)
+	})
 })
 
 describe('live', { tags: ['live'] }, () => {

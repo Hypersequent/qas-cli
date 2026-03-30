@@ -14,7 +14,7 @@ import {
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
-	runCli<T>('api', 'runs', 'tcases', 'get', ...args)
+	runCli<T>('api', 'runs', 'test-cases', 'get', ...args)
 
 describe('mocked', () => {
 	const mockTCase = { id: 'tc1', title: 'Login test', seq: 1, status: 'open' }
@@ -75,7 +75,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 	const tcases = await runCli<RunTCase[]>(
 		'api',
 		'runs',
-		'tcases',
+		'test-cases',
 		'list',
 		'--project-code',
 		project.code,
@@ -86,7 +86,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 	const result = await runCli<RunTCase>(
 		'api',
 		'runs',
-		'tcases',
+		'test-cases',
 		'get',
 		'--project-code',
 		project.code,
