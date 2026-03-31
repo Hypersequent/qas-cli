@@ -94,11 +94,14 @@ export function useMockServer(...handlers: RequestHandler[]): SetupServerApi {
 
 export async function runCli<T = unknown>(...args: string[]): Promise<T> {
 	const spy = mockConsoleLog()
-	await run(args)
-	const calls = spy.mock.calls
-	spy.mockRestore()
-	if (calls.length === 0) return undefined as T
-	return JSON.parse(calls[calls.length - 1][0] as string) as T
+	try {
+		await run(args)
+		const calls = spy.mock.calls
+		if (calls.length === 0) return undefined as T
+		return JSON.parse(calls[calls.length - 1][0] as string) as T
+	} finally {
+		spy.mockRestore()
+	}
 }
 
 export async function createFolder(projectCode: string): Promise<{ ids: number[][] }> {
