@@ -42,7 +42,6 @@ Required variables: ${qasEnvs.join(', ')}
 						msg.startsWith('Not enough non-option arguments')
 					) {
 						yi.showHelp()
-						process.exit(0)
 					}
 				} else if (err && err.message) {
 					console.error(err.message)

@@ -148,7 +148,7 @@ test('creates a result on live server', { tags: ['live'] }, async ({ project }) 
 	const tcases = await runCli<RunTCase[]>(
 		'api',
 		'runs',
-		'tcases',
+		'test-cases',
 		'list',
 		'--project-code',
 		project.code,

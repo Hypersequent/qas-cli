@@ -65,6 +65,27 @@ describe('missing subcommand shows help', () => {
 		}
 	})
 
+	test.each([
+		{ args: ['api', 'runs', 'test'], label: '`api runs test`' },
+		{
+			args: ['api', 'runs', 'test-cases', 'nonexistent'],
+			label: '`api runs test-cases nonexistent`',
+		},
+		{ args: ['api', 'blah'], label: '`api blah`' },
+	])('$label with unknown subcommand shows help and exits with error', async ({ args }) => {
+		const spies = setup()
+		try {
+			await run(args)
+			// The first process.exit call determines the real exit code
+			expect(spies.exitSpy.mock.calls[0][0]).toBe(1)
+			expect(spies.exitSpy).not.toHaveBeenCalledWith(0)
+			const stderrOutput = spies.collectStderr()
+			expect(stderrOutput).toMatch(/Unknown argument/)
+		} finally {
+			spies.restore()
+		}
+	})
+
 	test('no args shows help with exit code 0', async () => {
 		const spies = setup()
 		try {

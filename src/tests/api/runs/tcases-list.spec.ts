@@ -69,7 +69,7 @@ describe('live', { tags: ['live'] }, () => {
 		const result = await runCli<RunTCase[]>(
 			'api',
 			'runs',
-			'tcases',
+			'test-cases',
 			'list',
 			'--project-code',
 			project.code,
@@ -88,7 +88,7 @@ describe('live', { tags: ['live'] }, () => {
 		const result = await runCli<RunTCase[]>(
 			'api',
 			'runs',
-			'tcases',
+			'test-cases',
 			'list',
 			'--project-code',
 			project.code,

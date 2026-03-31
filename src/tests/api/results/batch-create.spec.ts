@@ -149,7 +149,7 @@ test('batch creates results on live server', { tags: ['live'] }, async ({ projec
 	const tcases = await runCli<RunTCase[]>(
 		'api',
 		'runs',
-		'tcases',
+		'test-cases',
 		'list',
 		'--project-code',
 		project.code,
