@@ -9,14 +9,19 @@ import {
 	type ListTCasesRequest,
 	type CountTCasesRequest,
 } from '../../../api/tcases'
-
-// CreateTCaseRequestSchema uses .superRefine() → ZodEffects, so extract inner ZodObject
-const CreateTCaseShape = CreateTCaseRequestSchema.sourceType().shape
-import { pageParam, limitParam, sortFieldParam, sortOrderParam } from '../../../api/schemas'
-import { resourceIdSchema } from '../../../api/schemas'
+import {
+	pageParam,
+	limitParam,
+	sortFieldParam,
+	sortOrderParam,
+	resourceIdSchema,
+} from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCase } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
+
+// CreateTCaseRequestSchema uses .superRefine() → ZodEffects, so extract inner ZodObject
+const CreateTCaseShape = CreateTCaseRequestSchema.sourceType().shape
 
 const help = {
 	...commonHelp,

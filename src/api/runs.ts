@@ -8,7 +8,7 @@ import {
 	sortOrderParam,
 	validateRequest,
 } from './schemas'
-import { Folder } from './folders'
+import type { Folder } from './folders'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export interface RunTCase {

@@ -5,8 +5,7 @@ import {
 	CloneRunRequestSchema,
 	type ListRunTCasesRequest,
 } from '../../../api/runs'
-import { limitParam, sortFieldParam, sortOrderParam } from '../../../api/schemas'
-import { resourceIdSchema } from '../../../api/schemas'
+import { limitParam, sortFieldParam, sortOrderParam, resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCase } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
