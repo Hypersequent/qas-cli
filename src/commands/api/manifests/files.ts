@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { printJson, apiDocsEpilog } from '../utils'
 import type { ApiEndpointSpec } from '../types'
@@ -27,9 +27,8 @@ const upload: ApiEndpointSpec = {
 	examples: help.upload.examples,
 	execute: async (api, { body }) => {
 		const filePath = body as string
-		const fileContent = readFileSync(filePath)
 		const filename = basename(filePath)
-		const blob = new Blob([fileContent])
+		const blob = new Blob([await readFile(filePath)])
 		const [result] = await api.files.upload([{ blob, filename }])
 		printJson(result)
 	},

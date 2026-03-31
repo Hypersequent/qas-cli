@@ -118,7 +118,7 @@ function createEndpointCommand(spec: ApiEndpointSpec): CommandModule {
 			try {
 				await executeCommand(spec, args as Record<string, unknown>)
 			} catch (e) {
-				formatApiError(e)
+				formatApiError(e, !!args.verbose)
 				process.exit(1)
 			}
 		},

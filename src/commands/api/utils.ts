@@ -20,7 +20,7 @@ export function printJson(data: unknown): void {
 export const apiDocsEpilog = (resource: string, hash?: string) =>
 	`API documentation: https://docs.qasphere.com/api/${resource}${hash ? `#${hash}` : ''}`
 
-interface ArgumentValidationIssue {
+export interface ArgumentValidationIssue {
 	argument: string
 	message: string
 }
@@ -32,8 +32,8 @@ export class ArgumentValidationError extends Error {
 	}
 }
 
-export function formatApiError(e: unknown): void {
-	const isVerbose = process.argv.some((arg) => arg === '--verbose')
+export function formatApiError(e: unknown, verbose = false): void {
+	const isVerbose = verbose
 
 	if (e instanceof ArgumentValidationError) {
 		console.error(`${chalk.red('Error:')} Invalid arguments:`)
