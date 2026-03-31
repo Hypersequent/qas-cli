@@ -114,18 +114,8 @@ const list: ApiEndpointSpec = {
 	bodyMode: 'none',
 	pathParams: [projectCodeParam],
 	queryOptions: [
-		{
-			name: 'page',
-			type: 'number',
-			describe: 'Page number for pagination (starts at 1).',
-			schema: pageParam,
-		},
-		{
-			name: 'limit',
-			type: 'number',
-			describe: 'Maximum number of items per page.',
-			schema: limitParam,
-		},
+		{ name: 'page', type: 'number', describe: help.page, schema: pageParam },
+		{ name: 'limit', type: 'number', describe: help.limit, schema: limitParam },
 		{ name: 'folders', type: 'string', describe: help.folders },
 		{ name: 'tags', type: 'string', describe: help.tagsFilter },
 		{ name: 'priorities', type: 'string', describe: help.priorities },

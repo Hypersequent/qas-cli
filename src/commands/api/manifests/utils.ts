@@ -5,7 +5,6 @@ import type { ApiPathParamSpec } from '../types'
  * Common help text shared across multiple manifest files.
  */
 export const commonHelp = {
-	'project-code': 'Project code identifying the QA Sphere project.',
 	'sort-field': 'Field to sort by (e.g., "title", "createdAt", "updatedAt").',
 	'sort-order': 'Sort direction (asc or desc).',
 	page: 'Page number for pagination (starts at 1).',
@@ -18,6 +17,6 @@ export const commonHelp = {
 export const projectCodeParam: ApiPathParamSpec = {
 	name: 'project-code',
 	type: 'string',
-	describe: commonHelp['project-code'],
+	describe: 'Project code identifying the QA Sphere project.',
 	schema: z.string().regex(/^[a-zA-Z0-9]+$/, 'must contain only latin letters and digits'),
 }
