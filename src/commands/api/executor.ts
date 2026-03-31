@@ -7,7 +7,8 @@ import {
 	collectPathParamValues,
 	collectQueryValues,
 	handleApiValidationError,
-	kebabToCamelCase,
+	kebabToCamel,
+	kebabToCamelCaseKeys,
 	mergeBodyWithFields,
 	parseBodyInput,
 	validateFieldValues,
@@ -46,7 +47,7 @@ export async function executeCommand(
 			}
 
 			// Transform validated field values into body fragment
-			const transform = spec.transformFields ?? kebabToCamelCase
+			const transform = spec.transformFields ?? kebabToCamelCaseKeys
 			const transformedFields = transform(fieldValues)
 
 			// Parse --body / --body-file if provided
@@ -96,7 +97,7 @@ export async function executeCommand(
 	if (queryIssues.length > 0) {
 		throw new ArgumentValidationError(queryIssues)
 	}
-	const transformQuery = spec.transformQuery ?? kebabToCamelCase
+	const transformQuery = spec.transformQuery ?? kebabToCamelCaseKeys
 	const query = transformQuery(rawQuery)
 
 	// 4. Connect to API (lazy env loading)
@@ -107,12 +108,12 @@ export async function executeCommand(
 	const argumentMap: Record<string, string> = {}
 	if (spec.bodyMode === 'json' && spec.fieldOptions) {
 		for (const field of spec.fieldOptions) {
-			const camelKey = field.name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+			const camelKey = kebabToCamel(field.name)
 			argumentMap[camelKey] = `--${field.name}`
 		}
 	}
 	for (const opt of queryOptions) {
-		const camelKey = opt.name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+		const camelKey = kebabToCamel(opt.name)
 		argumentMap[camelKey] = `--${opt.name}`
 	}
 

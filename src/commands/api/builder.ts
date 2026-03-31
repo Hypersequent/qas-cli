@@ -1,4 +1,4 @@
-import { Argv, CommandModule, Options } from 'yargs'
+import type { Argv, CommandModule, Options } from 'yargs'
 import { executeCommand } from './executor'
 import { formatApiError } from './utils'
 import type { ApiEndpointSpec, ApiFieldSpec, ApiPathParamSpec, ApiQueryOptionSpec } from './types'

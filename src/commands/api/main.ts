@@ -1,4 +1,4 @@
-import { Argv, CommandModule } from 'yargs'
+import type { Argv, CommandModule } from 'yargs'
 import { buildCommandsFromSpecs } from './builder'
 import { allSpecs } from './manifests/index'
 

@@ -6,7 +6,7 @@ import {
 	type ListRunTCasesRequest,
 } from '../../../api/runs'
 import { limitParam, sortFieldParam, sortOrderParam, resourceIdSchema } from '../../../api/schemas'
-import { printJson, apiDocsEpilog, kebabToCamelCase } from '../utils'
+import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
@@ -187,7 +187,7 @@ const list: ApiEndpointSpec = {
 		{ name: 'limit', type: 'number', describe: help.limit, schema: limitParam },
 	],
 	transformQuery: (query) => ({
-		...kebabToCamelCase(query),
+		...kebabToCamelCaseKeys(query),
 		milestoneIds:
 			typeof query['milestone-ids'] === 'string'
 				? query['milestone-ids'].split(',').map(Number)
@@ -291,7 +291,7 @@ const tcasesList: ApiEndpointSpec = {
 		},
 	],
 	transformQuery: (query) => ({
-		...kebabToCamelCase(query),
+		...kebabToCamelCaseKeys(query),
 		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
 		priorities:
 			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,

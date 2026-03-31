@@ -1,5 +1,5 @@
-import { ZodType } from 'zod'
-import { type Api } from '../../api/index'
+import type { ZodType } from 'zod'
+import type { Api } from '../../api/index'
 
 export type ApiValueType = 'string' | 'number' | 'boolean'
 

@@ -84,13 +84,12 @@ export function formatApiError(e: unknown): void {
  * Converts object keys from kebab-case to camelCase.
  * Example: { 'folder-id': 1, 'is-draft': false } → { folderId: 1, isDraft: false }
  */
-export function kebabToCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
-	const result: Record<string, unknown> = {}
-	for (const [key, value] of Object.entries(obj)) {
-		const camelKey = key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
-		result[camelKey] = value
-	}
-	return result
+export function kebabToCamel(key: string): string {
+	return key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+}
+
+export function kebabToCamelCaseKeys(obj: Record<string, unknown>): Record<string, unknown> {
+	return Object.fromEntries(Object.entries(obj).map(([k, v]) => [kebabToCamel(k), v]))
 }
 
 /**

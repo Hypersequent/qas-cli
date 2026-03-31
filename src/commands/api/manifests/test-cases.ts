@@ -16,7 +16,7 @@ import {
 	sortOrderParam,
 	resourceIdSchema,
 } from '../../../api/schemas'
-import { printJson, apiDocsEpilog, kebabToCamelCase } from '../utils'
+import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
@@ -152,7 +152,7 @@ const list: ApiEndpointSpec = {
 		},
 	],
 	transformQuery: (query) => ({
-		...kebabToCamelCase(query),
+		...kebabToCamelCaseKeys(query),
 		folders:
 			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
 		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
@@ -202,7 +202,7 @@ const count: ApiEndpointSpec = {
 		{ name: 'draft', type: 'boolean', describe: help.draft },
 	],
 	transformQuery: (query) => ({
-		...kebabToCamelCase(query),
+		...kebabToCamelCaseKeys(query),
 		folders:
 			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
 		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
@@ -217,7 +217,7 @@ const count: ApiEndpointSpec = {
 }
 
 function transformTCaseFields(fields: Record<string, unknown>): Record<string, unknown> {
-	const result = kebabToCamelCase(fields)
+	const result = kebabToCamelCaseKeys(fields)
 
 	// Handle precondition union
 	if (fields['precondition-text']) {
