@@ -1,0 +1,81 @@
+{
+  "suites": [
+    {
+      "title": "multi-annotation.spec.ts",
+      "specs": [
+        {
+          "title": "Login flow covers multiple cases",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [
+                {
+                  "type": "test case",
+                  "description": "https://qas.eu1.qasphere.com/project/TEST/tcase/10427"
+                },
+                {
+                  "type": "test case",
+                  "description": "https://qas.eu1.qasphere.com/project/TEST/tcase/10427"
+                },
+                {
+                  "type": "test case",
+                  "description": "https://qas.eu1.qasphere.com/project/TEST/tcase/10428"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "duration": 2500,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./multi-annotation-with-attachments.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        },
+        {
+          "title": "Navigation bar items TEST-006",
+          "tags": [],
+          "tests": [
+            {
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "duration": 1000,
+                  "attachments": [
+                    {
+                      "name": "attachment",
+                      "contentType": "application/json",
+                      "path": "./multi-annotation-with-attachments.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ]
+}

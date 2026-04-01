@@ -150,9 +150,10 @@ export class MarkerParser {
 	 * Used by ResultUploader to map results → run test cases.
 	 */
 	nameMatchesTCase(name: string, projectCode: string, seq: number): boolean {
-		// 1. Hyphenated: case-insensitive check with hyphenated marker (e.g., TEST-002)
+		// 1. Hyphenated: case-insensitive check with exact hyphenated marker using word boundaries
 		const hyphenated = formatMarker(projectCode, seq)
-		if (name.toLowerCase().includes(hyphenated.toLowerCase())) {
+		const hyphenatedPattern = new RegExp(`\\b${hyphenated}\\b`, 'i')
+		if (hyphenatedPattern.test(name)) {
 			return true
 		}
 

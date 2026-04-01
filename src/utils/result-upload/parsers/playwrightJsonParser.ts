@@ -104,35 +104,40 @@ export const parsePlaywrightJson: Parser = async (
 				return // Can this happen?
 			}
 
-			const markerFromAnnotations = getTCaseMarkerFromAnnotations(test.annotations) // What about result.annotations?
+			const markers = getAllTCaseMarkersFromAnnotations(test.annotations) // What about result.annotations?
 			const status = mapPlaywrightStatus(test.status)
-			const numTestcases = testcases.push({
-				// Use markerFromAnnotations as name prefix, so that it takes precedence over any
-				// other marker present. Prefixing it to name also helps in detectProjectCode
-				name: markerFromAnnotations
-					? `${markerFromAnnotations}: ${titlePrefix}${spec.title}`
-					: `${titlePrefix}${spec.title}`,
-				folder: topLevelSuite,
-				status,
-				message: buildMessage(result, status, options),
-				timeTaken: result.duration,
-				attachments: [],
-			})
+			const message = buildMessage(result, status, options)
+			const baseName = `${titlePrefix}${spec.title}`
 
-			const attachmentPaths = []
+			const attachmentPaths: string[] = []
 			for (const out of result.attachments || []) {
 				if (out.path) {
 					attachmentPaths.push(out.path)
 				}
 			}
-			attachmentsPromises.push({
-				index: numTestcases - 1,
-				// Attachment paths are absolute, but in tests we are using relative paths
-				promise: getAttachments(
-					attachmentPaths,
-					attachmentPaths[0]?.startsWith('/') ? undefined : attachmentBaseDirectory
-				),
-			})
+			const attachmentPromise = getAttachments(
+				attachmentPaths,
+				attachmentPaths[0]?.startsWith('/') ? undefined : attachmentBaseDirectory
+			)
+
+			// Fan out: one TestCaseResult per annotation, or one with no prefix if no annotations
+			const resultNames =
+				markers.length > 0 ? markers.map((marker) => `${marker}: ${baseName}`) : [baseName]
+
+			for (const name of resultNames) {
+				const numTestcases = testcases.push({
+					name,
+					folder: topLevelSuite,
+					status,
+					message,
+					timeTaken: result.duration,
+					attachments: [],
+				})
+				attachmentsPromises.push({
+					index: numTestcases - 1,
+					promise: attachmentPromise,
+				})
+			}
 		}
 
 		// Recursively process nested suites
@@ -164,15 +169,17 @@ export const parsePlaywrightJson: Parser = async (
 	return { testCaseResults: testcases, runFailureLogs: runFailureLogParts.join('') }
 }
 
-const getTCaseMarkerFromAnnotations = (annotations: Annotation[]) => {
+const getAllTCaseMarkersFromAnnotations = (annotations: Annotation[]): string[] => {
+	const markers: string[] = []
 	for (const annotation of annotations) {
 		if (annotation.type.toLowerCase().includes('test case') && annotation.description) {
 			const res = parseTCaseUrl(annotation.description)
 			if (res) {
-				return formatMarker(res.project, res.tcaseSeq)
+				markers.push(formatMarker(res.project, res.tcaseSeq))
 			}
 		}
 	}
+	return markers
 }
 
 const mapPlaywrightStatus = (status: Status): ResultStatus => {

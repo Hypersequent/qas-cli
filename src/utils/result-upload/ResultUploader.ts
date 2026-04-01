@@ -52,7 +52,8 @@ export class ResultUploader {
 
 		if (mappedResults.length) {
 			await this.uploadTestCases(mappedResults)
-			console.log(`Uploaded ${mappedResults.length} test cases`)
+			const uniqueTCases = new Set(mappedResults.map((r) => r.tcase.id)).size
+			console.log(`Uploaded ${mappedResults.length} results to ${uniqueTCases} test cases`)
 		}
 	}
 
@@ -208,30 +209,39 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			return results
 		}
 
-		// Collect all attachments from all test cases
-		const allAttachments: Array<{
-			attachment: Attachment
-			tcaseIndex: number
-		}> = []
+		// Collect unique attachments, deduplicating by file path
+		const uniqueAttachments = new Map<string, { attachment: Attachment; tcaseIndices: number[] }>()
 
 		results.forEach((item, index) => {
 			item.result.attachments.forEach((attachment) => {
 				if (attachment.buffer !== null) {
-					allAttachments.push({ attachment, tcaseIndex: index })
+					const existing = uniqueAttachments.get(attachment.filePath)
+					if (existing) {
+						existing.tcaseIndices.push(index)
+					} else {
+						uniqueAttachments.set(attachment.filePath, {
+							attachment,
+							tcaseIndices: [index],
+						})
+					}
 				}
 			})
 		})
 
-		if (allAttachments.length === 0) {
+		if (uniqueAttachments.size === 0) {
 			return results
 		}
 
+		const uniqueEntries = [...uniqueAttachments.values()]
+		const totalRefs = uniqueEntries.reduce((sum, e) => sum + e.tcaseIndices.length, 0)
+		const duplicateCount = totalRefs - uniqueEntries.length
+
 		// Group attachments into batches where total size <= MAX_BATCH_SIZE_BYTES
-		const batches: Array<typeof allAttachments> = []
-		let currentBatch: typeof allAttachments = []
+		const batches: Array<typeof uniqueEntries> = []
+		let currentBatch: typeof uniqueEntries = []
 		let currentBatchSize = 0
 
-		for (const item of allAttachments) {
+		for (const item of uniqueEntries) {
 			const size = item.attachment.buffer!.byteLength
 			if (
 				currentBatch.length > 0 &&
@@ -251,7 +261,8 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
 		// Upload batches concurrently with progress tracking
 		let uploadedCount = 0
-		loader.start(`Uploading attachments: 0/${allAttachments.length} files uploaded`)
+		const duplicateMsg = duplicateCount > 0 ? ` (${duplicateCount} duplicates skipped)` : ''
+		loader.start(`Uploading attachments: 0/${uniqueEntries.length} files uploaded${duplicateMsg}`)
 
 		const batchResults = await this.processConcurrently(
 			batches,
@@ -265,11 +276,11 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 
 				uploadedCount += batch.length
 				loader.setText(
-					`Uploading attachments: ${uploadedCount}/${allAttachments.length} files uploaded`
+					`Uploading attachments: ${uploadedCount}/${uniqueEntries.length} files uploaded${duplicateMsg}`
 				)
 
 				return batch.map((item, i) => ({
-					tcaseIndex: item.tcaseIndex,
+					tcaseIndices: item.tcaseIndices,
 					url: uploaded[i].url,
 					name: item.attachment.filename,
 				}))
@@ -278,14 +289,16 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 		)
 		loader.stop()
 
-		// Flatten batch results and group by test case index
+		// Flatten batch results and distribute URLs to all referencing test cases
 		const attachmentsByTCase = new Map<number, Array<{ name: string; url: string }>>()
 		for (const batchResult of batchResults) {
-			for (const { tcaseIndex, url, name } of batchResult) {
-				if (!attachmentsByTCase.has(tcaseIndex)) {
-					attachmentsByTCase.set(tcaseIndex, [])
+			for (const { tcaseIndices, url, name } of batchResult) {
+				for (const tcaseIndex of tcaseIndices) {
+					if (!attachmentsByTCase.has(tcaseIndex)) {
+						attachmentsByTCase.set(tcaseIndex, [])
+					}
+					attachmentsByTCase.get(tcaseIndex)!.push({ url, name })
 				}
-				attachmentsByTCase.get(tcaseIndex)!.push({ url, name })
 			}
 		}
 

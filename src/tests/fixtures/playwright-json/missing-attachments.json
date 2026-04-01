@@ -149,7 +149,7 @@
                     {
                       "name": "attachment",
                       "contentType": "application/json",
-                      "path": "./matching-tcases.json"
+                      "path": "./empty-tsuite.json"
                     }
                   ]
                 }

@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { unlinkSync, readdirSync } from 'node:fs'
-import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach } from 'vitest'
+import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach, vi } from 'vitest'
 import { run } from '../commands/main'
 import {
 	CreateTCasesRequest,
@@ -155,6 +155,16 @@ const countCreateTCasesApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/bulk'))
 const countRunLogApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith(`/run/${runId}/log`))
+
+const countIndividualFileUploads = () => {
+	let count = 0
+	server.events.on('response:mocked', async (e) => {
+		if (!new URL(e.request.url).pathname.endsWith('/file/batch')) return
+		const body = (await e.response.clone().json()) as { files: unknown[] }
+		count += body.files.length
+	})
+	return () => count
+}
 
 const getMappingFiles = () =>
 	new Set(
@@ -337,6 +347,17 @@ fileTypesWithAllure.forEach((fileType) => {
 				expect(numResultUploadCalls()).toBe(3) // 5 results total
 			})
 
+			test('Upload success message should report results and unique test cases', async () => {
+				const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+				await run(
+					`${fileType.command} -r ${runURL} ${fixtureInputPath(fileType, 'matching-tcases')}`
+				)
+				expect(logSpy).toHaveBeenCalledWith(
+					expect.stringContaining('Uploaded 5 results to 5 test cases')
+				)
+				logSpy.mockRestore()
+			})
+
 			test('Test cases on reports with a missing test case on QAS should throw an error', async () => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
@@ -391,14 +412,18 @@ fileTypesWithAllure.forEach((fileType) => {
 		})
 
 		describe('Uploading with attachments', () => {
-			test('Attachments should be uploaded', async () => {
+			test('Attachments should be uploaded and deduplicated', async () => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
+				const totalFilesUploaded = countIndividualFileUploads()
 				setMaxResultsInRequest(3)
 				await run(
 					`${fileType.command} -r ${runURL} --attachments ${fixtureInputPath(fileType, 'matching-tcases')}`
 				)
-				expect(numFileUploadCalls()).toBe(1) // all 5 files in one batch
+				// matching-tcases fixtures have 4 tests with the same attachment + 1 unique
+				// Should upload 2 unique files, not 5
+				expect(numFileUploadCalls()).toBe(1)
+				expect(totalFilesUploaded()).toBe(2)
 				expect(numResultUploadCalls()).toBe(2) // 5 results total
 			})
 			test('Missing attachments should throw an error', async () => {
@@ -415,11 +440,15 @@ fileTypesWithAllure.forEach((fileType) => {
 			test('Missing attachments should be successful when forced', async () => {
 				const numFileUploadCalls = countFileUploadApiCalls()
 				const numResultUploadCalls = countResultUploadApiCalls()
+				const totalFilesUploaded = countIndividualFileUploads()
 				setMaxResultsInRequest(1)
 				await run(
 					`${fileType.command} -r ${runURL} --attachments --force ${fixtureInputPath(fileType, 'missing-attachments')}`
 				)
-				expect(numFileUploadCalls()).toBe(1) // all 4 files in one batch
+				// missing-attachments fixtures have 3 tests with the same attachment + 1 unique + 1 missing
+				// Should upload 2 unique valid files, not 4
+				expect(numFileUploadCalls()).toBe(1)
+				expect(totalFilesUploaded()).toBe(2)
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
@@ -612,6 +641,36 @@ describe('Allure invalid result file handling', () => {
 		const numResultUploadCalls = countResultUploadApiCalls()
 		await run(`allure-upload -r ${runURL} --force ./src/tests/fixtures/allure/invalid-results`)
 		expect(numResultUploadCalls()).toBe(1) // 1 valid result total
+	})
+})
+
+describe('Multi-annotation Playwright upload', () => {
+	test('Should deduplicate file uploads when fan-out entries share the same attachment', async () => {
+		const totalFilesUploaded = countIndividualFileUploads()
+
+		await run(
+			`playwright-json-upload -r ${runURL} --attachments ./src/tests/fixtures/playwright-json/multi-annotation-with-attachments.json`
+		)
+
+		// The fixture has 1 test with 3 annotations (fan-out to 3 results) and 1 test with no
+		// annotations. All 4 results reference the same attachment file.
+		// Only 1 unique file should be uploaded, not 4.
+		expect(totalFilesUploaded()).toBe(1)
+	})
+
+	test('Upload message should distinguish results from unique test cases', async () => {
+		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+		await run(
+			`playwright-json-upload -r ${runURL} ./src/tests/fixtures/playwright-json/multi-annotation-with-attachments.json`
+		)
+
+		// Fixture: 3 fan-out results (2x TEST-10427, 1x TEST-10428) + 1 regular (TEST-006)
+		// = 4 results mapping to 3 unique test cases
+		expect(logSpy).toHaveBeenCalledWith(
+			expect.stringContaining('Uploaded 4 results to 3 test cases')
+		)
+		logSpy.mockRestore()
 	})
 })
 

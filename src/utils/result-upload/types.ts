@@ -2,6 +2,7 @@ import { ResultStatus } from '../../api/schemas'
 
 export interface Attachment {
 	filename: string
+	filePath: string
 	buffer: Buffer | null
 	error: Error | null
 }
