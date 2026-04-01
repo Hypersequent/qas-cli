@@ -1,5 +1,6 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
+import escapeHtml from 'escape-html'
 import { RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
@@ -404,6 +405,6 @@ interface TCaseWithResult {
 
 const makeListHtml = (list: { name: string; url: string }[]) => {
 	return `<ul>
-${list.map((item) => `<li><a href="${item.url}">${item.name}</a></li>`).join('\n')}
+${list.map((item) => `<li><a href="${escapeHtml(item.url)}">${escapeHtml(item.name)}</a></li>`).join('\n')}
 </ul>`
 }
