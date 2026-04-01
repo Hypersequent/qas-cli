@@ -388,21 +388,20 @@ describe('Playwright JSON parsing', () => {
 			skipStderr: 'never',
 		})
 
-		// Fixture has 1 test with 3 annotations (2 for 10427, 1 for 10428) + 1 test with no annotations = 4 results
-		expect(testcases).toHaveLength(4)
+		// Fixture has 1 test with 3 annotations (2x 10427 deduped to 1, plus 10428) + 1 test with no annotations = 3 results
+		expect(testcases).toHaveLength(3)
 		expect(testcases[0].name).toBe('TEST-10427: Login flow covers multiple cases')
-		expect(testcases[1].name).toBe('TEST-10427: Login flow covers multiple cases')
-		expect(testcases[2].name).toBe('TEST-10428: Login flow covers multiple cases')
-		expect(testcases[3].name).toBe('Navigation bar items TEST-006')
+		expect(testcases[1].name).toBe('TEST-10428: Login flow covers multiple cases')
+		expect(testcases[2].name).toBe('Navigation bar items TEST-006')
 
-		// The three fan-out entries share the same status, duration, folder
-		for (const tc of testcases.slice(0, 3)) {
+		// The two fan-out entries share the same status, duration, folder
+		for (const tc of testcases.slice(0, 2)) {
 			expect(tc.status).toBe('passed')
 			expect(tc.timeTaken).toBe(2500)
 			expect(tc.folder).toBe('multi-annotation.spec.ts')
 		}
 
-		// All four entries have attachments from the fixture
+		// All three entries have attachments from the fixture
 		for (const tc of testcases) {
 			expect(tc.attachments).toHaveLength(1)
 		}

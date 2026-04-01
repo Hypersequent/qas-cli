@@ -120,9 +120,12 @@ export const parsePlaywrightJson: Parser = async (
 				attachmentPaths[0]?.startsWith('/') ? undefined : attachmentBaseDirectory
 			)
 
-			// Fan out: one TestCaseResult per annotation, or one with no prefix if no annotations
+			// Fan out: one TestCaseResult per unique annotation, or one with no prefix if no annotations
+			const uniqueMarkers = [...new Set(markers)]
 			const resultNames =
-				markers.length > 0 ? markers.map((marker) => `${marker}: ${baseName}`) : [baseName]
+				uniqueMarkers.length > 0
+					? uniqueMarkers.map((marker) => `${marker}: ${baseName}`)
+					: [baseName]
 
 			for (const name of resultNames) {
 				const numTestcases = testcases.push({

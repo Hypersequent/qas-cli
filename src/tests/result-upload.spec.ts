@@ -652,9 +652,9 @@ describe('Multi-annotation Playwright upload', () => {
 			`playwright-json-upload -r ${runURL} --attachments ./src/tests/fixtures/playwright-json/multi-annotation-with-attachments.json`
 		)
 
-		// The fixture has 1 test with 3 annotations (fan-out to 3 results) and 1 test with no
-		// annotations. All 4 results reference the same attachment file.
-		// Only 1 unique file should be uploaded, not 4.
+		// The fixture has 1 test with 3 annotations (2x 10427 deduped, 1x 10428 = 2 fan-out results)
+		// and 1 test with no annotations. All 3 results reference the same attachment file.
+		// Only 1 unique file should be uploaded, not 3.
 		expect(totalFilesUploaded()).toBe(1)
 	})
 
@@ -665,10 +665,10 @@ describe('Multi-annotation Playwright upload', () => {
 			`playwright-json-upload -r ${runURL} ./src/tests/fixtures/playwright-json/multi-annotation-with-attachments.json`
 		)
 
-		// Fixture: 3 fan-out results (2x TEST-10427, 1x TEST-10428) + 1 regular (TEST-006)
-		// = 4 results mapping to 3 unique test cases
+		// Fixture: 2 fan-out results (10427 deduped, 10428) + 1 regular (TEST-006)
+		// = 3 results mapping to 3 unique test cases
 		expect(logSpy).toHaveBeenCalledWith(
-			expect.stringContaining('Uploaded 4 results to 3 test cases')
+			expect.stringContaining('Uploaded 3 results to 3 test cases')
 		)
 		logSpy.mockRestore()
 	})
