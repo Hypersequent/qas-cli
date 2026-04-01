@@ -152,7 +152,7 @@ export class MarkerParser {
 	nameMatchesTCase(name: string, projectCode: string, seq: number): boolean {
 		// 1. Hyphenated: case-insensitive check with exact hyphenated marker using word boundaries
 		const hyphenated = formatMarker(projectCode, seq)
-		const hyphenatedPattern = new RegExp(`\\b${hyphenated}\\b`, 'i')
+		const hyphenatedPattern = new RegExp(`(?<![a-zA-Z0-9])${hyphenated}(?!\\d)`, 'i')
 		if (hyphenatedPattern.test(name)) {
 			return true
 		}

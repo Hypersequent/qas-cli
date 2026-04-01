@@ -249,6 +249,14 @@ describe('nameMatchesTCase', () => {
 			test('marker surrounded by parens does not prefix-match', () => {
 				expect(playwright.nameMatchesTCase('some test (QS1-10427)', 'QS1', 104)).toBe(false)
 			})
+
+			test('marker adjacent to underscore still matches', () => {
+				expect(playwright.nameMatchesTCase('test_QS1-104_login', 'QS1', 104)).toBe(true)
+			})
+
+			test('marker adjacent to bracket still matches', () => {
+				expect(playwright.nameMatchesTCase('case[QS1-104]', 'QS1', 104)).toBe(true)
+			})
 		})
 	})
 
