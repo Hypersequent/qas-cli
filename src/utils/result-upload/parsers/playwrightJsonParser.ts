@@ -159,7 +159,8 @@ export const parsePlaywrightJson: Parser = async (
 	const attachments = await Promise.all(attachmentsPromises.map((p) => p.promise))
 	attachments.forEach((tcaseAttachment, i) => {
 		const tcaseIndex = attachmentsPromises[i].index
-		testcases[tcaseIndex].attachments = tcaseAttachment
+		// Clone to avoid affecting other test cases if any downstream code mutates the array
+		testcases[tcaseIndex].attachments = [...tcaseAttachment]
 	})
 
 	// Build runFailureLogs from top-level errors

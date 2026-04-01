@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises'
-import path, { basename, join } from 'path'
+import path, { basename, resolve } from 'path'
 import { Attachment } from './types'
 
 const getFile = async (filePath: string, basePath?: string): Promise<Buffer> => {
@@ -26,7 +26,7 @@ export const getAttachments = async (
 	return Promise.allSettled(filePaths.map((p) => getFile(p, basePath))).then((results) => {
 		return results.map((p, i) => ({
 			filename: basename(filePaths[i]),
-			filePath: basePath ? join(basePath, filePaths[i]) : filePaths[i],
+			filePath: resolve(basePath ?? '.', filePaths[i]),
 			buffer: p.status === 'fulfilled' ? p.value : null,
 			error: p.status === 'fulfilled' ? null : p.reason,
 		}))
