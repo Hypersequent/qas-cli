@@ -158,10 +158,10 @@ const countRunLogApiCalls = () =>
 
 const countIndividualFileUploads = () => {
 	let count = 0
-	server.events.on('response:mocked', async (e) => {
+	server.events.on('request:start', async (e) => {
 		if (!new URL(e.request.url).pathname.endsWith('/file/batch')) return
-		const body = (await e.response.clone().json()) as { files: unknown[] }
-		count += body.files.length
+		const form = await e.request.clone().formData()
+		count += form.getAll('files').length
 	})
 	return () => count
 }
