@@ -10,7 +10,7 @@
   "attachments": [
     {
       "name": "attachment",
-      "source": "shared-attachment.txt",
+      "source": "006-container.json",
       "type": "text/plain"
     }
   ],

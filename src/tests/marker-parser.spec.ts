@@ -216,6 +216,48 @@ describe('nameMatchesTCase', () => {
 		test('no match for wrong seq', () => {
 			expect(junit.nameMatchesTCase('TEST-002 Cart', 'TEST', 3)).toBe(false)
 		})
+
+		describe('does not prefix-match longer sequences', () => {
+			test('QS1-104 does not match name containing QS1-10427', () => {
+				expect(playwright.nameMatchesTCase('QS1-10427: some test', 'QS1', 104)).toBe(false)
+			})
+
+			test('QS1-107 does not match name containing QS1-10775', () => {
+				expect(playwright.nameMatchesTCase('QS1-10775: some test', 'QS1', 107)).toBe(false)
+			})
+
+			test('QS1-10427 still matches itself', () => {
+				expect(playwright.nameMatchesTCase('QS1-10427: some test', 'QS1', 10427)).toBe(true)
+			})
+
+			test('QS1-104 matches when it appears exactly', () => {
+				expect(playwright.nameMatchesTCase('QS1-104: some test', 'QS1', 104)).toBe(true)
+			})
+
+			test('QS1-104 matches at end of name', () => {
+				expect(playwright.nameMatchesTCase('some test QS1-104', 'QS1', 104)).toBe(true)
+			})
+
+			test('QS1-104 matches in middle of name with boundaries', () => {
+				expect(playwright.nameMatchesTCase('some QS1-104 test', 'QS1', 104)).toBe(true)
+			})
+
+			test('marker surrounded by parens still matches', () => {
+				expect(playwright.nameMatchesTCase('some test (QS1-10427)', 'QS1', 10427)).toBe(true)
+			})
+
+			test('marker surrounded by parens does not prefix-match', () => {
+				expect(playwright.nameMatchesTCase('some test (QS1-10427)', 'QS1', 104)).toBe(false)
+			})
+
+			test('marker adjacent to underscore still matches', () => {
+				expect(playwright.nameMatchesTCase('test_QS1-104_login', 'QS1', 104)).toBe(true)
+			})
+
+			test('marker adjacent to bracket still matches', () => {
+				expect(playwright.nameMatchesTCase('case[QS1-104]', 'QS1', 104)).toBe(true)
+			})
+		})
 	})
 
 	describe('separator-bounded hyphenless (JUnit only)', () => {

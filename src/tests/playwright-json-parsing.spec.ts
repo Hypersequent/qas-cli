@@ -379,6 +379,138 @@ describe('Playwright JSON parsing', () => {
 		expect(testcases[2].name).toBe('PRJ-789: PRJ-456: Test with marker in name and annotation')
 	})
 
+	test('Should fan out multiple results for test with multiple annotations', async () => {
+		const jsonPath = `${playwrightJsonBasePath}/multi-annotation-with-attachments.json`
+		const jsonContent = await readFile(jsonPath, 'utf8')
+
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		// Fixture has 1 test with 3 annotations (2x 10427 deduped to 1, plus 10428) + 1 test with no annotations = 3 results
+		expect(testcases).toHaveLength(3)
+		expect(testcases[0].name).toBe('TEST-10427: Login flow covers multiple cases')
+		expect(testcases[1].name).toBe('TEST-10428: Login flow covers multiple cases')
+		expect(testcases[2].name).toBe('Navigation bar items TEST-006')
+
+		// The two fan-out entries share the same status, duration, folder
+		for (const tc of testcases.slice(0, 2)) {
+			expect(tc.status).toBe('passed')
+			expect(tc.timeTaken).toBe(2500)
+			expect(tc.folder).toBe('multi-annotation.spec.ts')
+		}
+
+		// All three entries have attachments from the fixture
+		for (const tc of testcases) {
+			expect(tc.attachments).toHaveLength(1)
+		}
+	})
+
+	test('Should still produce one result for single annotation', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'single.spec.ts',
+					specs: [
+						{
+							title: 'Simple test',
+							tags: [],
+							tests: [
+								{
+									annotations: [
+										{
+											type: 'test case',
+											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/100',
+										},
+									],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											duration: 1000,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe('PRJ-100: Simple test')
+	})
+
+	test('Should fan out by annotations even when name has a marker', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'precedence.spec.ts',
+					specs: [
+						{
+							title: 'PRJ-999: Test with marker in name',
+							tags: [],
+							tests: [
+								{
+									annotations: [
+										{
+											type: 'test case',
+											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/100',
+										},
+										{
+											type: 'test case',
+											description: 'https://qas.eu1.qasphere.com/project/PRJ/tcase/200',
+										},
+									],
+									expectedStatus: 'passed',
+									projectName: 'chromium',
+									results: [
+										{
+											status: 'passed',
+											errors: [],
+											stdout: [],
+											stderr: [],
+											retry: 0,
+											duration: 1000,
+											attachments: [],
+										},
+									],
+									status: 'expected',
+								},
+							],
+						},
+					],
+					suites: [],
+				},
+			],
+		})
+
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		// Annotations take precedence — two results, not one from the name marker
+		expect(testcases).toHaveLength(2)
+		expect(testcases[0].name).toBe('PRJ-100: PRJ-999: Test with marker in name')
+		expect(testcases[1].name).toBe('PRJ-200: PRJ-999: Test with marker in name')
+	})
+
 	test('Should map test status correctly', async () => {
 		const jsonContent = JSON.stringify({
 			suites: [

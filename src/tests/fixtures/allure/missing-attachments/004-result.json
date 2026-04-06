@@ -10,7 +10,7 @@
   "attachments": [
     {
       "name": "attachment",
-      "source": "existing-attachment.txt",
+      "source": "001-result.json",
       "type": "text/plain"
     }
   ]

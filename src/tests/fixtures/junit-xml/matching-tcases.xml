@@ -173,7 +173,7 @@
     <testcase name="Menu page content TEST-007" classname="ui.contents.spec.ts" time="3.325">
       <system-out>
 <![CDATA[
-[[ATTACHMENT|./matching-tcases.xml]]
+[[ATTACHMENT|./empty-tsuite.xml]]
 ]]>
 </system-out>
     </testcase>
