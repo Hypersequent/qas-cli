@@ -734,6 +734,32 @@ describe('Marker-based result mapping', () => {
 		expect(numResultUploadCalls()).toBe(0)
 	})
 
+	test('Should fail duplicate target mappings before creating new test cases', async () => {
+		const numCreateTCasesCalls = countCreateTCasesApiCalls()
+		const numCreateRunCalls = countCreateRunApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		createTCasesResponse = {
+			tcases: [
+				{ id: '6', seq: 6 },
+				{ id: '7', seq: 7 },
+			],
+		}
+
+		try {
+			await expect(
+				run(
+					`junit-upload --project-code ${projectCode} --create-tcases ./src/tests/fixtures/junit-xml/without-markers.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml`
+				)
+			).rejects.toThrowError()
+		} finally {
+			createTCasesResponse = null
+		}
+
+		expect(numCreateTCasesCalls()).toBe(0)
+		expect(numCreateRunCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(0)
+	})
+
 	test('Should allow duplicate target mappings with --force', async () => {
 		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 		const numResultUploadCalls = countResultUploadApiCalls()
