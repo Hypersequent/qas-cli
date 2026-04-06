@@ -1,0 +1,39 @@
+{
+  "suites": [
+    {
+      "title": "describe-marker-unmatched.spec.ts",
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard Projects (TEST-034, TEST-035, TEST-365)",
+          "specs": [
+            {
+              "title": "viewer should not see project management actions",
+              "tags": [],
+              "tests": [
+                {
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "duration": 1000,
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ]
+            }
+          ],
+          "suites": []
+        }
+      ]
+    }
+  ]
+}

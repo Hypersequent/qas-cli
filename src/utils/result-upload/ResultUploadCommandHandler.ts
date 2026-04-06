@@ -6,7 +6,8 @@ import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
 import { TCase } from '../../api/tcases'
-import { ParseResult, TestCaseResult } from './types'
+import { ParseResult, TestCaseMarker, TestCaseResult } from './types'
+import { DuplicateTCaseMapping, TCaseTarget, mapResolvedResultsToTCases } from './mapping'
 import { ResultUploader } from './ResultUploader'
 import { parseJUnitXml } from './parsers/junitXmlParser'
 import { parsePlaywrightJson } from './parsers/playwrightJsonParser'
@@ -77,6 +78,7 @@ export class ResultUploadCommandHandler {
 	private api: Api
 	private baseUrl: string
 	private markerParser: MarkerParser
+	private skipUploaderDuplicateValidation = false
 
 	constructor(
 		private type: UploadCommandType,
@@ -111,6 +113,7 @@ export class ResultUploadCommandHandler {
 
 			runId = urlParsed.run
 			projectCode = urlParsed.project
+			this.resolveMarkers(fileResults, projectCode)
 		} else {
 			if (this.args.projectCode) {
 				projectCode = this.args.projectCode as string
@@ -127,7 +130,12 @@ export class ResultUploadCommandHandler {
 
 			const resp = await this.getTCaseIds(projectCode, fileResults)
 			fileResults = resp.fileResults
-			runId = await this.createNewRun(projectCode, resp.tcaseIds)
+			this.resolveMarkers(fileResults, projectCode)
+			this.validateDuplicateMappings(projectCode, fileResults, Object.values(resp.targetsBySeq))
+
+			const createRunResult = await this.createNewRun(projectCode, resp.tcaseIds)
+			runId = createRunResult.runId
+			this.skipUploaderDuplicateValidation = !createRunResult.reusedExisting
 		}
 
 		const results = fileResults.flatMap((fileResult) => fileResult.results)
@@ -166,7 +174,10 @@ export class ResultUploadCommandHandler {
 	protected detectProjectCodeFromTCaseNames(fileResults: FileResults[]) {
 		for (const { results } of fileResults) {
 			for (const result of results) {
-				if (result.name) {
+				if (result.markerResolution === 'resolved' && result.marker?.projectCode) {
+					return result.marker.projectCode
+				}
+				if (result.markerResolution !== 'resolved-none' && result.name) {
 					const code = this.markerParser.detectProjectCode(result.name)
 					if (code) return code
 				}
@@ -194,7 +205,8 @@ export class ResultUploadCommandHandler {
 					continue
 				}
 
-				const seq = this.markerParser.extractSeq(result.name, projectCode)
+				const marker = this.resolveMarker(result, projectCode)
+				const seq = marker?.seq ?? null
 				resultsWithSeqAndFile.push({
 					seq,
 					file,
@@ -208,7 +220,7 @@ export class ResultUploadCommandHandler {
 		}
 
 		// Now fetch the test cases by their sequence numbers
-		const apiTCasesMap: Record<number, TCase> = {}
+		const apiTCasesMap: Record<number, TCaseTarget> = {}
 		if (seqIdsSet.size > 0) {
 			const tcaseMarkers = Array.from(seqIdsSet).map((v) =>
 				this.markerParser.formatMarker(projectCode, v)
@@ -222,7 +234,11 @@ export class ResultUploadCommandHandler {
 				})
 
 				for (const tcase of response.data) {
-					apiTCasesMap[tcase.seq] = tcase
+					apiTCasesMap[tcase.seq] = {
+						id: tcase.id,
+						seq: tcase.seq,
+						title: tcase.title,
+					}
 				}
 
 				if (response.data.length < DEFAULT_PAGE_SIZE) {
@@ -261,10 +277,22 @@ export class ResultUploadCommandHandler {
 
 			for (let i = 0; i < keys.length; i++) {
 				const marker = this.markerParser.formatMarker(projectCode, newTCases[i].seq)
+				const duplicateTargetAllowed = (tcasesToCreateMap[keys[i]] || []).length > 1
 				for (const result of tcasesToCreateMap[keys[i]] || []) {
 					// Prefix the test case markers for use in ResultUploader. The fileResults array
 					// containing the updated name is returned to the caller
 					result.name = `${marker}: ${result.name}`
+					result.marker = {
+						projectCode,
+						seq: newTCases[i].seq,
+					}
+					result.markerResolution = 'resolved'
+					result.allowDuplicateTarget = duplicateTargetAllowed
+				}
+				apiTCasesMap[newTCases[i].seq] = {
+					id: newTCases[i].id,
+					seq: newTCases[i].seq,
+					title: keys[i],
 				}
 				tcaseIds.push(newTCases[i].id)
 			}
@@ -274,7 +302,7 @@ export class ResultUploadCommandHandler {
 			return printErrorThenExit('No valid test cases found in any of the files')
 		}
 
-		return { tcaseIds, fileResults }
+		return { tcaseIds, fileResults, targetsBySeq: apiTCasesMap }
 	}
 
 	private async createNewTCases(projectCode: string, tcasesToCreate: string[]) {
@@ -417,7 +445,7 @@ export class ResultUploadCommandHandler {
 			console.log(
 				chalk.blue(`Test run URL: ${this.baseUrl}/project/${projectCode}/run/${response.id}`)
 			)
-			return response.id
+			return { runId: response.id, reusedExisting: false }
 		} catch (error) {
 			// Check if the error is about conflicting run ID
 			const errorMessage = error instanceof Error ? error.message : String(error)
@@ -426,7 +454,7 @@ export class ResultUploadCommandHandler {
 			if (conflictMatch) {
 				const existingRunId = Number(conflictMatch[1])
 				console.log(chalk.yellow(`Reusing existing test run "${title}" with ID: ${existingRunId}`))
-				return existingRunId
+				return { runId: existingRunId, reusedExisting: true }
 			}
 
 			// If it's not a conflicting run ID error, re-throw the original error
@@ -446,7 +474,83 @@ export class ResultUploadCommandHandler {
 		runFailureLogs: string
 	}) {
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
-		const uploader = new ResultUploader(this.markerParser, this.type, { ...this.args, runUrl })
+		const uploader = new ResultUploader(
+			this.type,
+			{ ...this.args, runUrl },
+			{ skipDuplicateValidation: this.skipUploaderDuplicateValidation }
+		)
 		await uploader.handle(results, runFailureLogs)
+	}
+
+	private resolveMarkers(fileResults: FileResults[], projectCode: string) {
+		for (const { results } of fileResults) {
+			for (const result of results) {
+				this.resolveMarker(result, projectCode)
+			}
+		}
+	}
+
+	private validateDuplicateMappings(
+		projectCode: string,
+		fileResults: FileResults[],
+		targets: TCaseTarget[]
+	) {
+		const { duplicates } = mapResolvedResultsToTCases(
+			projectCode,
+			fileResults.flatMap((fileResult) => fileResult.results),
+			targets
+		)
+
+		if (!duplicates.length) {
+			return
+		}
+
+		this.printDuplicateMappings(projectCode, duplicates)
+		if (!this.args.force) {
+			process.exit(1)
+		}
+	}
+
+	private resolveMarker(result: TestCaseResult, projectCode: string): TestCaseMarker | null {
+		if (result.markerResolution === 'resolved' && result.marker) {
+			return result.marker.projectCode.toLowerCase() === projectCode.toLowerCase()
+				? result.marker
+				: null
+		}
+
+		if (result.markerResolution === 'resolved-none') {
+			return null
+		}
+
+		if (!result.name) {
+			result.markerResolution = 'resolved-none'
+			return null
+		}
+
+		const seq = this.markerParser.extractSeq(result.name, projectCode)
+		if (seq === null) {
+			result.markerResolution = 'resolved-none'
+			return null
+		}
+
+		result.marker = {
+			projectCode: this.markerParser.detectProjectCode(result.name) || projectCode,
+			seq,
+		}
+		result.markerResolution = 'resolved'
+		return result.marker
+	}
+
+	private printDuplicateMappings(projectCode: string, duplicates: DuplicateTCaseMapping[]) {
+		const header = this.args.force ? chalk.yellow('Warning:') : chalk.red('Error:')
+		for (const duplicate of duplicates) {
+			console.error(
+				`${header} multiple results map to ${chalk.green(`${projectCode}-${duplicate.tcase.seq}`)} (${chalk.blue(duplicate.tcase.title)}):`
+			)
+			for (const result of duplicate.results) {
+				const folderMessage = result.folder ? ` "${result.folder}" ->` : ''
+				console.error(`  -${folderMessage} "${result.name}"`)
+			}
+		}
 	}
 }

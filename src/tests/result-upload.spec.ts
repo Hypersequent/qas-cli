@@ -6,6 +6,7 @@ import { run } from '../commands/main'
 import { PaginatedResponse } from '../api/schemas'
 import { CreateTCasesRequest, CreateTCasesResponse, TCase } from '../api/tcases'
 import { Folder } from '../api/folders'
+import { CreateResultsRequest } from '../api/results'
 import { DEFAULT_FOLDER_TITLE } from '../utils/result-upload/ResultUploadCommandHandler'
 import { setMaxResultsInRequest } from '../utils/result-upload/ResultUploader'
 import { runTestCases } from './fixtures/testcases'
@@ -149,8 +150,21 @@ const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result/batch'))
 const countCreateTCasesApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/bulk'))
+const countCreateRunApiCalls = () =>
+	countMockedApiCalls(server, (req) =>
+		new URL(req.url).pathname.endsWith(`/project/${projectCode}/run`)
+	)
 const countRunLogApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith(`/run/${runId}/log`))
+
+const captureResultBatchRequests = () => {
+	const requests: CreateResultsRequest[] = []
+	server.events.on('request:start', async (e) => {
+		if (!new URL(e.request.url).pathname.endsWith('/result/batch')) return
+		requests.push((await e.request.clone().json()) as CreateResultsRequest)
+	})
+	return () => requests
+}
 
 const countIndividualFileUploads = () => {
 	let count = 0
@@ -667,6 +681,86 @@ describe('Multi-annotation Playwright upload', () => {
 			expect.stringContaining('Uploaded 3 results to 3 test cases')
 		)
 		logSpy.mockRestore()
+	})
+})
+
+describe('Marker-based result mapping', () => {
+	test('Should map Playwright results using the spec marker, not markers from describe titles', async () => {
+		const getRequests = captureResultBatchRequests()
+
+		await run(
+			`playwright-json-upload -r ${runURL} ./src/tests/fixtures/playwright-json/describe-marker-collision.json`
+		)
+
+		const uploadedTcaseIds = getRequests()
+			.flatMap((request) => request.items)
+			.map((item) => item.tcaseId)
+		expect(uploadedTcaseIds).toEqual(['1CBd7QsjQ_qDrjofzXkMLqE'])
+	})
+
+	test('Should leave Playwright results unmatched when only describe titles contain markers', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+
+		await expect(
+			run(
+				`playwright-json-upload -r ${runURL} ./src/tests/fixtures/playwright-json/describe-marker-unmatched.json`
+			)
+		).rejects.toThrowError()
+
+		expect(numResultUploadCalls()).toBe(0)
+	})
+
+	test('Should fail when multiple results map to the same run test case', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await expect(
+			run(
+				`junit-upload -r ${runURL} ./src/tests/fixtures/junit-xml/matching-tcases.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml`
+			)
+		).rejects.toThrowError()
+		expect(numResultUploadCalls()).toBe(0)
+	})
+
+	test('Should fail duplicate target mappings before creating a new run', async () => {
+		const numCreateRunCalls = countCreateRunApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+
+		await expect(
+			run(
+				`junit-upload --project-code ${projectCode} ./src/tests/fixtures/junit-xml/matching-tcases.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml`
+			)
+		).rejects.toThrowError()
+
+		expect(numCreateRunCalls()).toBe(0)
+		expect(numResultUploadCalls()).toBe(0)
+	})
+
+	test('Should allow duplicate target mappings with --force', async () => {
+		const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+		const numResultUploadCalls = countResultUploadApiCalls()
+		setMaxResultsInRequest(10)
+
+		await run(
+			`junit-upload -r ${runURL} --force ./src/tests/fixtures/junit-xml/matching-tcases.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml`
+		)
+
+		expect(numResultUploadCalls()).toBe(1)
+		expect(logSpy).toHaveBeenCalledWith(
+			expect.stringContaining('Uploaded 10 results to 5 test cases')
+		)
+		logSpy.mockRestore()
+	})
+
+	test('Should create a new run for forced duplicate mappings without failing after creation', async () => {
+		const numCreateRunCalls = countCreateRunApiCalls()
+		const numResultUploadCalls = countResultUploadApiCalls()
+		setMaxResultsInRequest(10)
+
+		await run(
+			`junit-upload --project-code ${projectCode} --force ./src/tests/fixtures/junit-xml/matching-tcases.xml ./src/tests/fixtures/junit-xml/matching-tcases.xml`
+		)
+
+		expect(numCreateRunCalls()).toBe(1)
+		expect(numResultUploadCalls()).toBe(1)
 	})
 })
 
