@@ -2,63 +2,104 @@ import { config, DotenvPopulateInput } from 'dotenv'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import chalk from 'chalk'
+import {
+	loadCredentialsFromKeyring,
+	loadCredentialsFromFile,
+	type StoredCredentials,
+	type CredentialSource,
+} from './credentials'
 
 export const qasEnvFile = '.qaspherecli'
 export const qasEnvs = ['QAS_TOKEN', 'QAS_URL']
 
-export function hasRequiredKeys(env: NodeJS.ProcessEnv | DotenvPopulateInput): boolean {
-	return qasEnvs.every((key) => key in env && env[key] !== 'undefined')
+interface ResolvedCredentials {
+	credentials: StoredCredentials
+	source: CredentialSource
 }
 
-export function loadEnvs(): void {
-	if (hasRequiredKeys(process.env)) {
-		return
+/**
+ * Resolves the credential source without modifying process.env.
+ * Used by auth status/logout to report where credentials come from.
+ */
+export async function resolveCredentialSource(): Promise<ResolvedCredentials | null> {
+	// 1. Environment variables
+	if (process.env.QAS_TOKEN && process.env.QAS_URL) {
+		return {
+			credentials: { apiKey: process.env.QAS_TOKEN, tenantUrl: process.env.QAS_URL },
+			source: 'env_var',
+		}
 	}
 
-	const fileEnvs: DotenvPopulateInput = {}
-	let dir = process.cwd()
-
+	// 2. .env file in cwd
 	const dotenvPath = join(process.cwd(), '.env')
 	if (existsSync(dotenvPath)) {
+		const fileEnvs: DotenvPopulateInput = {}
 		config({ path: dotenvPath, processEnv: fileEnvs })
-	}
-
-	if (!hasRequiredKeys(fileEnvs)) {
-		for (;;) {
-			const envPath = join(dir, qasEnvFile)
-			if (existsSync(envPath)) {
-				config({ path: envPath, processEnv: fileEnvs })
-				break
-			}
-
-			const parentDir = dirname(dir)
-			if (parentDir === dir) {
-				// If the parent directory is the same as the current, we've reached the root
-				break
-			}
-
-			dir = parentDir
-		}
-	}
-
-	const missingEnvs = []
-	for (const env of qasEnvs) {
-		if (!(env in process.env)) {
-			const fileEnvValue = fileEnvs[env]
-			if (fileEnvValue && fileEnvValue !== 'undefined') {
-				process.env[env] = fileEnvValue
-			} else {
-				missingEnvs.push(env)
+		if (fileEnvs.QAS_TOKEN && fileEnvs.QAS_URL) {
+			return {
+				credentials: {
+					apiKey: fileEnvs.QAS_TOKEN,
+					tenantUrl: fileEnvs.QAS_URL,
+				},
+				source: '.env',
 			}
 		}
 	}
 
-	if (missingEnvs.length == 0) {
+	// 3. Keyring
+	const keyringCreds = await loadCredentialsFromKeyring()
+	if (keyringCreds) {
+		return { credentials: keyringCreds, source: 'keyring' }
+	}
+
+	// 4. ~/.config/qasphere/credentials.json
+	const fileCreds = loadCredentialsFromFile()
+	if (fileCreds) {
+		return { credentials: fileCreds, source: 'credentials.json' }
+	}
+
+	// 5. .qaspherecli file
+	let dir = process.cwd()
+	for (;;) {
+		const envPath = join(dir, qasEnvFile)
+		if (existsSync(envPath)) {
+			const fileEnvs: DotenvPopulateInput = {}
+			config({ path: envPath, processEnv: fileEnvs })
+			if (fileEnvs.QAS_TOKEN && fileEnvs.QAS_URL) {
+				return {
+					credentials: {
+						apiKey: fileEnvs.QAS_TOKEN,
+						tenantUrl: fileEnvs.QAS_URL,
+					},
+					source: '.qaspherecli',
+				}
+			}
+			break
+		}
+
+		const parentDir = dirname(dir)
+		if (parentDir === dir) break
+		dir = parentDir
+	}
+
+	return null
+}
+
+export async function loadEnvs(): Promise<void> {
+	const resolved = await resolveCredentialSource()
+	if (resolved) {
+		process.env.QAS_TOKEN = resolved.credentials.apiKey
+		process.env.QAS_URL = resolved.credentials.tenantUrl
 		return
 	}
 
-	console.log(chalk.red('Missing required environment variables: ') + missingEnvs.join(', '))
-	console.log('\nPlease create a .qaspherecli file with the following content:')
+	console.log(
+		chalk.red('Missing required environment variables: ') +
+			qasEnvs.filter((k) => !process.env[k]).join(', ')
+	)
+	console.log('\nYou can authenticate using:')
+	console.log(chalk.green('  qasphere auth login'))
+	console.log('\nOr create a .qaspherecli file with the following content:')
 	console.log(
 		chalk.green(`
 QAS_TOKEN=your_token

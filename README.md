@@ -34,29 +34,52 @@ Verify installation: `qasphere --version`
 
 **Update:** Run `npm update -g qas-cli` to get the latest version.
 
-## Environment
+## Authentication
 
-The CLI requires the following variables to be defined:
+The recommended way to authenticate is using the interactive login command:
+
+```bash
+qasphere auth login
+```
+
+This opens your browser to complete authentication and securely stores your credentials in the system keyring. If a keyring is not available, credentials are stored in `~/.config/qasphere/credentials.json` with restricted file permissions.
+
+You can also log in by directly providing an API key:
+
+```bash
+qasphere auth login --api-key
+```
+
+### Other auth commands
+
+```bash
+qasphere auth status    # Show current authentication status
+qasphere auth logout    # Clear stored credentials
+```
+
+### Credential resolution order
+
+The CLI resolves credentials in the following order (first match wins):
+
+1. `QAS_TOKEN` and `QAS_URL` environment variables
+2. `.env` file in the current working directory
+3. System keyring (set by `qasphere auth login`)
+4. `~/.config/qasphere/credentials.json` (fallback when keyring is unavailable)
+5. `.qaspherecli` file in the current directory or any parent directory
+
+### Manual configuration
+
+Instead of using `auth login`, you can manually set the required variables:
 
 - `QAS_TOKEN` - QA Sphere API token (see [docs](https://docs.qasphere.com/api/authentication) if you need help generating one)
 - `QAS_URL` - Base URL of your QA Sphere instance (e.g., `https://qas.eu2.qasphere.com`)
 
-These variables could be defined:
-
-- as environment variables
-- in .env of a current working directory
-- in a special `.qaspherecli` configuration file in your project directory (or any parent directory)
-
-Example: .qaspherecli
+These variables can be defined as environment variables, in a `.env` file, or in a `.qaspherecli` configuration file:
 
 ```sh
 # .qaspherecli
 QAS_TOKEN=your_token
 QAS_URL=https://qas.eu1.qasphere.com
-
-# Example with real values:
-# QAS_TOKEN=qas.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
-# QAS_URL=https://qas.eu1.qasphere.com
 ```
 
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`

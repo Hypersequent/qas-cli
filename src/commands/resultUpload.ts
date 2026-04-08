@@ -190,7 +190,7 @@ ${chalk.bold('Run name template placeholders:')}
 	}
 
 	handler = async (args: Arguments<ResultUploadCommandArgs>) => {
-		loadEnvs()
+		await loadEnvs()
 		const handler = new ResultUploadCommandHandler(this.type, args)
 		await handler.handle()
 	}

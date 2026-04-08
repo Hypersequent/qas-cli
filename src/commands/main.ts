@@ -1,5 +1,6 @@
 import yargs from 'yargs'
 import { ResultUploadCommandModule } from './resultUpload'
+import { authCommand } from './auth'
 import { qasEnvs, qasEnvFile } from '../utils/env'
 import { CLI_VERSION } from '../utils/version'
 
@@ -8,9 +9,11 @@ export const run = (args: string | string[]) =>
 		.usage(
 			`$0 <command> [options]
 
-Required variables: ${qasEnvs.join(', ')}
+Authenticate using: $0 auth login
+Or set variables: ${qasEnvs.join(', ')}
   These should be either exported as env vars or defined in a ${qasEnvFile} file.`
 		)
+		.command(authCommand)
 		.command(new ResultUploadCommandModule('junit-upload'))
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
 		.command(new ResultUploadCommandModule('allure-upload'))
