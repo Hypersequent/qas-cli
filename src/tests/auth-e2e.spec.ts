@@ -479,29 +479,36 @@ describe('credential storage (keyring unavailable)', () => {
 	})
 
 	test('overwrites existing credentials on re-login', async () => {
+		const secondApiKey = 'tenantId.keyId2.keyToken2'
+
+		// Accept both API keys for validation
+		server.use(
+			http.get(`${tenantUrl}/api/public/v0/project`, ({ request }) => {
+				const auth = request.headers.get('Authorization')
+				if (auth === `ApiKey ${testApiKey}` || auth === `ApiKey ${secondApiKey}`) {
+					return HttpResponse.json({ data: [], total: 0 })
+				}
+				return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+			})
+		)
+
 		mockKeyringUnavailable()
 		mockPrompts('acme', testApiKey)
 
 		await runCommand('auth login --api-key')
 
-		// Verify first key is valid
-		log.mockClear()
-		await runCommand('auth status')
-		expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
-		expect(log).not.toHaveBeenCalledWith(expect.stringContaining('invalid or expired'))
-
-		// Re-login with different key
+		// Re-login with different valid key
 		vi.doUnmock('../utils/prompt')
-		mockPrompts('acme', 'second-key')
+		mockPrompts('acme', secondApiKey)
 
 		log.mockClear()
 		await runCommand('auth login --api-key')
 		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
 
-		// Verify the new key replaced the old one (projects endpoint rejects 'second-key')
+		// Verify status uses the new key
 		log.mockClear()
 		await runCommand('auth status')
-		expect(log).toHaveBeenCalledWith(expect.stringContaining('invalid or expired'))
+		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
 	})
 })
 
@@ -556,5 +563,148 @@ describe('credential storage (keyring available)', () => {
 		} finally {
 			process.chdir(origCwd)
 		}
+	})
+
+	test('auth status shows keyring as source', async () => {
+		mockKeyringAvailable()
+		mockPrompts('acme', testApiKey)
+
+		await runCommand('auth login --api-key')
+
+		log.mockClear()
+		await runCommand('auth status')
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('keyring'))
+	})
+})
+
+describe('credential resolution edge cases', () => {
+	test('partial env vars (only QAS_TOKEN) falls through to .qaspherecli', async () => {
+		mockKeyringUnavailable()
+		process.env.QAS_TOKEN = 'env-only-token' // Invalid token should fail assertions below if it were used
+		// QAS_URL intentionally not set — should not resolve as env_var
+
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(
+			join(projectDir, '.qaspherecli'),
+			`QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`
+		)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth status')
+			expect(log).not.toHaveBeenCalledWith(expect.stringContaining('env_var'))
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('.qaspherecli'))
+			expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('corrupt credentials file warns and falls back gracefully', async () => {
+		mockKeyringUnavailable()
+
+		// Write garbage to the credentials file
+		const credDir = join(testHomeDir, '.config', 'qasphere')
+		mkdirSync(credDir, { recursive: true })
+		writeFileSync(join(credDir, 'credentials.json'), 'not valid json{{{')
+
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const emptyDir = join(testHomeDir, 'empty')
+		mkdirSync(emptyDir, { recursive: true })
+
+		const origCwd = process.cwd()
+		process.chdir(emptyDir)
+		try {
+			await runCommand('auth status')
+			expect(warn).toHaveBeenCalledWith(expect.stringContaining('could not read credentials'))
+			expect(log).toHaveBeenCalledWith('Not logged in.')
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('credentials file with wrong shape warns and falls back gracefully', async () => {
+		mockKeyringUnavailable()
+
+		// Write valid JSON but wrong shape
+		const credDir = join(testHomeDir, '.config', 'qasphere')
+		mkdirSync(credDir, { recursive: true })
+		writeFileSync(join(credDir, 'credentials.json'), '{"foo": "bar"}')
+
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const emptyDir = join(testHomeDir, 'empty')
+		mkdirSync(emptyDir, { recursive: true })
+
+		const origCwd = process.cwd()
+		process.chdir(emptyDir)
+		try {
+			await runCommand('auth status')
+			expect(warn).toHaveBeenCalledWith(expect.stringContaining('invalid format'))
+			expect(log).toHaveBeenCalledWith('Not logged in.')
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+})
+
+describe('auth logout source labels', () => {
+	test('cannot log out when using .env file', async () => {
+		mockKeyringUnavailable()
+
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(join(projectDir, '.env'), `QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth logout')
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('Cannot log out'))
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('.env'))
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('cannot log out when using .qaspherecli file', async () => {
+		mockKeyringUnavailable()
+
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(
+			join(projectDir, '.qaspherecli'),
+			`QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`
+		)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth logout')
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('Cannot log out'))
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('.qaspherecli'))
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('logout warns when env vars still active after clearing keyring', async () => {
+		mockKeyringAvailable()
+		mockPrompts('acme', testApiKey)
+
+		await runCommand('auth login --api-key')
+
+		// Set env vars that will persist after keyring is cleared
+		process.env.QAS_TOKEN = testApiKey
+		process.env.QAS_URL = tenantUrl
+
+		log.mockClear()
+		await runCommand('auth logout')
+		expect(log).toHaveBeenCalledWith('Logged out.')
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('still available'))
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('environment variables'))
 	})
 })

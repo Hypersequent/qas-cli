@@ -46,35 +46,23 @@ async function getKeyringEntry(): Promise<KeyringEntry | null> {
 	}
 }
 
-async function isKeyringAvailable(): Promise<boolean> {
-	const mod = await loadKeyringModule()
-	if (!mod) return false
-	try {
-		const test = new mod.Entry(KEYRING_SERVICE, '__qas_keyring_test__')
-		test.setPassword('test')
-		test.getPassword()
-		test.deletePassword()
-		return true
-	} catch {
-		// Operations fail when the keyring daemon is unavailable
-		// (e.g., glibc Linux without D-Bus/Secret Service).
-		return false
-	}
-}
-
 export async function saveCredentials(credentials: StoredCredentials): Promise<CredentialSource> {
 	const json = JSON.stringify(credentials)
 
-	if (await isKeyringAvailable()) {
-		const entry = (await getKeyringEntry())!
-		entry.setPassword(json)
-		return 'keyring'
+	const entry = await getKeyringEntry()
+	if (entry) {
+		try {
+			entry.setPassword(json)
+			return 'keyring'
+		} catch {
+			// Keyring operation failed, fall through to file
+		}
 	}
 
 	// Fallback: write to file with restricted permissions
 	mkdirSync(CONFIG_DIR, { recursive: true })
-	writeFileSync(CREDENTIALS_FILE, json, 'utf-8')
-	chmodSync(CREDENTIALS_FILE, 0o600)
+	writeFileSync(CREDENTIALS_FILE, json, { encoding: 'utf-8', mode: 0o600 })
+	chmodSync(CREDENTIALS_FILE, 0o600) // belt-and-suspenders for existing files
 	return 'credentials.json'
 }
 
@@ -108,9 +96,14 @@ export function loadCredentialsFromFile(): StoredCredentials | null {
 	try {
 		const json = readFileSync(CREDENTIALS_FILE, 'utf-8')
 		const parsed: unknown = JSON.parse(json)
-		return isValidCredentials(parsed) ? parsed : null
-	} catch {
-		// Invalid JSON or read error. Skip loading credentials.
+		if (!isValidCredentials(parsed)) {
+			console.warn(`Warning: credentials file at ${CREDENTIALS_FILE} has invalid format.`)
+			return null
+		}
+		return parsed
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e)
+		console.warn(`Warning: could not read credentials file at ${CREDENTIALS_FILE}: ${message}`)
 		return null
 	}
 }

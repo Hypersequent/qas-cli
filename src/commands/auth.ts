@@ -34,11 +34,26 @@ async function resolveTenantUrl(): Promise<string> {
 	}
 }
 
+async function validateApiKey(tenantUrl: string, apiKey: string): Promise<boolean> {
+	try {
+		const api = createApi(tenantUrl, apiKey)
+		await api.projects.listProjects()
+		return true
+	} catch {
+		return false
+	}
+}
+
 async function handleApiKeyLogin(): Promise<void> {
 	const tenantUrl = await resolveTenantUrl()
 	const apiKey = await promptHidden('API Key: ')
 	if (!apiKey) {
 		console.error(chalk.red('Error:') + ' API key is required.')
+		process.exit(1)
+	}
+
+	if (!(await validateApiKey(tenantUrl, apiKey))) {
+		console.error(chalk.red('Error:') + ' Invalid API key.')
 		process.exit(1)
 	}
 
@@ -132,21 +147,28 @@ async function handleStatus(): Promise<void> {
 	console.log(`Logged in to ${result.credentials.tenantUrl}`)
 	console.log(`  Source: ${result.source}`)
 
-	// Validate credentials by making a lightweight API call
-	try {
-		const api = createApi(result.credentials.tenantUrl, result.credentials.apiKey)
-		await api.projects.listProjects()
-		console.log(`  Status: ${chalk.green('valid')}`)
-	} catch {
-		console.log(`  Status: ${chalk.red('invalid or expired')}`)
-	}
+	const valid = await validateApiKey(result.credentials.tenantUrl, result.credentials.apiKey)
+	console.log(`  Status: ${valid ? chalk.green('valid') : chalk.red('invalid or expired')}`)
 }
 
+const sourceLabels: Partial<Record<CredentialSource, string>> = {
+	env_var: 'environment variables (QAS_TOKEN, QAS_URL)',
+	'.env': 'a .env file in the current directory',
+	'.qaspherecli': 'a .qaspherecli file',
+}
 async function handleLogout(): Promise<void> {
 	const result = await clearCredentials()
 
 	if (result.cleared) {
 		console.log('Logged out.')
+
+		// Warn if credentials are still available from another source
+		const remaining = await resolveCredentialSource()
+		if (remaining) {
+			const label = sourceLabels[remaining.source] || remaining.source
+			console.log(`Note: credentials are still available via ${label}.`)
+		}
+
 		console.log(
 			'Note that your API keys are still valid. To prevent unauthorized access, revoke them in your QA Sphere account settings.'
 		)
@@ -156,11 +178,6 @@ async function handleLogout(): Promise<void> {
 	// Check if credentials come from a non-clearable source
 	const source = await resolveCredentialSource()
 	if (source) {
-		const sourceLabels: Partial<Record<CredentialSource, string>> = {
-			env_var: 'environment variables (QAS_TOKEN, QAS_URL)',
-			'.env': 'a .env file in the current directory',
-			'.qaspherecli': 'a .qaspherecli file',
-		}
 		const label = sourceLabels[source.source] || source.source
 		console.log(`Cannot log out: credentials are provided via ${label}.`)
 		console.log('Remove them manually to log out.')
