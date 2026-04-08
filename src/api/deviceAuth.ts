@@ -20,8 +20,8 @@ export interface DeviceTokenPendingResponse {
 export interface DeviceTokenApprovedResponse {
 	status: 'approved'
 	data: {
-		apiKey: string
-		apiKeyName: string
+		key: string
+		keyName: string
 		tenantUrl: string
 		email: string
 	}

@@ -115,12 +115,12 @@ async function handleDeviceLogin(): Promise<void> {
 				process.removeListener('SIGINT', onSigint)
 
 				const source = await saveCredentials({
-					apiKey: result.data.apiKey,
+					apiKey: result.data.key,
 					tenantUrl: result.data.tenantUrl,
 				})
 
 				console.log(chalk.green('✓') + ` Logged in to ${result.data.tenantUrl}`)
-				console.log(`  API Key: ${result.data.apiKeyName}`)
+				console.log(`  API Key: ${result.data.keyName}`)
 				console.log(`  Credentials saved to ${source}.`)
 				return
 			}
