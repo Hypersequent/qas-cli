@@ -220,8 +220,8 @@ describe('auth login (device flow)', () => {
 				return HttpResponse.json({
 					status: 'approved',
 					data: {
-						apiKey: testApiKey,
-						apiKeyName: testApiKeyName,
+						key: testApiKey,
+						keyName: testApiKeyName,
 						tenantUrl: tenantUrl,
 						email: testEmail,
 					},
