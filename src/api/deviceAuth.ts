@@ -45,7 +45,7 @@ const createFetcher = (baseUrl: string) =>
 		withHttpRetry
 	)
 
-export async function checkTenant(teamName: string): Promise<CheckTenantResponse> {
+export async function checkTenant(teamName: string): Promise<{ tenantUrl: string }> {
 	const fetcher = createFetcher(LOGIN_SERVICE_URL)
 	const response = await fetcher(`/api/check-tenant?name=${encodeURIComponent(teamName)}`, {
 		method: 'GET',
@@ -55,7 +55,7 @@ export async function checkTenant(teamName: string): Promise<CheckTenantResponse
 	// The check-tenant endpoint returns a redirect URL (e.g. http://tenant.localhost:5173/login).
 	// Extract just the origin for use as the API base URL.
 	const origin = new URL(data.redirectUrl).origin
-	return { redirectUrl: origin }
+	return { tenantUrl: origin }
 }
 
 export async function requestDeviceCode(tenantUrl: string): Promise<DeviceCodeResponse> {

@@ -108,27 +108,12 @@ export function loadCredentialsFromFile(): StoredCredentials | null {
 	}
 }
 
-export async function clearCredentials(): Promise<{
-	cleared: boolean
-	source?: CredentialSource
-}> {
-	// Try keyring first
-	const entry = await getKeyringEntry()
-	if (entry) {
-		try {
-			entry.getPassword() // Throws if no entry exists
-			entry.deletePassword()
-			return { cleared: true, source: 'keyring' }
-		} catch {
-			// No keyring entry or keyring unavailable, continue to file
-		}
-	}
-
-	// Try file
-	if (existsSync(CREDENTIALS_FILE)) {
+export async function clearCredentials(source: 'keyring' | 'credentials.json'): Promise<void> {
+	if (source === 'keyring') {
+		const entry = await getKeyringEntry()
+		if (!entry) throw new Error('Keyring is not available')
+		entry.deletePassword()
+	} else {
 		unlinkSync(CREDENTIALS_FILE)
-		return { cleared: true, source: 'credentials.json' }
 	}
-
-	return { cleared: false }
 }

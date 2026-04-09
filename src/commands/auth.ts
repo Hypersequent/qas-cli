@@ -3,7 +3,13 @@ import chalk from 'chalk'
 import { ensureInteractive, prompt, promptHidden } from '../utils/prompt'
 import { openBrowser } from '../utils/browser'
 import { twirlLoader } from '../utils/misc'
-import { saveCredentials, clearCredentials, type CredentialSource } from '../utils/credentials'
+import {
+	saveCredentials,
+	clearCredentials,
+	loadCredentialsFromKeyring,
+	loadCredentialsFromFile,
+	type CredentialSource,
+} from '../utils/credentials'
 import { createApi } from '../api'
 import {
 	checkTenant,
@@ -25,8 +31,8 @@ async function resolveTenantUrl(): Promise<string> {
 	}
 
 	try {
-		const result = await checkTenant(teamName)
-		return result.redirectUrl
+		const { tenantUrl } = await checkTenant(teamName)
+		return tenantUrl
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e)
 		console.error(chalk.red('Error:') + ` Could not find team "${teamName}": ${message}`)
@@ -46,7 +52,7 @@ async function validateApiKey(tenantUrl: string, apiKey: string): Promise<boolea
 
 async function handleApiKeyLogin(): Promise<void> {
 	const tenantUrl = await resolveTenantUrl()
-	const apiKey = await promptHidden('API Key: ')
+	const apiKey = await promptHidden(`API Key ${chalk.gray('(Input Hidden)')}: `)
 	if (!apiKey) {
 		console.error(chalk.red('Error:') + ' API key is required.')
 		process.exit(1)
@@ -156,10 +162,26 @@ const sourceLabels: Partial<Record<CredentialSource, string>> = {
 	'.env': 'a .env file in the current directory',
 	'.qaspherecli': 'a .qaspherecli file',
 }
-async function handleLogout(): Promise<void> {
-	const result = await clearCredentials()
+async function findClearableSource(): Promise<'keyring' | 'credentials.json' | null> {
+	if (await loadCredentialsFromKeyring()) return 'keyring'
+	if (loadCredentialsFromFile()) return 'credentials.json'
+	return null
+}
 
-	if (result.cleared) {
+async function handleLogout(): Promise<void> {
+	const clearable = await findClearableSource()
+
+	if (clearable) {
+		try {
+			await clearCredentials(clearable)
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e)
+			console.error(
+				chalk.red('Error:') + ` Could not clear credentials from ${clearable}: ${message}`
+			)
+			process.exit(1)
+		}
+
 		console.log('Logged out.')
 
 		// Warn if credentials are still available from another source
@@ -175,7 +197,7 @@ async function handleLogout(): Promise<void> {
 		return
 	}
 
-	// Check if credentials come from a non-clearable source
+	// No clearable source — check if credentials come from a non-clearable source
 	const source = await resolveCredentialSource()
 	if (source) {
 		const label = sourceLabels[source.source] || source.source
