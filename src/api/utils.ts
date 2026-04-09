@@ -1,13 +1,25 @@
-export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		if (typeof input === 'string') {
-			return fetcher(baseUrl + input, init)
-		}
-		return fetcher(input, init)
-	}
-}
+type FetchMiddleware = (fetcher: typeof fetch) => typeof fetch
 
-export const withJson = (fetcher: typeof fetch): typeof fetch => {
+// TODO: Each middleware adds a frame to the stack trace. V8 defaults to 10 frames (Error.stackTraceLimit).
+// With too many middlewares, the call site gets truncated from the stack, making it hard to identify where the request originated.
+// Currently at ~4 middlewares which fits within the limit.
+export const withFetchMiddlewares = (
+	fetcher: typeof fetch,
+	...middlewares: FetchMiddleware[]
+): typeof fetch => middlewares.reduce((f, mw) => mw(f), fetcher)
+
+export const withBaseUrl =
+	(baseUrl: string): FetchMiddleware =>
+	(fetcher: typeof fetch): typeof fetch => {
+		return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
+			if (typeof input === 'string') {
+				return fetcher(baseUrl + input, init)
+			}
+			return fetcher(input, init)
+		}
+	}
+
+export const withJson: FetchMiddleware = (fetcher) => {
 	const JSON_CONFIG: RequestInit = {
 		headers: {
 			Accept: 'application/json',
@@ -40,6 +52,16 @@ export const withHeaders = (
 		})
 	}
 }
+
+export const withUserAgent =
+	(version: string): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, { 'User-Agent': `qas-cli/${version}` })
+
+export const withApiKey =
+	(apiKey: string): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, { Authorization: `ApiKey ${apiKey}` })
 
 export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	const json = await response.json()

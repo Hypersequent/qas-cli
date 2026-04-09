@@ -466,6 +466,31 @@ describe('auth logout edge cases', () => {
 	})
 })
 
+describe('credential storage (keyring setPassword failure)', () => {
+	test('falls back to file when keyring setPassword throws', async () => {
+		// Keyring module loads and Entry construction works, but setPassword throws
+		vi.doMock('@napi-rs/keyring', () => ({
+			Entry: class MockEntry {
+				setPassword() {
+					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
+				}
+				getPassword(): string {
+					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
+				}
+				deletePassword() {
+					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
+				}
+			},
+		}))
+		mockPrompts('acme', testApiKey)
+
+		await runCommand('auth login --api-key')
+
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
+		expect(existsSync(credentialsFilePath())).toBe(true)
+	})
+})
+
 describe('credential storage (keyring unavailable)', () => {
 	test('saves to file with 0600 permissions', async () => {
 		mockKeyringUnavailable()

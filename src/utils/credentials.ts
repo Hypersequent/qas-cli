@@ -60,7 +60,7 @@ export async function saveCredentials(credentials: StoredCredentials): Promise<C
 	}
 
 	// Fallback: write to file with restricted permissions
-	mkdirSync(CONFIG_DIR, { recursive: true })
+	mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 })
 	writeFileSync(CREDENTIALS_FILE, json, { encoding: 'utf-8', mode: 0o600 })
 	chmodSync(CREDENTIALS_FILE, 0o600) // belt-and-suspenders for existing files
 	return 'credentials.json'

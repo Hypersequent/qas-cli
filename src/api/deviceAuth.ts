@@ -1,4 +1,11 @@
-import { withBaseUrl, withJson, withHttpRetry, jsonResponse } from './utils'
+import {
+	withFetchMiddlewares,
+	withBaseUrl,
+	withJson,
+	withUserAgent,
+	withHttpRetry,
+	jsonResponse,
+} from './utils'
 import { CLI_VERSION } from '../utils/version'
 import { LOGIN_SERVICE_URL } from '../utils/config'
 
@@ -29,13 +36,19 @@ export interface DeviceTokenApprovedResponse {
 
 type DeviceTokenResponse = DeviceTokenPendingResponse | DeviceTokenApprovedResponse
 
-const createFetcher = (baseUrl: string) => withHttpRetry(withJson(withBaseUrl(fetch, baseUrl)))
+const createFetcher = (baseUrl: string) =>
+	withFetchMiddlewares(
+		fetch,
+		withBaseUrl(baseUrl),
+		withUserAgent(CLI_VERSION),
+		withJson,
+		withHttpRetry
+	)
 
 export async function checkTenant(teamName: string): Promise<CheckTenantResponse> {
 	const fetcher = createFetcher(LOGIN_SERVICE_URL)
 	const response = await fetcher(`/api/check-tenant?name=${encodeURIComponent(teamName)}`, {
 		method: 'GET',
-		headers: { 'User-Agent': `qas-cli/${CLI_VERSION}` },
 	})
 	const data = await jsonResponse<CheckTenantResponse>(response)
 
@@ -49,7 +62,6 @@ export async function requestDeviceCode(tenantUrl: string): Promise<DeviceCodeRe
 	const fetcher = createFetcher(tenantUrl)
 	const response = await fetcher('/api/auth/device/code', {
 		method: 'POST',
-		headers: { 'User-Agent': `qas-cli/${CLI_VERSION}` },
 	})
 	return jsonResponse<DeviceCodeResponse>(response)
 }
@@ -61,7 +73,6 @@ export async function pollDeviceToken(
 	const fetcher = createFetcher(tenantUrl)
 	const response = await fetcher('/api/auth/device/token', {
 		method: 'POST',
-		headers: { 'User-Agent': `qas-cli/${CLI_VERSION}` },
 		body: JSON.stringify({ deviceCode }),
 	})
 	return jsonResponse<DeviceTokenResponse>(response)

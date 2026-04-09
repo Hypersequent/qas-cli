@@ -3,13 +3,13 @@ import chalk from 'chalk'
 import { ensureInteractive, prompt, promptHidden } from '../utils/prompt'
 import { openBrowser } from '../utils/browser'
 import { twirlLoader } from '../utils/misc'
-import { saveCredentials, clearCredentials, CredentialSource } from '../utils/credentials'
+import { saveCredentials, clearCredentials, type CredentialSource } from '../utils/credentials'
 import { createApi } from '../api'
 import {
 	checkTenant,
 	requestDeviceCode,
 	pollDeviceToken,
-	DeviceCodeResponse,
+	type DeviceCodeResponse,
 } from '../api/deviceAuth'
 import { resolveCredentialSource } from '../utils/env'
 
