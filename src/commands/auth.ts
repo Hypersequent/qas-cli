@@ -1,4 +1,4 @@
-import { Argv, CommandModule } from 'yargs'
+import type { Argv, CommandModule } from 'yargs'
 import chalk from 'chalk'
 import { ensureInteractive, prompt, promptHidden } from '../utils/prompt'
 import { openBrowser } from '../utils/browser'
