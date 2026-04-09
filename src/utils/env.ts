@@ -46,19 +46,11 @@ export async function resolveCredentialSource(): Promise<ResolvedCredentials | n
 		}
 	}
 
-	// 3. Keyring
-	const keyringCreds = await loadCredentialsFromKeyring()
-	if (keyringCreds) {
-		return { credentials: keyringCreds, source: 'keyring' }
-	}
+	// 3. Keyring or credentials.json
+	const persisted = await resolvePersistedCredentialSource()
+	if (persisted) return persisted
 
-	// 4. ~/.config/qasphere/credentials.json
-	const fileCreds = loadCredentialsFromFile()
-	if (fileCreds) {
-		return { credentials: fileCreds, source: 'credentials.json' }
-	}
-
-	// 5. .qaspherecli file
+	// 4. .qaspherecli file
 	let dir = process.cwd()
 	for (;;) {
 		const envPath = join(dir, qasEnvFile)
@@ -82,6 +74,19 @@ export async function resolveCredentialSource(): Promise<ResolvedCredentials | n
 		dir = parentDir
 	}
 
+	return null
+}
+
+export async function resolvePersistedCredentialSource(): Promise<ResolvedCredentials | null> {
+	const keyringCreds = await loadCredentialsFromKeyring()
+	if (keyringCreds) {
+		return { credentials: keyringCreds, source: 'keyring' }
+	}
+
+	const fileCreds = loadCredentialsFromFile()
+	if (fileCreds) {
+		return { credentials: fileCreds, source: 'credentials.json' }
+	}
 	return null
 }
 

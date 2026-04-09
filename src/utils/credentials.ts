@@ -108,12 +108,15 @@ export function loadCredentialsFromFile(): StoredCredentials | null {
 	}
 }
 
-export async function clearCredentials(source: 'keyring' | 'credentials.json'): Promise<void> {
+export async function clearCredentials(source: CredentialSource): Promise<void> {
 	if (source === 'keyring') {
 		const entry = await getKeyringEntry()
 		if (!entry) throw new Error('Keyring is not available')
 		entry.deletePassword()
-	} else {
+		return
+	} else if (source === 'credentials.json') {
 		unlinkSync(CREDENTIALS_FILE)
+		return
 	}
+	throw new Error(`Cannot clear credentials from ${source}`)
 }

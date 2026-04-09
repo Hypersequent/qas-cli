@@ -3,13 +3,7 @@ import chalk from 'chalk'
 import { ensureInteractive, prompt, promptHidden } from '../utils/prompt'
 import { openBrowser } from '../utils/browser'
 import { twirlLoader } from '../utils/misc'
-import {
-	saveCredentials,
-	clearCredentials,
-	loadCredentialsFromKeyring,
-	loadCredentialsFromFile,
-	type CredentialSource,
-} from '../utils/credentials'
+import { saveCredentials, clearCredentials, type CredentialSource } from '../utils/credentials'
 import { createApi } from '../api'
 import {
 	checkTenant,
@@ -17,7 +11,7 @@ import {
 	pollDeviceToken,
 	type DeviceCodeResponse,
 } from '../api/deviceAuth'
-import { resolveCredentialSource } from '../utils/env'
+import { resolveCredentialSource, resolvePersistedCredentialSource } from '../utils/env'
 
 interface AuthLoginArgs {
 	'api-key'?: boolean
@@ -162,26 +156,21 @@ const sourceLabels: Partial<Record<CredentialSource, string>> = {
 	'.env': 'a .env file in the current directory',
 	'.qaspherecli': 'a .qaspherecli file',
 }
-async function findClearableSource(): Promise<'keyring' | 'credentials.json' | null> {
-	if (await loadCredentialsFromKeyring()) return 'keyring'
-	if (loadCredentialsFromFile()) return 'credentials.json'
-	return null
-}
 
 async function handleLogout(): Promise<void> {
-	const clearable = await findClearableSource()
+	const clearableSource = await resolvePersistedCredentialSource()
 
-	if (clearable) {
+	if (clearableSource) {
 		try {
-			await clearCredentials(clearable)
+			await clearCredentials(clearableSource.source)
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e)
 			console.error(
-				chalk.red('Error:') + ` Could not clear credentials from ${clearable}: ${message}`
+				chalk.red('Error:') +
+					` Could not clear credentials from ${clearableSource.source}: ${message}`
 			)
 			process.exit(1)
 		}
-
 		console.log('Logged out.')
 
 		// Warn if credentials are still available from another source
