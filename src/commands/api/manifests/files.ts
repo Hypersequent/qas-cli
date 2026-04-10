@@ -5,12 +5,12 @@ import type { ApiEndpointSpec } from '../types'
 
 const help = {
 	upload: {
-		describe: 'Upload a file attachment.',
+		describe: 'Upload a file attachment via the public batch upload endpoint.',
 		epilog: apiDocsEpilog('upload_file', 'upload-file'),
 		examples: [
 			{
 				usage: '$0 api files upload --file ./screenshot.png',
-				description: 'Upload a file attachment',
+				description: 'Upload a single file using the batch upload endpoint',
 			},
 		],
 	},

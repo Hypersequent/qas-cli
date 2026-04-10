@@ -12,9 +12,9 @@ describe('mocked', () => {
 	const mockResponse = { id: 'file1', url: 'https://example.com/file1.png' }
 
 	useMockServer(
-		http.post(`${baseURL}/api/public/v0/file`, async ({ request }) => {
+		http.post(`${baseURL}/api/public/v0/file/batch`, async ({ request }) => {
 			expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
-			return HttpResponse.json(mockResponse)
+			return HttpResponse.json({ files: [mockResponse] })
 		})
 	)
 
@@ -50,6 +50,6 @@ describe('mocked', () => {
 		writeFileSync(filePath, Buffer.alloc(1024 * 1024 * 50))
 
 		const result = await runCommand('--file', filePath)
-		expect(result).toEqual(mockFile)
+		expect(result).toEqual(mockResponse)
 	})
 })

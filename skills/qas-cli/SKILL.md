@@ -158,6 +158,8 @@ qasphere api
     └── list                                    # List all users
 ```
 
+Note: `qasphere api files upload --file ...` uses the public batch upload endpoint internally and returns the first uploaded file from that response.
+
 ### Pagination
 
 List commands support pagination via `--page` and `--limit`. Some also support `--sort-field` and `--sort-order` (asc/desc). The `audit-logs list` command uses cursor-based pagination with `--after` and `--count` instead.

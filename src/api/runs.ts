@@ -185,7 +185,11 @@ export const createRunApi = (fetcher: typeof fetch) => {
 			method: 'POST',
 		}).then((r) => jsonResponse<MessageResponse>(r))
 
-	const createLog = async (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) => {
+	const createLog = async (
+		projectCode: ResourceId,
+		runId: ResourceId,
+		req: CreateRunLogRequest
+	) => {
 		const validated = validateRequest(req, CreateRunLogRequestSchema)
 		return fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
 			method: 'POST',

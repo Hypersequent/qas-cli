@@ -162,6 +162,8 @@ qasphere api
     └── list                                    # List all users
 ```
 
+Note: `qasphere api files upload --file ...` uses the public batch upload endpoint internally and returns the first uploaded file from that response.
+
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`
 
 The `junit-upload`, `playwright-json-upload`, and `allure-upload` commands upload test results to QA Sphere.
