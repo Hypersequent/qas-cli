@@ -1,7 +1,12 @@
 import { jsonResponse } from './utils'
 
-export const createFileApi = (fetcher: typeof fetch) => ({
-	uploadFiles: async (files: Array<{ blob: Blob; filename: string }>) => {
+export interface RemoteFile {
+	id: string
+	url: string
+}
+
+export const createFileApi = (fetcher: typeof fetch) => {
+	const upload = async (files: Array<{ blob: Blob; filename: string }>) => {
 		const form = new FormData()
 		for (const { blob, filename } of files) {
 			form.append('files', blob, filename)
@@ -16,5 +21,14 @@ export const createFileApi = (fetcher: typeof fetch) => ({
 			files: Array<{ id: string; url: string }>
 		}>(res)
 		return uploaded
-	},
-})
+	}
+
+	return {
+		upload,
+		uploadFile: async (file: Blob, filename: string) => {
+			const [uploaded] = await upload([{ blob: file, filename }])
+			return uploaded
+		},
+		uploadFiles: upload,
+	}
+}

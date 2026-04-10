@@ -4,6 +4,27 @@
 [![license](https://img.shields.io/npm/l/qas-cli)](https://github.com/Hypersequent/qas-cli/blob/main/LICENSE)
 [![CI](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Hypersequent/qas-cli/actions/workflows/ci.yml)
 
+## Table of Contents
+
+- [Description](#description)
+- [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Via NPX](#via-npx)
+  - [Via NPM](#via-npm)
+- [Shell Completion](#shell-completion)
+- [Environment](#environment)
+- [Command: `api`](#command-api)
+  - [API Command Tree](#api-command-tree)
+- [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
+  - [Options](#options)
+  - [Run Name Template Placeholders](#run-name-template-placeholders)
+  - [Usage Examples](#usage-examples)
+- [Test Report Requirements](#test-report-requirements)
+  - [JUnit XML](#junit-xml)
+  - [Playwright JSON](#playwright-json)
+  - [Allure](#allure)
+- [Development](#development-for-those-who-want-to-contribute-to-the-tool)
+
 ## Description
 
 The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
@@ -34,6 +55,24 @@ Verify installation: `qasphere --version`
 
 **Update:** Run `npm update -g qas-cli` to get the latest version.
 
+## Shell Completion
+
+The CLI supports shell completion for commands and options. To enable it, append the completion script to your shell profile:
+
+**Zsh:**
+
+```bash
+qasphere completion >> ~/.zshrc
+```
+
+**Bash:**
+
+```bash
+qasphere completion >> ~/.bashrc
+```
+
+Then restart your shell or source the profile (e.g., `source ~/.zshrc`). After that, pressing `Tab` will autocomplete commands and options.
+
 ## Environment
 
 The CLI requires the following variables to be defined:
@@ -58,6 +97,72 @@ QAS_URL=https://qas.eu1.qasphere.com
 # QAS_TOKEN=qas.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
 # QAS_URL=https://qas.eu1.qasphere.com
 ```
+
+## Command: `api`
+
+The `api` command provides direct access to the QA Sphere public API from the command line. Outputting JSON to stdout for easy scripting and piping.
+
+### API Command Tree
+
+```
+qasphere api <resource> <action> [options]
+```
+
+```
+qasphere api
+├── audit-logs
+│   └── list                                    # List audit log entries
+├── custom-fields
+│   └── list --project-code                     # List custom fields
+├── files
+│   └── upload --file                           # Upload a file attachment
+├── folders
+│   ├── list --project-code                     # List folders
+│   └── bulk-create --project-code --folders    # Create/update folders
+├── milestones
+│   ├── list --project-code                     # List milestones
+│   └── create --project-code --title           # Create milestone
+├── projects
+│   ├── list                                    # List all projects
+│   ├── get --project-code                      # Get project by code
+│   └── create --code --title                   # Create project
+├── requirements
+│   └── list --project-code                     # List requirements
+├── results
+│   ├── create --project-code --run-id --tcase-id --status  # Create result
+│   └── batch-create --project-code --run-id --items        # Batch create results
+├── runs
+│   ├── create --project-code --title --type --query-plans  # Create run
+│   ├── list --project-code                     # List runs
+│   ├── clone --project-code --run-id --title   # Clone run
+│   ├── close --project-code --run-id           # Close run
+│   └── test-cases
+│       ├── list --project-code --run-id        # List test cases in run
+│       └── get --project-code --run-id --tcase-id  # Get test case in run
+├── settings
+│   ├── list-statuses                           # List result statuses
+│   └── update-statuses --statuses              # Update custom statuses
+├── shared-preconditions
+│   ├── list --project-code                     # List shared preconditions
+│   └── get --project-code --id                 # Get shared precondition
+├── shared-steps
+│   ├── list --project-code                     # List shared steps
+│   └── get --project-code --id                 # Get shared step
+├── tags
+│   └── list --project-code                     # List tags
+├── test-cases
+│   ├── list --project-code                     # List test cases
+│   ├── get --project-code --tcase-id           # Get test case
+│   ├── count --project-code                    # Count test cases
+│   ├── create --project-code --body            # Create test case
+│   └── update --project-code --tcase-id --body # Update test case
+├── test-plans
+│   └── create --project-code --body            # Create test plan
+└── users
+    └── list                                    # List all users
+```
+
+Note: `qasphere api files upload --file ...` uses the public batch upload endpoint internally and returns the first uploaded file from that response.
 
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`
 
@@ -271,6 +376,16 @@ The CLI automatically detects global or suite-level failures and uploads them as
 - **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs.
 - **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
 - **Allure**: Failed or broken `befores`/`afters` fixtures in `*-container.json` files (e.g., session/module-level setup/teardown failures from pytest) are extracted as run-level logs.
+
+## AI Agent Skill
+
+qas-cli includes a [SKILL.md](./SKILL.md) file that enables AI coding agents (e.g., Claude Code, Cursor) to use the CLI effectively. To add this skill to your agent:
+
+```bash
+npx skills add Hypersequent/qas-cli
+```
+
+The skill provides the agent with full documentation of the CLI commands, options, and conventions. See [skills](https://github.com/vercel-labs/skills) for more details.
 
 ## Development (for those who want to contribute to the tool)
 

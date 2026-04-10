@@ -1,5 +1,6 @@
 import yargs from 'yargs'
 import { ResultUploadCommandModule } from './resultUpload'
+import { apiCommand } from './api/main'
 import { qasEnvs, qasEnvFile } from '../utils/env'
 import { CLI_VERSION } from '../utils/version'
 
@@ -14,6 +15,7 @@ Required variables: ${qasEnvs.join(', ')}
 		.command(new ResultUploadCommandModule('junit-upload'))
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
 		.command(new ResultUploadCommandModule('allure-upload'))
+		.command(apiCommand)
 		.demandCommand(1, '')
 		.help('h')
 		.alias('h', 'help')
@@ -40,16 +42,17 @@ Required variables: ${qasEnvs.join(', ')}
 						msg.startsWith('Not enough non-option arguments')
 					) {
 						yi.showHelp()
-						process.exit(0)
 					}
 				} else if (err && err.message) {
 					console.error(err.message)
 				} else if (err) {
 					console.error(String(err))
 				} else {
-					console.error('An unexpected error occurred.')
+					// No message and no error — likely a demandCommand('') failure (missing subcommand)
+					yi.showHelp()
 				}
 				process.exit(1)
 			}
 		})
+		.completion()
 		.parse()
