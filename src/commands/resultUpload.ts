@@ -1,6 +1,6 @@
 import { Arguments, Argv, CommandModule } from 'yargs'
 import chalk from 'chalk'
-import { loadEnvs, qasEnvFile } from '../utils/env'
+import { resolveAuth } from '../utils/credentials'
 import {
 	ResultUploadCommandArgs,
 	ResultUploadCommandHandler,
@@ -168,11 +168,6 @@ ${chalk.bold('Test Case Matching:')}
 		'--create-tcases'
 	)} to automatically create test cases in QA Sphere.
 
-${chalk.bold('Required environment variables:')}
-  These should be either defined in a ${qasEnvFile} file or exported as environment variables:
-    - ${chalk.bold('QAS_TOKEN')}: Your QASphere API token
-    - ${chalk.bold('QAS_URL')}: Your QASphere instance URL (e.g., https://qas.eu1.qasphere.com)
-
 ${chalk.bold('Run name template placeholders:')}
   - ${chalk.bold('{env:VAR_NAME}')}: Environment variables
   - ${chalk.bold('{YYYY}')}: 4-digit year
@@ -190,8 +185,8 @@ ${chalk.bold('Run name template placeholders:')}
 	}
 
 	handler = async (args: Arguments<ResultUploadCommandArgs>) => {
-		await loadEnvs()
-		const handler = new ResultUploadCommandHandler(this.type, args)
+		const auth = await resolveAuth()
+		const handler = new ResultUploadCommandHandler(this.type, args, auth)
 		await handler.handle()
 	}
 }

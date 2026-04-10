@@ -4,6 +4,7 @@ import escapeHtml from 'escape-html'
 import { RunTCase } from '../../api/schemas'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
+import type { AuthConfig } from '../credentials'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
 import type { MarkerParser } from './MarkerParser'
@@ -21,14 +22,14 @@ export class ResultUploader {
 	constructor(
 		private markerParser: MarkerParser,
 		private type: UploadCommandType,
-		private args: Arguments<ResultUploadCommandArgs>
+		private args: Arguments<ResultUploadCommandArgs>,
+		auth: AuthConfig
 	) {
-		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
 		this.project = project
 		this.run = run
-		this.api = createApi(url, apiToken)
+		this.api = createApi(url, auth.token, auth.authType)
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {

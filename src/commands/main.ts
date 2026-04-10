@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { ResultUploadCommandModule } from './resultUpload'
 import { authCommand } from './auth'
-import { qasEnvs, qasEnvFile } from '../utils/env'
+import { qasEnvs, qasEnvFile } from '../utils/credentials'
 import { CLI_VERSION } from '../utils/version'
 
 export const run = (args: string | string[]) =>

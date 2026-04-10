@@ -66,8 +66,8 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson` decorators that wrap `fetch`
-- `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from sub-modules
+- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson` decorators that wrap `fetch`
+- `index.ts` — `createApi(baseUrl, token, authType)` assembles the API client from sub-modules
 - Sub-modules: `projects.ts`, `run.ts`, `tcases.ts`, `file.ts`
 
 ### Configuration (src/utils/)

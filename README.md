@@ -44,12 +44,6 @@ qasphere auth login
 
 This opens your browser to complete authentication and securely stores your credentials in the system keyring. If a keyring is not available, credentials are stored in `~/.config/qasphere/credentials.json` with restricted file permissions.
 
-You can also log in by directly providing an API key:
-
-```bash
-qasphere auth login --api-key
-```
-
 ### Other auth commands
 
 ```bash

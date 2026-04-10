@@ -11,9 +11,10 @@ export const withFetchMiddlewares = (
 export const withBaseUrl =
 	(baseUrl: string): FetchMiddleware =>
 	(fetcher: typeof fetch): typeof fetch => {
+		const normalized = baseUrl.replace(/\/+$/, '')
 		return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
 			if (typeof input === 'string') {
-				return fetcher(baseUrl + input, init)
+				return fetcher(normalized + input, init)
 			}
 			return fetcher(input, init)
 		}
@@ -58,10 +59,14 @@ export const withUserAgent =
 	(fetcher) =>
 		withHeaders(fetcher, { 'User-Agent': `qas-cli/${version}` })
 
-export const withApiKey =
-	(apiKey: string): FetchMiddleware =>
+export type AuthType = 'apikey' | 'bearer'
+
+export const withAuth =
+	(token: string, authType: AuthType): FetchMiddleware =>
 	(fetcher) =>
-		withHeaders(fetcher, { Authorization: `ApiKey ${apiKey}` })
+		withHeaders(fetcher, {
+			Authorization: authType === 'bearer' ? `Bearer ${token}` : `ApiKey ${token}`,
+		})
 
 export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	const json = await response.json()
