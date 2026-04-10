@@ -16,6 +16,7 @@ const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 
 export interface CheckTenantResponse {
 	redirectUrl: string
+	suspended: boolean
 }
 
 export interface OAuthDeviceCodeResponse {
@@ -68,7 +69,9 @@ async function oauthErrorResponse(response: Response): Promise<OAuthErrorRespons
 
 // --- API functions ---
 
-export async function checkTenant(teamName: string): Promise<{ tenantUrl: string }> {
+export async function checkTenant(
+	teamName: string
+): Promise<{ tenantUrl: string; suspended: boolean }> {
 	const fetcher = createFetcher(LOGIN_SERVICE_URL)
 	const response = await fetcher(`/api/check-tenant?name=${encodeURIComponent(teamName)}`, {
 		method: 'GET',
@@ -78,7 +81,7 @@ export async function checkTenant(teamName: string): Promise<{ tenantUrl: string
 	// The check-tenant endpoint returns a redirect URL (e.g. http://tenant.localhost:5173/login).
 	// Extract just the origin for use as the API base URL.
 	const origin = new URL(data.redirectUrl).origin
-	return { tenantUrl: origin }
+	return { tenantUrl: origin, suspended: data.suspended }
 }
 
 export async function requestDeviceCode(tenantUrl: string): Promise<OAuthDeviceCodeResponse> {

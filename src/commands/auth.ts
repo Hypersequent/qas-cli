@@ -27,7 +27,11 @@ async function resolveTenantUrl(): Promise<string> {
 	}
 
 	try {
-		const { tenantUrl } = await checkTenant(teamName)
+		const { tenantUrl, suspended } = await checkTenant(teamName)
+		if (suspended) {
+			console.error(chalk.red('Error:') + ` Team "${teamName}" has been suspended.`)
+			process.exit(1)
+		}
 		return tenantUrl
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e)

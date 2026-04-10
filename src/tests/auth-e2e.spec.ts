@@ -19,7 +19,7 @@ const checkTenantHandler = http.get(`${loginServiceUrl}/api/check-tenant`, ({ re
 	if (!name || name === 'nonexistent') {
 		return HttpResponse.json({ message: 'Tenant not found' }, { status: 404 })
 	}
-	return HttpResponse.json({ redirectUrl: `${tenantUrl}/login` })
+	return HttpResponse.json({ redirectUrl: `${tenantUrl}/login`, suspended: false })
 })
 
 const deviceCodeHandler = (interval = 0, expiresIn = 900) =>
@@ -378,6 +378,23 @@ describe('auth login error cases', () => {
 		await runCommand('auth login').catch(() => {})
 
 		expect(err).toHaveBeenCalledWith(expect.stringContaining('Team name is required'))
+		expect(exit).toHaveBeenCalledWith(1)
+	})
+
+	test('suspended team shows error', async () => {
+		mockKeyringUnavailable()
+		mockPrompts('acme')
+		const exit = mockProcessExit()
+
+		server.use(
+			http.get(`${loginServiceUrl}/api/check-tenant`, () => {
+				return HttpResponse.json({ redirectUrl: `${tenantUrl}/login`, suspended: true })
+			})
+		)
+
+		await runCommand('auth login').catch(() => {})
+
+		expect(err).toHaveBeenCalledWith(expect.stringContaining('has been suspended'))
 		expect(exit).toHaveBeenCalledWith(1)
 	})
 })
