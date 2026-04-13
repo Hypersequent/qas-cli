@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { config, DotenvPopulateInput } from 'dotenv'
+import { config } from 'dotenv'
+import type { DotenvPopulateInput } from 'dotenv'
 import chalk from 'chalk'
 import { refreshAccessToken } from '../../api/oauth'
 import {

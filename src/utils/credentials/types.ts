@@ -5,7 +5,7 @@ export const oauthCredentialsSchema = z.object({
 	type: z.literal('oauth'),
 	accessToken: z.string().min(1),
 	refreshToken: z.string().min(1),
-	accessTokenExpiresAt: z.string().min(1), // ISO 8601
+	accessTokenExpiresAt: z.string().datetime(), // ISO 8601
 	tenantUrl: z.string().min(1),
 })
 
