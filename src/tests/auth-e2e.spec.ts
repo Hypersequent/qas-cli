@@ -54,66 +54,67 @@ const projectsHandler = http.get(`${tenantUrl}/api/public/v0/project`, ({ reques
 
 const server = setupServer(checkTenantHandler, projectsHandler)
 
+// --- Hoisted mock state ---
+// vi.hoisted runs before imports, so vi.mock factories can reference these.
+// Each test configures state before runCommand(); mock implementations read at call time.
+
+const mockState = vi.hoisted(() => ({
+	teamName: 'acme',
+	keyringMode: 'unavailable' as 'unavailable' | 'available',
+	keyringStore: new Map<string, string>(),
+	testHomeDir: '',
+}))
+
+vi.mock('../utils/prompt', () => ({
+	ensureInteractive: () => {},
+	prompt: async () => mockState.teamName,
+}))
+
+vi.mock('../utils/browser', () => ({
+	openBrowser: () => {},
+}))
+
+vi.mock('node:os', async () => {
+	const actual = await vi.importActual<typeof import('node:os')>('node:os')
+	return { ...actual, homedir: () => mockState.testHomeDir }
+})
+
+vi.mock('@napi-rs/keyring', () => ({
+	Entry: class MockEntry {
+		private key: string
+		constructor(service: string, account: string) {
+			this.key = `${service}:${account}`
+		}
+		setPassword(password: string) {
+			if (mockState.keyringMode !== 'available') {
+				throw new Error('Platform secure storage failure')
+			}
+			mockState.keyringStore.set(this.key, password)
+		}
+		getPassword(): string {
+			if (mockState.keyringMode !== 'available') {
+				throw new Error('Platform secure storage failure')
+			}
+			const val = mockState.keyringStore.get(this.key)
+			if (val === undefined) throw new Error('No entry')
+			return val
+		}
+		deletePassword() {
+			if (mockState.keyringMode !== 'available') {
+				throw new Error('Platform secure storage failure')
+			}
+			if (!mockState.keyringStore.has(this.key)) throw new Error('No entry')
+			mockState.keyringStore.delete(this.key)
+		}
+	},
+}))
+
 // --- Test setup ---
 
 let testHomeDir: string
 let log: ReturnType<typeof vi.spyOn>
 let err: ReturnType<typeof vi.spyOn>
 const originalEnv = { ...process.env }
-
-function mockKeyringUnavailable() {
-	vi.doMock('@napi-rs/keyring', () => ({
-		Entry: class MockEntry {
-			setPassword() {
-				throw new Error('Platform secure storage failure')
-			}
-			getPassword(): string {
-				throw new Error('Platform secure storage failure')
-			}
-			deletePassword() {
-				throw new Error('Platform secure storage failure')
-			}
-		},
-	}))
-}
-
-function mockKeyringAvailable(): Map<string, string> {
-	const store = new Map<string, string>()
-	vi.doMock('@napi-rs/keyring', () => ({
-		Entry: class MockEntry {
-			private key: string
-			constructor(service: string, account: string) {
-				this.key = `${service}:${account}`
-			}
-			setPassword(password: string) {
-				store.set(this.key, password)
-			}
-			getPassword(): string {
-				const val = store.get(this.key)
-				if (val === undefined) throw new Error('No entry')
-				return val
-			}
-			deletePassword() {
-				if (!store.has(this.key)) throw new Error('No entry')
-				store.delete(this.key)
-			}
-		},
-	}))
-	return store
-}
-
-function mockPrompts(teamName: string) {
-	vi.doMock('../utils/prompt', () => ({
-		ensureInteractive: () => {},
-		prompt: async () => teamName,
-	}))
-}
-
-function mockBrowser() {
-	vi.doMock('../utils/browser', () => ({
-		openBrowser: () => {},
-	}))
-}
 
 function mockProcessExit() {
 	return vi.spyOn(process, 'exit').mockImplementation((() => {
@@ -125,7 +126,7 @@ function credentialsFilePath() {
 	return join(testHomeDir, '.config', 'qasphere', 'credentials.json')
 }
 
-function writeOAuthCredentials(source: 'file' | 'keyring', store?: Map<string, string>) {
+function writeOAuthCredentials(source: 'file' | 'keyring') {
 	const creds = {
 		type: 'oauth',
 		accessToken: testAccessToken,
@@ -133,8 +134,8 @@ function writeOAuthCredentials(source: 'file' | 'keyring', store?: Map<string, s
 		accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
 		tenantUrl,
 	}
-	if (source === 'keyring' && store) {
-		store.set('qasphere-cli:credentials', JSON.stringify(creds))
+	if (source === 'keyring') {
+		mockState.keyringStore.set('qasphere-cli:credentials', JSON.stringify(creds))
 	} else {
 		const credDir = join(testHomeDir, '.config', 'qasphere')
 		mkdirSync(credDir, { recursive: true })
@@ -143,8 +144,8 @@ function writeOAuthCredentials(source: 'file' | 'keyring', store?: Map<string, s
 	return creds
 }
 
-// vi.doMock only affects future imports. Since each test sets up different mocks (different prompts, keyring available vs unavailable),
-// we need resetModules() + dynamic import to get a fresh module tree that picks up the current test's mocks.
+// vi.resetModules() is still needed so module-level constants (e.g. CONFIG_DIR = join(homedir(), ...))
+// re-evaluate with the current test's homedir. vi.mock (hoisted) ensures mocks always apply reliably.
 async function runCommand(args: string) {
 	vi.resetModules()
 	const { run: freshRun } = await import('../commands/main')
@@ -161,10 +162,10 @@ beforeEach(() => {
 	)
 	mkdirSync(testHomeDir, { recursive: true })
 
-	vi.doMock('node:os', async () => {
-		const actual = await vi.importActual<typeof import('node:os')>('node:os')
-		return { ...actual, homedir: () => testHomeDir }
-	})
+	mockState.testHomeDir = testHomeDir
+	mockState.keyringMode = 'unavailable'
+	mockState.keyringStore.clear()
+	mockState.teamName = 'acme'
 
 	// Clear credential env vars so resolveCredentialSource() doesn't short-circuit
 	// to the env_var source, allowing tests to use test-isolated keyring/file/dotenv paths.
@@ -191,10 +192,6 @@ afterEach(() => {
 		rmSync(testHomeDir, { recursive: true })
 	}
 
-	vi.doUnmock('node:os')
-	vi.doUnmock('@napi-rs/keyring')
-	vi.doUnmock('../utils/prompt')
-	vi.doUnmock('../utils/browser')
 	vi.restoreAllMocks()
 })
 
@@ -202,10 +199,6 @@ afterEach(() => {
 
 describe('auth login (device flow)', () => {
 	test('device flow login succeeds', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
-
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
@@ -216,10 +209,6 @@ describe('auth login (device flow)', () => {
 	})
 
 	test('device flow saves OAuth credentials', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
-
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
@@ -238,9 +227,6 @@ describe('auth login (device flow)', () => {
 	})
 
 	test('device flow shows timeout on expiry', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
 		const exit = mockProcessExit()
 
 		// Use 0 interval and 0 expiresIn so the loop exits immediately
@@ -261,9 +247,6 @@ describe('auth login (device flow)', () => {
 	})
 
 	test('device flow handles expired_token from server', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
 		const exit = mockProcessExit()
 
 		server.use(
@@ -283,9 +266,6 @@ describe('auth login (device flow)', () => {
 	})
 
 	test('device flow handles access_denied', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
 		const exit = mockProcessExit()
 
 		server.use(
@@ -305,10 +285,6 @@ describe('auth login (device flow)', () => {
 	})
 
 	test('device flow handles slow_down by increasing interval', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
-
 		let pollCount = 0
 		server.use(
 			deviceCodeHandler(0, 900),
@@ -337,9 +313,6 @@ describe('auth login (device flow)', () => {
 	}, 10_000)
 
 	test('device flow handles device code request failure', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
 		const exit = mockProcessExit()
 
 		server.use(
@@ -360,8 +333,7 @@ describe('auth login (device flow)', () => {
 
 describe('auth login error cases', () => {
 	test('check-tenant returns 404 for unknown team', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('nonexistent')
+		mockState.teamName = 'nonexistent'
 		const exit = mockProcessExit()
 
 		await runCommand('auth login').catch(() => {})
@@ -371,8 +343,7 @@ describe('auth login error cases', () => {
 	})
 
 	test('empty team name shows error', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('')
+		mockState.teamName = ''
 		const exit = mockProcessExit()
 
 		await runCommand('auth login').catch(() => {})
@@ -382,8 +353,6 @@ describe('auth login error cases', () => {
 	})
 
 	test('suspended team shows error', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
 		const exit = mockProcessExit()
 
 		server.use(
@@ -401,10 +370,6 @@ describe('auth login error cases', () => {
 
 describe('auth login → status → logout lifecycle', () => {
 	test('full lifecycle with device flow', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
-
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		// Use an isolated directory so no .qaspherecli is found after logout
@@ -447,7 +412,6 @@ describe('auth login → status → logout lifecycle', () => {
 
 describe('auth status credential sources', () => {
 	test('shows env_var source when env vars are set', async () => {
-		mockKeyringUnavailable()
 		process.env.QAS_TOKEN = testApiKey
 		process.env.QAS_URL = tenantUrl
 
@@ -458,8 +422,6 @@ describe('auth status credential sources', () => {
 	})
 
 	test('shows .env source when .env file exists', async () => {
-		mockKeyringUnavailable()
-
 		const envDir = join(testHomeDir, 'project')
 		mkdirSync(envDir, { recursive: true })
 		writeFileSync(join(envDir, '.env'), `QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`)
@@ -476,7 +438,6 @@ describe('auth status credential sources', () => {
 	})
 
 	test('env vars take priority over .env file', async () => {
-		mockKeyringUnavailable()
 		process.env.QAS_TOKEN = testApiKey
 		process.env.QAS_URL = tenantUrl
 
@@ -498,8 +459,6 @@ describe('auth status credential sources', () => {
 	})
 
 	test('shows .qaspherecli source when file exists in directory tree', async () => {
-		mockKeyringUnavailable()
-
 		const projectDir = join(testHomeDir, 'project')
 		const subDir = join(projectDir, 'sub', 'dir')
 		mkdirSync(subDir, { recursive: true })
@@ -520,7 +479,6 @@ describe('auth status credential sources', () => {
 	})
 
 	test('shows invalid status when credentials are bad', async () => {
-		mockKeyringUnavailable()
 		process.env.QAS_TOKEN = 'bad-token'
 		process.env.QAS_URL = tenantUrl
 
@@ -530,8 +488,6 @@ describe('auth status credential sources', () => {
 	})
 
 	test('shows not logged in when no credentials found', async () => {
-		mockKeyringUnavailable()
-
 		const emptyDir = join(testHomeDir, 'empty')
 		mkdirSync(emptyDir, { recursive: true })
 
@@ -549,9 +505,8 @@ describe('auth status credential sources', () => {
 		{ source: 'credentials.json' as const, setupKeyring: false },
 		{ source: 'keyring' as const, setupKeyring: true },
 	])('shows expiry for OAuth credentials from $source', async ({ source, setupKeyring }) => {
-		const store = setupKeyring ? mockKeyringAvailable() : undefined
-		if (!setupKeyring) mockKeyringUnavailable()
-		writeOAuthCredentials(setupKeyring ? 'keyring' : 'file', store)
+		if (setupKeyring) mockState.keyringMode = 'available'
+		writeOAuthCredentials(setupKeyring ? 'keyring' : 'file')
 
 		await runCommand('auth status')
 
@@ -563,7 +518,6 @@ describe('auth status credential sources', () => {
 
 describe('auth logout edge cases', () => {
 	test('cannot log out when using env vars', async () => {
-		mockKeyringUnavailable()
 		process.env.QAS_TOKEN = testApiKey
 		process.env.QAS_URL = tenantUrl
 
@@ -574,8 +528,6 @@ describe('auth logout edge cases', () => {
 	})
 
 	test('shows not logged in when nothing to clear', async () => {
-		mockKeyringUnavailable()
-
 		const emptyDir = join(testHomeDir, 'empty')
 		mkdirSync(emptyDir, { recursive: true })
 
@@ -590,7 +542,6 @@ describe('auth logout edge cases', () => {
 	})
 
 	test('second logout after file cleared shows not logged in', async () => {
-		mockKeyringUnavailable()
 		writeOAuthCredentials('file')
 
 		const projectDir = join(testHomeDir, 'project')
@@ -612,7 +563,6 @@ describe('auth logout edge cases', () => {
 	})
 
 	test('logout mentions server-side revocation', async () => {
-		mockKeyringUnavailable()
 		writeOAuthCredentials('file')
 
 		const projectDir = join(testHomeDir, 'project')
@@ -633,8 +583,6 @@ describe('auth logout edge cases', () => {
 
 describe('auth logout source labels', () => {
 	test('cannot log out when using .env file', async () => {
-		mockKeyringUnavailable()
-
 		const projectDir = join(testHomeDir, 'project')
 		mkdirSync(projectDir, { recursive: true })
 		writeFileSync(join(projectDir, '.env'), `QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`)
@@ -651,8 +599,6 @@ describe('auth logout source labels', () => {
 	})
 
 	test('cannot log out when using .qaspherecli file', async () => {
-		mockKeyringUnavailable()
-
 		const projectDir = join(testHomeDir, 'project')
 		mkdirSync(projectDir, { recursive: true })
 		writeFileSync(
@@ -672,7 +618,6 @@ describe('auth logout source labels', () => {
 	})
 
 	test('logout warns when env vars still active after clearing credentials', async () => {
-		mockKeyringUnavailable()
 		writeOAuthCredentials('file')
 
 		process.env.QAS_TOKEN = testApiKey
@@ -688,23 +633,7 @@ describe('auth logout source labels', () => {
 
 describe('credential storage (keyring setPassword failure)', () => {
 	test('falls back to file when keyring setPassword throws', async () => {
-		// Keyring module loads and Entry construction works, but setPassword throws
-		vi.doMock('@napi-rs/keyring', () => ({
-			Entry: class MockEntry {
-				setPassword() {
-					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
-				}
-				getPassword(): string {
-					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
-				}
-				deletePassword() {
-					throw new Error('org.freedesktop.DBus.Error.ServiceUnknown')
-				}
-			},
-		}))
-		mockPrompts('acme')
-		mockBrowser()
-
+		// keyringMode stays 'unavailable' — setPassword throws, triggering file fallback
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
@@ -716,10 +645,6 @@ describe('credential storage (keyring setPassword failure)', () => {
 
 describe('credential storage (keyring unavailable)', () => {
 	test('saves to file with 0600 permissions', async () => {
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
-
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
@@ -732,10 +657,6 @@ describe('credential storage (keyring unavailable)', () => {
 	test('overwrites existing credentials on re-login', async () => {
 		const secondAccessToken = 'tenantId.authId7chars.secondAccessToken'
 		const secondRefreshToken = 'tenantId.authId7chars.secondRefreshToken'
-
-		mockKeyringUnavailable()
-		mockPrompts('acme')
-		mockBrowser()
 
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
@@ -768,17 +689,15 @@ describe('credential storage (keyring unavailable)', () => {
 
 describe('credential storage (keyring available)', () => {
 	test('saves to keyring when available', async () => {
-		const store = mockKeyringAvailable()
-		mockPrompts('acme')
-		mockBrowser()
+		mockState.keyringMode = 'available'
 
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
-		expect(store.size).toBe(0)
+		expect(mockState.keyringStore.size).toBe(0)
 		await runCommand('auth login')
 
-		expect(store.size).toBe(1)
-		const value = Array.from(store.values())[0]
+		expect(mockState.keyringStore.size).toBe(1)
+		const value = Array.from(mockState.keyringStore.values())[0]
 		const parsed = JSON.parse(value) as Record<string, unknown>
 		expect(parsed.type).toBe('oauth')
 		expect(parsed.accessToken).toBe(testAccessToken)
@@ -788,25 +707,21 @@ describe('credential storage (keyring available)', () => {
 	})
 
 	test('logout clears keyring entry', async () => {
-		const store = mockKeyringAvailable()
-		mockPrompts('acme')
-		mockBrowser()
+		mockState.keyringMode = 'available'
 
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
-		expect(store.size).toBe(1)
+		expect(mockState.keyringStore.size).toBe(1)
 
 		log.mockClear()
 		await runCommand('auth logout')
 		expect(log).toHaveBeenCalledWith('Logged out.')
-		expect(store.size).toBe(0)
+		expect(mockState.keyringStore.size).toBe(0)
 	})
 
 	test('second logout after keyring cleared shows not logged in', async () => {
-		const store = mockKeyringAvailable()
-		mockPrompts('acme')
-		mockBrowser()
+		mockState.keyringMode = 'available'
 
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
@@ -817,7 +732,7 @@ describe('credential storage (keyring available)', () => {
 
 		try {
 			await runCommand('auth login')
-			expect(store.size).toBe(1)
+			expect(mockState.keyringStore.size).toBe(1)
 
 			log.mockClear()
 			await runCommand('auth logout')
@@ -832,14 +747,12 @@ describe('credential storage (keyring available)', () => {
 	})
 
 	test('auth status shows keyring as source', async () => {
-		const store = mockKeyringAvailable()
-		mockPrompts('acme')
-		mockBrowser()
+		mockState.keyringMode = 'available'
 
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
 		await runCommand('auth login')
-		expect(store.size).toBe(1)
+		expect(mockState.keyringStore.size).toBe(1)
 
 		log.mockClear()
 		await runCommand('auth status')
@@ -849,7 +762,6 @@ describe('credential storage (keyring available)', () => {
 
 describe('credential resolution edge cases', () => {
 	test('partial env vars (only QAS_TOKEN) falls through to .qaspherecli', async () => {
-		mockKeyringUnavailable()
 		process.env.QAS_TOKEN = 'env-only-token' // Invalid token should fail assertions below if it were used
 		// QAS_URL intentionally not set — should not resolve as env_var
 
@@ -873,8 +785,6 @@ describe('credential resolution edge cases', () => {
 	})
 
 	test('corrupt credentials file warns and falls back gracefully', async () => {
-		mockKeyringUnavailable()
-
 		// Write garbage to the credentials file
 		const credDir = join(testHomeDir, '.config', 'qasphere')
 		mkdirSync(credDir, { recursive: true })
@@ -897,8 +807,6 @@ describe('credential resolution edge cases', () => {
 	})
 
 	test('credentials file with wrong shape warns and falls back gracefully', async () => {
-		mockKeyringUnavailable()
-
 		// Write valid JSON but wrong shape (legacy apiKey format without type)
 		const credDir = join(testHomeDir, '.config', 'qasphere')
 		mkdirSync(credDir, { recursive: true })
@@ -923,8 +831,6 @@ describe('credential resolution edge cases', () => {
 
 describe('token refresh at load time', () => {
 	test('refreshes expired access token before running command', async () => {
-		mockKeyringUnavailable()
-
 		// Write credentials with expired access token
 		const credDir = join(testHomeDir, '.config', 'qasphere')
 		mkdirSync(credDir, { recursive: true })
@@ -981,7 +887,6 @@ describe('token refresh at load time', () => {
 	})
 
 	test('expired refresh token shows session expired message', async () => {
-		mockKeyringUnavailable()
 		const exit = mockProcessExit()
 
 		// Write credentials with expired access token and a refresh token that will fail
