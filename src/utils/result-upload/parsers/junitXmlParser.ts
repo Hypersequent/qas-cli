@@ -1,6 +1,7 @@
 import escapeHtml from 'escape-html'
 import xml from 'xml2js'
 import z from 'zod'
+import { getParsedMarkerFromText } from '../MarkerParser'
 import { Attachment, ParseResult, TestCaseResult } from '../types'
 import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
 import { ResultStatus } from '../../../api/schemas'
@@ -148,11 +149,14 @@ export const parseJUnitXml: Parser = async (
 			// generic suite (e.g., "pytest"). For runners where classname matches the
 			// suite name (e.g., Playwright), this produces the same result.
 			const folder = tcase.$.classname ?? suite.$?.name ?? ''
+			const parsedMarker = getParsedMarkerFromText(tcaseName)
 			const index =
 				testcases.push({
 					...result,
 					folder,
 					name: tcaseName,
+					marker: parsedMarker ?? null,
+					markerResolution: parsedMarker ? 'resolved' : 'needs-project-resolution',
 					timeTaken:
 						Number.isFinite(timeTakenSeconds) && timeTakenSeconds >= 0
 							? Math.round(timeTakenSeconds * 1000)

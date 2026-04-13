@@ -5,9 +5,9 @@ import stripAnsi from 'strip-ansi'
 import z from 'zod'
 import { ResultStatus } from '../../../api/schemas'
 import { parseTCaseUrl } from '../../misc'
-import { formatMarker, getMarkerFromText } from '../MarkerParser'
+import { formatMarker, getParsedMarkerFromText } from '../MarkerParser'
 import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
-import { Attachment, ParseResult, TestCaseResult } from '../types'
+import { Attachment, ParseResult, TestCaseMarker, TestCaseResult } from '../types'
 import { getAttachments } from '../utils'
 
 // Allure result file schema reference:
@@ -154,7 +154,11 @@ export const parseAllureResults: Parser = async (
 		const marker = extractMarker(parsedResult)
 		const index =
 			testcases.push({
-				name: marker ? `${marker}: ${parsedResult.name}` : parsedResult.name,
+				name: marker
+					? `${formatMarker(marker.projectCode, marker.seq)}: ${parsedResult.name}`
+					: parsedResult.name,
+				marker: marker ?? null,
+				markerResolution: marker ? 'resolved' : 'resolved-none',
 				folder: getFolder(parsedResult),
 				status,
 				message: buildMessage(parsedResult, status, options),
@@ -251,23 +255,26 @@ const buildMessage = (
 	return message
 }
 
-const extractMarker = (result: AllureResult): string | undefined => {
-	return getMarkerFromTmsLinks(result.links) || getMarkerFromText(result.name)
+const extractMarker = (result: AllureResult): TestCaseMarker | undefined => {
+	return getMarkerFromTmsLinks(result.links) || getParsedMarkerFromText(result.name)
 }
 
-const getMarkerFromTmsLinks = (links: AllureResult['links']): string | undefined => {
+const getMarkerFromTmsLinks = (links: AllureResult['links']): TestCaseMarker | undefined => {
 	const tmsLinks = (links || []).filter((link) => link.type?.toLowerCase() === 'tms')
 
 	for (const link of tmsLinks) {
 		if (!link.url) continue
 		const parsed = parseTCaseUrl(link.url)
 		if (parsed) {
-			return formatMarker(parsed.project, parsed.tcaseSeq)
+			return {
+				projectCode: parsed.project,
+				seq: parsed.tcaseSeq,
+			}
 		}
 	}
 
 	for (const link of tmsLinks) {
-		const markerFromName = getMarkerFromText(link.name)
+		const markerFromName = getParsedMarkerFromText(link.name)
 		if (markerFromName) {
 			return markerFromName
 		}

@@ -391,8 +391,14 @@ describe('Playwright JSON parsing', () => {
 		// Fixture has 1 test with 3 annotations (2x 10427 deduped to 1, plus 10428) + 1 test with no annotations = 3 results
 		expect(testcases).toHaveLength(3)
 		expect(testcases[0].name).toBe('TEST-10427: Login flow covers multiple cases')
+		expect(testcases[0].marker).toEqual({ projectCode: 'TEST', seq: 10427 })
+		expect(testcases[0].markerResolution).toBe('resolved')
 		expect(testcases[1].name).toBe('TEST-10428: Login flow covers multiple cases')
+		expect(testcases[1].marker).toEqual({ projectCode: 'TEST', seq: 10428 })
+		expect(testcases[1].markerResolution).toBe('resolved')
 		expect(testcases[2].name).toBe('Navigation bar items TEST-006')
+		expect(testcases[2].marker).toEqual({ projectCode: 'TEST', seq: 6 })
+		expect(testcases[2].markerResolution).toBe('resolved')
 
 		// The two fan-out entries share the same status, duration, folder
 		for (const tc of testcases.slice(0, 2)) {
@@ -454,6 +460,8 @@ describe('Playwright JSON parsing', () => {
 
 		expect(testcases).toHaveLength(1)
 		expect(testcases[0].name).toBe('PRJ-100: Simple test')
+		expect(testcases[0].marker).toEqual({ projectCode: 'PRJ', seq: 100 })
+		expect(testcases[0].markerResolution).toBe('resolved')
 	})
 
 	test('Should fan out by annotations even when name has a marker', async () => {
@@ -509,6 +517,118 @@ describe('Playwright JSON parsing', () => {
 		expect(testcases).toHaveLength(2)
 		expect(testcases[0].name).toBe('PRJ-100: PRJ-999: Test with marker in name')
 		expect(testcases[1].name).toBe('PRJ-200: PRJ-999: Test with marker in name')
+		expect(testcases[0].marker).toEqual({ projectCode: 'PRJ', seq: 100 })
+		expect(testcases[1].marker).toEqual({ projectCode: 'PRJ', seq: 200 })
+		expect(testcases[0].markerResolution).toBe('resolved')
+		expect(testcases[1].markerResolution).toBe('resolved')
+	})
+
+	test('Should extract fallback marker from spec title, not describe titles', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'describe-collision.spec.ts',
+					specs: [],
+					suites: [
+						{
+							title: 'Test Case Folders (TEST-002, TEST-003)',
+							specs: [
+								{
+									title: 'should create a new root folder (TEST-004)',
+									tags: [],
+									tests: [
+										{
+											annotations: [],
+											expectedStatus: 'passed',
+											projectName: 'chromium',
+											results: [
+												{
+													status: 'passed',
+													errors: [],
+													stdout: [],
+													stderr: [],
+													retry: 0,
+													duration: 1000,
+													attachments: [],
+												},
+											],
+											status: 'expected',
+										},
+									],
+								},
+							],
+							suites: [],
+						},
+					],
+				},
+			],
+		})
+
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe(
+			'Test Case Folders (TEST-002, TEST-003) › should create a new root folder (TEST-004)'
+		)
+		expect(testcases[0].marker).toEqual({ projectCode: 'TEST', seq: 4 })
+		expect(testcases[0].markerResolution).toBe('resolved')
+	})
+
+	test('Should keep marker unresolved-none when only describe title contains markers', async () => {
+		const jsonContent = JSON.stringify({
+			suites: [
+				{
+					title: 'describe-only-markers.spec.ts',
+					specs: [],
+					suites: [
+						{
+							title: 'Dashboard Projects (TEST-034, TEST-035, TEST-365)',
+							specs: [
+								{
+									title: 'viewer should not see project management actions',
+									tags: [],
+									tests: [
+										{
+											annotations: [],
+											expectedStatus: 'passed',
+											projectName: 'chromium',
+											results: [
+												{
+													status: 'passed',
+													errors: [],
+													stdout: [],
+													stderr: [],
+													retry: 0,
+													duration: 1000,
+													attachments: [],
+												},
+											],
+											status: 'expected',
+										},
+									],
+								},
+							],
+							suites: [],
+						},
+					],
+				},
+			],
+		})
+
+		const { testCaseResults: testcases } = await parsePlaywrightJson(jsonContent, '', {
+			skipStdout: 'never',
+			skipStderr: 'never',
+		})
+
+		expect(testcases).toHaveLength(1)
+		expect(testcases[0].name).toBe(
+			'Dashboard Projects (TEST-034, TEST-035, TEST-365) › viewer should not see project management actions'
+		)
+		expect(testcases[0].marker).toBeNull()
+		expect(testcases[0].markerResolution).toBe('resolved-none')
 	})
 
 	test('Should map test status correctly', async () => {

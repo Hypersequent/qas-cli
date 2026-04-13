@@ -1,3 +1,4 @@
+import type { TestCaseMarker } from './types'
 import { UploadCommandType } from './ResultUploadCommandHandler'
 
 const MARKER_SEP = `_`
@@ -33,8 +34,7 @@ const execRegexWithPriority = (
 export const formatMarker = (projectCode: string, seq: number) =>
 	`${projectCode}-${seq.toString().padStart(3, '0')}`
 
-/** Extract and normalize a hyphenated marker like "TEST-002" from free text. */
-export const getMarkerFromText = (text: string | undefined): string | undefined => {
+export const getParsedMarkerFromText = (text: string | undefined): TestCaseMarker | undefined => {
 	if (!text) {
 		return undefined
 	}
@@ -44,7 +44,16 @@ export const getMarkerFromText = (text: string | undefined): string | undefined 
 		return undefined
 	}
 
-	return formatMarker(match[1], Number(match[2]))
+	return {
+		projectCode: match[1],
+		seq: Number(match[2]),
+	}
+}
+
+/** Extract and normalize a hyphenated marker like "TEST-002" from free text. */
+export const getMarkerFromText = (text: string | undefined): string | undefined => {
+	const marker = getParsedMarkerFromText(text)
+	return marker ? formatMarker(marker.projectCode, marker.seq) : undefined
 }
 
 export class MarkerParser {
