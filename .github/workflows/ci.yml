@@ -56,3 +56,12 @@ jobs:
 
       - name: Multi-node version test
         run: cd mnode-test && ./docker-test.sh
+
+      - name: Run live API tests
+        env:
+          QAS_TEST_URL: ${{ secrets.QAS_TEST_URL }}
+          QAS_TEST_TOKEN: ${{ secrets.QAS_TEST_TOKEN }}
+          QAS_TEST_USERNAME: ${{ secrets.QAS_TEST_USERNAME }}
+          QAS_TEST_PASSWORD: ${{ secrets.QAS_TEST_PASSWORD }}
+          QAS_DEV_AUTH: ${{ secrets.QAS_DEV_AUTH }}
+        run: npm run test:live

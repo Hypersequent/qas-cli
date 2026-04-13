@@ -163,13 +163,13 @@ QAS_URL=http://your-qasphere-instance-url
 
 # Example:
 # QAS_TOKEN=tst0000001.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
-# QAS_URL=http://tenant1.localhost:5173`)
+# QAS_URL=https://tenant_id.eu1.qasphere.com`)
 		)
 		console.log('\nOr export them as environment variables:')
 		console.log(
 			chalk.green(`
-export QAS_TOKEN=your_token
-export QAS_URL=http://your-qasphere-instance-url`)
+export QAS_TOKEN=tst0000001.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
+export QAS_URL=https://tenant_id.eu1.qasphere.com`)
 		)
 		process.exit(1)
 	}

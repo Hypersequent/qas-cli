@@ -29,7 +29,7 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 ### Entry Point & CLI Framework
 
 - `src/bin/qasphere.ts` — Entry point (`#!/usr/bin/env node`). Validates Node version, delegates to `run()`.
-- `src/commands/main.ts` — Yargs setup. Registers three commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of the same `ResultUploadCommandModule` class.
+- `src/commands/main.ts` — Yargs setup. Registers three upload commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of `ResultUploadCommandModule`, plus the `api` command.
 - `src/commands/resultUpload.ts` — `ResultUploadCommandModule` defines CLI options shared by both commands. Loads env vars, then delegates to `ResultUploadCommandHandler`.
 
 ### Core Upload Pipeline (src/utils/result-upload/)
@@ -62,24 +62,50 @@ The upload flow has two stages handled by two classes, with a shared `MarkerPars
 - `allureParser.ts` — Parses Allure JSON results directories (`*-result.json` and `*-container.json` files; XML/images ignored). Supports test case linking via TMS links (`type: "tms"`) or marker in test name, maps Allure statuses to QA Sphere result statuses (`unknown→open`, `broken→blocked`), strips ANSI codes and HTML-escapes messages, and resolves attachments via `attachments[].source`. Uses `formatMarker()` from `MarkerParser`. Extracts run-level failure logs from container files by checking `befores`/`afters` fixtures with `failed`/`broken` status — primarily useful for pytest (allure-junit5 and allure-playwright leave container fixtures empty).
 - `types.ts` — Shared `TestCaseResult`, `ParseResult`, and `Attachment` interfaces used by both parsers.
 
+### API Command (src/commands/api/)
+
+The `api` command provides direct programmatic access to the QA Sphere public API: `qasphere api <resource> <action> [options]`. Each resource (e.g., `projects`, `runs`, `test-cases`) is a subcommand with its own actions. Some resources have nested subgroups (e.g., `qasphere api runs test-cases list`).
+
+**Architecture**: The API command uses a manifest-based pattern. Each resource defines its endpoints as declarative `ApiEndpointSpec` objects (in `src/commands/api/manifests/`), and shared infrastructure handles yargs registration, validation, and execution.
+
+**Key files**:
+
+- `types.ts` — Defines `ApiEndpointSpec` as a discriminated union on `bodyMode` (`'none'` | `'json'` | `'file'`), plus supporting types (`ApiPathParamSpec`, `ApiFieldSpec`, `ApiQueryOptionSpec`, `ExecuteFn`)
+- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`)
+- `builder.ts` — `buildCommandsFromSpecs()` builds a yargs command tree from the flat specs array, handling nested command paths automatically. Creates yargs options from path params, query options, field options, and body mode
+- `executor.ts` — `executeCommand()` orchestrates execution: collects and validates path params → processes body (based on `bodyMode` discriminant) → collects and validates query options → connects to API (lazy env loading) → executes with error mapping
+- `main.ts` — Registers the `api` command, delegates to `buildCommandsFromSpecs()`
+- `utils.ts` — Shared helpers: `printJson()`, `apiDocsEpilog()`, `formatApiError()`, `ArgumentValidationError`, `kebabToCamelCase()`, body parsing (`parseBodyInput`, `mergeBodyWithFields`), validation (`validateFieldValues`, `validateOptionValues`), collection helpers (`collectFieldValues`, `collectPathParamValues`, `collectQueryValues`), and `handleApiValidationError()` for reformatting API errors into CLI argument names
+
+Important note: Online documentation is available at https://docs.qasphere.com. Most leaf pages have a markdown version available by appending `.md` in the URL. Use the markdown version before falling back to the original URL if the markdown version returns >= 400 status.
+
+**Key design patterns**:
+
+- **Manifest-based declarations**: Each endpoint is a plain object (`ApiEndpointSpec`) declaring its command path, params, options, body mode, and execute function. The builder and executor handle all yargs wiring, validation, and error handling generically
+- **Lazy env loading**: `QAS_URL`/`QAS_TOKEN` are loaded only when the API is actually called (inside `executeCommand()`), so CLI validation errors are reported first
+- **Validation flow**: Path params and query options are validated against optional Zod schemas. For `json` body mode, individual field values are validated (with JSON parsing for complex fields), then merged with `--body`/`--body-file` input. API-level `RequestValidationError` is caught and reformatted into CLI argument names (e.g., `--query-plans: [0].tcaseIds: not allowed for "live" runs`)
+
 ### API Layer (src/api/)
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson` decorators that wrap `fetch`
-- `index.ts` — `createApi(baseUrl, token, authType)` assembles the API client from sub-modules
-- Sub-modules: `projects.ts`, `run.ts`, `tcases.ts`, `file.ts`
+- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson`, `withUserAgent`, `withHttpRetry` decorators that wrap `fetch` via middleware pattern; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
+- `index.ts` — `createApi(baseUrl, token, authType)` assembles the API client from all sub-modules using `withFetchMiddlewares`
+- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `pageParam`, `limitParam`)
+- One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
 
 ### Configuration (src/utils/)
 
-- `env.ts` — Loads `QAS_TOKEN` and `QAS_URL` from environment variables, `.env`, or `.qaspherecli` (searched up the directory tree)
+- `env.ts` — Loads `QAS_TOKEN` and `QAS_URL` from environment variables, `.env`, or `.qaspherecli` (searched up the directory tree). Optional `QAS_DEV_AUTH` adds a dev cookie via the `withDevAuth` fetch decorator
 - `config.ts` — Constants (required Node version)
 - `misc.ts` — URL parsing, template string processing (`{env:VAR}`, date placeholders), error handling utilities. Note: marker-related functions have been moved to `MarkerParser.ts`
 - `version.ts` — Reads version from `package.json` by traversing parent directories
 
 ## Testing
 
-Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`:
+Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test files are in `src/tests/`.
+
+### Upload Command Tests
 
 - `result-upload.spec.ts` — Integration tests for the full upload flow (JUnit, Playwright, and Allure), with MSW intercepting all API calls. Includes hyphenless and CamelCase marker tests (JUnit only)
 - `marker-parser.spec.ts` — Unit tests for `MarkerParser` (detection, extraction, matching across all marker formats and command types)
@@ -89,6 +115,51 @@ Tests use **Vitest** with **MSW** (Mock Service Worker) for API mocking. Test fi
 - `template-string-processing.spec.ts` — Unit tests for run name template processing
 
 Test fixtures live in `src/tests/fixtures/` (XML files, JSON files, and mock test case data).
+
+### API Command Tests (src/tests/api/)
+
+Tests for the `api` command are organized by resource under `src/tests/api/`, with one spec file per action (e.g., `projects/list.spec.ts`, `runs/create.spec.ts`). Tests support both mocked and live modes.
+
+**Shared infrastructure** (`src/tests/api/test-helper.ts`):
+
+- `baseURL`, `token` — Configured base URL and token (mocked values or real from env vars)
+- `useMockServer(...handlers)` — Sets up MSW server with lifecycle hooks (before/after each test)
+- `runCli(...args)` — Invokes the CLI programmatically via `run(args)`, captures and parses JSON output. Useful only if the command prints JSON.
+- `test` fixture — Extended Vitest `test` that provides a `project` fixture (mock project in mocked mode, real project with cleanup in live mode)
+- `expectValidationError(runner, pattern)` — Asserts a command exits with a validation error matching the given regex
+- Helper functions for live tests: `createFolder()`, `createTCase()`, `createRun()`
+
+**Global setup** (`src/tests/global-setup.ts`): Authenticates against the live API (if env vars are set) and provides a session token for test project cleanup.
+
+**Test pattern**: Each spec file typically contains:
+
+1. A `describe('mocked', ...)` block with MSW handlers and assertions on request headers/params
+2. Validation error tests checking CLI argument validation
+3. Live tests tagged with `{ tags: ['live'] }` that run against a real QA Sphere instance
+
+**Other tests**:
+
+- `missing-subcommand-help.spec.ts` — Verifies incomplete commands (e.g., `api` alone, `api projects` alone) show help text
+- `api/utils.spec.ts` — Unit tests for API command utility functions
+
+### Running Tests
+
+```bash
+npm run test                                    # Run all tests (mocked only by default)
+npm run test:live                               # Run live tests only (requires env vars)
+```
+
+### Environment Variables for Live API Tests
+
+Live tests require all four variables to be set; otherwise tests run in mocked mode only:
+
+| Variable            | Purpose                                               |
+| ------------------- | ----------------------------------------------------- |
+| `QAS_TEST_URL`      | Base URL of the QA Sphere instance                    |
+| `QAS_TEST_TOKEN`    | API token for authenticated API calls                 |
+| `QAS_TEST_USERNAME` | Email for login endpoint (used by global setup)       |
+| `QAS_TEST_PASSWORD` | Password for login endpoint (used by global setup)    |
+| `QAS_DEV_AUTH`      | (Optional) Dev auth cookie value for dev environments |
 
 The `tsconfig.json` excludes `src/tests` from compilation output.
 

@@ -1,6 +1,17 @@
+import { z, ZodError, ZodType } from 'zod'
+
 export type ResourceId = string | number
 
-export type ResultStatus = 'open' | 'passed' | 'blocked' | 'failed' | 'skipped'
+export type ResultStatus =
+	| 'open'
+	| 'passed'
+	| 'blocked'
+	| 'failed'
+	| 'skipped'
+	| 'custom1'
+	| 'custom2'
+	| 'custom3'
+	| 'custom4'
 
 export interface PaginatedResponse<T> {
 	data: T[]
@@ -13,66 +24,38 @@ export interface PaginatedRequest {
 	page?: number
 	limit?: number
 }
-
-export interface TCase {
-	id: string
-	legacyId?: string
-	seq: number
-	title: string
-	version: number
-	projectId: string
-	folderId: number
+export interface MessageResponse {
+	message: string
 }
 
-export interface CreateTCasesRequest {
-	folderPath: string[]
-	tcases: { title: string; tags: string[] }[]
+export class RequestValidationError extends Error {
+	constructor(
+		public readonly zodError: ZodError,
+		public readonly rawValue: unknown
+	) {
+		super(zodError.message)
+		this.name = 'RequestValidationError'
+	}
 }
 
-export interface CreateTCasesResponse {
-	tcases: { id: string; seq: number }[]
+export function validateRequest<T>(value: unknown, schema: ZodType<T>): T {
+	try {
+		return schema.parse(value)
+	} catch (e) {
+		if (e instanceof ZodError) {
+			throw new RequestValidationError(e, value)
+		}
+		throw e
+	}
 }
 
-export interface GetTCasesRequest extends PaginatedRequest {
-	folders?: number[]
-}
-
-export interface GetTCasesBySeqRequest {
-	seqIds: string[]
-	page?: number
-	limit?: number
-}
-
-export interface GetFoldersRequest extends PaginatedRequest {
-	search?: string
-}
-
-export interface Folder {
-	id: number
-	parentId: number
-	pos: number
-	title: string
-}
-
-export interface RunTCase {
-	id: string
-	version: number
-	folderId: number
-	pos: number
-	seq: number
-	title: string
-	priority: string
-	status: string
-	folder: Folder
-}
-
-export interface CreateResultsRequestItem {
-	tcaseId: string
-	status: ResultStatus
-	comment?: string
-	timeTaken: number | null // In milliseconds
-}
-
-export interface CreateResultsRequest {
-	items: CreateResultsRequestItem[]
-}
+export const sortFieldParam = z.string().optional()
+export const sortOrderParam = z.enum(['asc', 'desc']).optional()
+export type SortOrder = z.infer<typeof sortOrderParam>
+export const pageParam = z.number().int().positive().optional()
+export const limitParam = z.number().int().positive().optional()
+export const priorityEnum = z.enum(['low', 'medium', 'high'])
+export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
+export const resourceIdSchema = z
+	.string()
+	.regex(/^[a-zA-Z0-9_-]+$/, 'must contain only alphanumeric characters, dashes, and underscores')

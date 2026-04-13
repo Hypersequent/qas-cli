@@ -169,7 +169,7 @@ async function handleStatus(): Promise<void> {
 	const token = result.authType === 'bearer' ? result.credentials.accessToken : result.token
 	try {
 		const api = createApi(tenantUrl, token, result.authType)
-		await api.projects.listProjects()
+		await api.projects.list()
 		console.log(`  Status: ${chalk.green('valid')}`)
 	} catch {
 		console.log(`  Status: ${chalk.red('invalid or expired')}`)

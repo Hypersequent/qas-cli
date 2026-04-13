@@ -1,7 +1,7 @@
 import { Arguments } from 'yargs'
 import chalk from 'chalk'
 import escapeHtml from 'escape-html'
-import { RunTCase } from '../../api/schemas'
+import { RunTCase } from '../../api/runs'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
 import type { AuthConfig } from '../credentials'
@@ -33,9 +33,7 @@ export class ResultUploader {
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {
-		const tcases = await this.api.runs
-			.getRunTCases(this.project, this.run)
-			.catch(printErrorThenExit)
+		const tcases = await this.api.runs.getTCases(this.project, this.run).catch(printErrorThenExit)
 
 		const { results: mappedResults, missing } = this.mapTestCaseResults(results, tcases)
 		this.validateAndPrintMissingTestCases(missing)
@@ -48,7 +46,7 @@ export class ResultUploader {
 		)
 
 		if (runFailureLogs) {
-			await this.api.runs.createRunLog(this.project, this.run, { comment: runFailureLogs })
+			await this.api.runs.createLog(this.project, this.run, { comment: runFailureLogs })
 			console.log(`Uploaded run failure logs`)
 		}
 
@@ -274,7 +272,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 					filename: attachment.filename,
 				}))
 
-				const uploaded = await this.api.files.uploadFiles(files)
+				const uploaded = await this.api.files.upload(files)
 
 				uploadedCount += batch.length
 				loader.setText(
@@ -330,7 +328,7 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 			const endIdx = Math.min(startIdx + MAX_RESULTS_IN_REQUEST, results.length)
 			const batch = results.slice(startIdx, endIdx)
 
-			await this.api.runs.createResults(this.project, this.run, {
+			await this.api.results.createBatch(this.project, this.run, {
 				items: batch.map(({ tcase, result }) => ({
 					tcaseId: tcase.id,
 					status: result.status,
