@@ -12,7 +12,10 @@
   - [Via NPX](#via-npx)
   - [Via NPM](#via-npm)
 - [Shell Completion](#shell-completion)
-- [Environment](#environment)
+- [Authentication](#authentication)
+  - [Other auth commands](#other-auth-commands)
+  - [Credential resolution order](#credential-resolution-order)
+  - [Manual configuration](#manual-configuration)
 - [Command: `api`](#command-api)
   - [API Command Tree](#api-command-tree)
 - [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
@@ -23,6 +26,8 @@
   - [JUnit XML](#junit-xml)
   - [Playwright JSON](#playwright-json)
   - [Allure](#allure)
+  - [Run-Level Logs](#run-level-logs)
+- [AI Agent Skill](#ai-agent-skill)
 - [Development](#development-for-those-who-want-to-contribute-to-the-tool)
 
 ## Description
@@ -386,7 +391,7 @@ Allure results use one `*-result.json` file per test in a results directory. `al
 
 Only Allure JSON result files (`*-result.json`) are supported. Legacy Allure 1 XML files are ignored.
 
-## Run-Level Logs
+### Run-Level Logs
 
 The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
 
