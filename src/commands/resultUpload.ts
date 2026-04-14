@@ -84,7 +84,8 @@ export class ResultUploadCommandModule implements CommandModule<unknown, ResultU
 				type: 'boolean',
 			},
 			force: {
-				describe: 'Ignore API request errors, invalid test cases or attachments',
+				describe:
+					'Ignore API request errors, invalid or duplicate test case mappings, or attachments',
 				type: 'boolean',
 			},
 			'ignore-unmatched': {

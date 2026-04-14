@@ -1,0 +1,39 @@
+{
+  "suites": [
+    {
+      "title": "describe-collision.spec.ts",
+      "specs": [],
+      "suites": [
+        {
+          "title": "Test Case Folders (TEST-002, TEST-003)",
+          "specs": [
+            {
+              "title": "should create a new root folder (TEST-004)",
+              "tags": [],
+              "tests": [
+                {
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "duration": 1000,
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ]
+            }
+          ],
+          "suites": []
+        }
+      ]
+    }
+  ]
+}

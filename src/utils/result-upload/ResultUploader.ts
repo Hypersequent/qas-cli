@@ -7,7 +7,7 @@ import { Api, createApi } from '../../api'
 import type { AuthConfig } from '../credentials'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
-import type { MarkerParser } from './MarkerParser'
+import { DuplicateTCaseMapping, TCaseWithResult, mapResolvedResultsToTCases } from './mapping'
 
 const MAX_CONCURRENT_BATCH_UPLOADS = 3
 const MAX_BATCH_SIZE_BYTES = 100 * 1024 * 1024 // 100 MiB
@@ -20,10 +20,10 @@ export class ResultUploader {
 	private run: number
 
 	constructor(
-		private markerParser: MarkerParser,
 		private type: UploadCommandType,
 		private args: Arguments<ResultUploadCommandArgs>,
-		auth: AuthConfig
+		auth: AuthConfig,
+		private options: { skipDuplicateValidation?: boolean } = {}
 	) {
 		const { url, project, run } = parseRunUrl(args)
 
@@ -35,8 +35,11 @@ export class ResultUploader {
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {
 		const tcases = await this.api.runs.getTCases(this.project, this.run).catch(printErrorThenExit)
 
-		const { results: mappedResults, missing } = this.mapTestCaseResults(results, tcases)
+		const { results: mappedResults, missing, duplicates } = this.mapTestCaseResults(results, tcases)
 		this.validateAndPrintMissingTestCases(missing)
+		if (!this.options.skipDuplicateValidation) {
+			this.validateAndPrintDuplicateMappings(duplicates)
+		}
 		this.validateAndPrintMissingAttachments(mappedResults)
 
 		console.log(
@@ -87,6 +90,27 @@ export class ResultUploader {
 
 	private printMissingTestCaseSummary(count: number) {
 		console.log(chalk.dim(`\nSkipped ${count} unmatched test${count === 1 ? '' : 's'}`))
+	}
+
+	private validateAndPrintDuplicateMappings(duplicates: DuplicateTCaseMapping[]) {
+		if (!duplicates.length) {
+			return
+		}
+
+		const header = this.args.force ? chalk.yellow('Warning:') : chalk.red('Error:')
+		for (const duplicate of duplicates) {
+			console.error(
+				`${header} multiple results map to ${chalk.green(`${this.project}-${duplicate.tcase.seq}`)} (${chalk.blue(duplicate.tcase.title)}):`
+			)
+			for (const result of duplicate.results) {
+				const folderMessage = result.folder ? ` "${result.folder}" ->` : ''
+				console.error(`  -${folderMessage} "${result.name}"`)
+			}
+		}
+
+		if (!this.args.force) {
+			process.exit(1)
+		}
 	}
 
 	private printMissingTestCaseGuidance(missing: TestCaseResult[]) {
@@ -372,34 +396,12 @@ ${chalk.yellow('To fix this issue, choose one of the following options:')}
 	}
 
 	private mapTestCaseResults = (testcaseResults: TestCaseResult[], testcases: RunTCase[]) => {
-		const results: TCaseWithResult[] = []
-		const missing: TestCaseResult[] = []
-
-		testcaseResults.forEach((result) => {
-			if (result.name) {
-				const tcase = testcases.find((tcase) =>
-					this.markerParser.nameMatchesTCase(result.name, this.project, tcase.seq)
-				)
-
-				if (tcase) {
-					results.push({ result, tcase })
-					return
-				}
-			}
-			missing.push(result)
-		})
-
-		return { results, missing }
+		return mapResolvedResultsToTCases(this.project, testcaseResults, testcases)
 	}
 }
 
 export const setMaxResultsInRequest = (max: number) => {
 	MAX_RESULTS_IN_REQUEST = max
-}
-
-interface TCaseWithResult {
-	tcase: RunTCase
-	result: TestCaseResult
 }
 
 const makeListHtml = (list: { name: string; url: string }[]) => {

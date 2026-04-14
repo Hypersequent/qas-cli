@@ -204,7 +204,7 @@ There are two modes for uploading results using the commands:
   - `--run-name` - Optional name template for creating new test run. It supports `{env:VAR}`, `{YYYY}`, `{YY}`, `{MM}`, `{MMM}`, `{DD}`, `{HH}`, `{hh}`, `{mm}`, `{ss}`, `{AMPM}` placeholders (default: `Automated test run - {MMM} {DD}, {YYYY}, {hh}:{mm}:{ss} {AMPM}`)
   - `--create-tcases` - Automatically create test cases in QA Sphere for results that don't have valid test case markers. A mapping file (`qasphere-automapping-YYYYMMDD-HHmmss.txt`) is generated showing the sequence numbers assigned to each new test case (default: `false`)
 - `--attachments` - Try to detect and upload any attachments with the test result
-- `--force` - Ignore API request errors, invalid test cases, or attachments
+- `--force` - Ignore API request errors, invalid or duplicate test case mappings, or attachments
 - `--ignore-unmatched` - Suppress individual unmatched test messages, show summary only
 - `--skip-report-stdout` - Control when to skip stdout blocks from test report (choices: `on-success`, `never`; default: `never`)
 - `--skip-report-stderr` - Control when to skip stderr blocks from test report (choices: `on-success`, `never`; default: `never`)
@@ -319,7 +319,7 @@ Ensure the required environment variables are defined before running these comma
 
 ## Test Report Requirements
 
-The QAS CLI maps test results from your reports (JUnit XML, Playwright JSON, or Allure) to corresponding test cases in QA Sphere. If a test result lacks a valid marker/reference, the CLI will display an error unless you use `--create-tcases` to automatically create test cases, or `--ignore-unmatched`/`--force` to skip unmatched results.
+The QAS CLI maps test results from your reports (JUnit XML, Playwright JSON, or Allure) to corresponding test cases in QA Sphere. If a test result lacks a valid marker/reference, or multiple results resolve to the same run test case, the CLI will display an error unless you use `--create-tcases` to automatically create test cases, or `--ignore-unmatched`/`--force` to bypass the mapping issue.
 
 ### JUnit XML
 

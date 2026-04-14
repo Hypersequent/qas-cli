@@ -5,8 +5,9 @@ import { Attachment, ParseResult, TestCaseResult } from '../types'
 import { Parser, ParserOptions } from '../ResultUploadCommandHandler'
 import { ResultStatus } from '../../../api/schemas'
 import { parseTCaseUrl } from '../../misc'
-import { formatMarker } from '../MarkerParser'
+import { formatMarker, getParsedMarkerFromText } from '../MarkerParser'
 import { getAttachments } from '../utils'
+import type { TestCaseMarker } from '../types'
 
 // Schema definition as per https://github.com/microsoft/playwright/blob/main/packages/playwright/types/testReporter.d.ts
 
@@ -108,6 +109,7 @@ export const parsePlaywrightJson: Parser = async (
 			const status = mapPlaywrightStatus(test.status)
 			const message = buildMessage(result, status, options)
 			const baseName = `${titlePrefix}${spec.title}`
+			const fallbackMarker = getParsedMarkerFromText(spec.title)
 
 			const attachmentPaths: string[] = []
 			for (const out of result.attachments || []) {
@@ -120,16 +122,30 @@ export const parsePlaywrightJson: Parser = async (
 				attachmentPaths[0]?.startsWith('/') ? undefined : attachmentBaseDirectory
 			)
 
-			// Fan out: one TestCaseResult per unique annotation, or one with no prefix if no annotations
-			const uniqueMarkers = [...new Set(markers)]
-			const resultNames =
+			// Fan out: one TestCaseResult per unique annotation, or one result using the spec title marker.
+			const uniqueMarkers = dedupeMarkers(markers)
+			const resultsToCreate =
 				uniqueMarkers.length > 0
-					? uniqueMarkers.map((marker) => `${marker}: ${baseName}`)
-					: [baseName]
+					? uniqueMarkers.map((marker) => ({
+							name: `${formatMarker(marker.projectCode, marker.seq)}: ${baseName}`,
+							marker,
+							markerResolution: 'resolved' as const,
+						}))
+					: [
+							{
+								name: baseName,
+								marker: fallbackMarker ?? null,
+								markerResolution: fallbackMarker
+									? ('resolved' as const)
+									: ('resolved-none' as const),
+							},
+						]
 
-			for (const name of resultNames) {
+			for (const { name, marker, markerResolution } of resultsToCreate) {
 				const numTestcases = testcases.push({
 					name,
+					marker,
+					markerResolution,
 					folder: topLevelSuite,
 					status,
 					message,
@@ -173,17 +189,28 @@ export const parsePlaywrightJson: Parser = async (
 	return { testCaseResults: testcases, runFailureLogs: runFailureLogParts.join('') }
 }
 
-const getAllTCaseMarkersFromAnnotations = (annotations: Annotation[]): string[] => {
-	const markers: string[] = []
+const getAllTCaseMarkersFromAnnotations = (annotations: Annotation[]): TestCaseMarker[] => {
+	const markers: TestCaseMarker[] = []
 	for (const annotation of annotations) {
 		if (annotation.type.toLowerCase().includes('test case') && annotation.description) {
 			const res = parseTCaseUrl(annotation.description)
 			if (res) {
-				markers.push(formatMarker(res.project, res.tcaseSeq))
+				markers.push({
+					projectCode: res.project,
+					seq: res.tcaseSeq,
+				})
 			}
 		}
 	}
 	return markers
+}
+
+const dedupeMarkers = (markers: TestCaseMarker[]): TestCaseMarker[] => {
+	const uniqueMarkers = new Map<string, TestCaseMarker>()
+	for (const marker of markers) {
+		uniqueMarkers.set(`${marker.projectCode.toLowerCase()}-${marker.seq}`, marker)
+	}
+	return Array.from(uniqueMarkers.values())
 }
 
 const mapPlaywrightStatus = (status: Status): ResultStatus => {
