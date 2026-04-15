@@ -150,14 +150,14 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 export async function resolveAuth(): Promise<AuthConfig> {
 	const resolved = await resolveCredentialSource()
 	if (!resolved) {
-		console.log(
+		console.error(
 			chalk.red('Missing required environment variables: ') +
 				qasEnvs.filter((k) => !process.env[k]).join(', ')
 		)
-		console.log('\nYou can authenticate using:')
-		console.log(chalk.green('  qasphere auth login'))
-		console.log('\nOr create a .qaspherecli file with the following content:')
-		console.log(
+		console.error('\nYou can authenticate using:')
+		console.error(chalk.green('  qasphere auth login'))
+		console.error('\nOr create a .qaspherecli file with the following content:')
+		console.error(
 			chalk.green(`
 QAS_TOKEN=your_token
 QAS_URL=http://your-qasphere-instance-url
@@ -166,8 +166,8 @@ QAS_URL=http://your-qasphere-instance-url
 # QAS_TOKEN=tst0000001.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
 # QAS_URL=https://tenant_id.eu1.qasphere.com`)
 		)
-		console.log('\nOr export them as environment variables:')
-		console.log(
+		console.error('\nOr export them as environment variables:')
+		console.error(
 			chalk.green(`
 export QAS_TOKEN=tst0000001.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
 export QAS_URL=https://tenant_id.eu1.qasphere.com`)

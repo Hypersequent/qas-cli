@@ -927,4 +927,83 @@ describe('token refresh at load time', () => {
 			process.chdir(origCwd)
 		}
 	})
+
+	test('refreshes expired access token stored in keyring and persists back to keyring', async () => {
+		mockState.keyringMode = 'available'
+		writeOAuthCredentials('keyring')
+
+		// Override the access token to be expired
+		const key = 'qasphere-cli:credentials'
+		const creds = JSON.parse(mockState.keyringStore.get(key)!) as Record<string, unknown>
+		creds.accessTokenExpiresAt = new Date(Date.now() - 60_000).toISOString()
+		mockState.keyringStore.set(key, JSON.stringify(creds))
+
+		const refreshedAccessToken = 'tenantId.authId7chars.refreshedAccessToken'
+		const refreshedRefreshToken = 'tenantId.authId7chars.refreshedRefreshToken'
+
+		server.use(
+			http.post(`${tenantUrl}/api/oauth/token`, async ({ request }) => {
+				const body = (await request.json()) as Record<string, string>
+				if (body.grant_type === 'refresh_token' && body.refresh_token === testRefreshToken) {
+					return HttpResponse.json({
+						access_token: refreshedAccessToken,
+						token_type: 'Bearer',
+						expires_in: 3600,
+						refresh_token: refreshedRefreshToken,
+					})
+				}
+				return HttpResponse.json(
+					{ error: 'invalid_grant', error_description: 'invalid refresh token' },
+					{ status: 401 }
+				)
+			}),
+			http.get(`${tenantUrl}/api/public/v0/project`, ({ request }) => {
+				const auth = request.headers.get('Authorization')
+				if (auth === `Bearer ${refreshedAccessToken}`) {
+					return HttpResponse.json({ data: [], total: 0 })
+				}
+				return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+			})
+		)
+
+		await runCommand('auth status')
+
+		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
+
+		// Verify keyring was updated with new tokens
+		const updated = JSON.parse(mockState.keyringStore.get(key)!) as Record<string, unknown>
+		expect(updated.accessToken).toBe(refreshedAccessToken)
+		expect(updated.refreshToken).toBe(refreshedRefreshToken)
+
+		// Verify credentials file was NOT created
+		expect(existsSync(credentialsFilePath())).toBe(false)
+	})
+})
+
+describe('logout error handling', () => {
+	test('clearCredentials failure shows error and exits', async () => {
+		const exit = mockProcessExit()
+
+		mockState.keyringMode = 'available'
+		writeOAuthCredentials('keyring')
+
+		// Make keyring deletion throw
+		const originalDelete = mockState.keyringStore.delete.bind(mockState.keyringStore)
+		mockState.keyringStore.delete = () => {
+			throw new Error('Keyring access denied')
+		}
+
+		try {
+			await runCommand('auth logout').catch(() => {})
+
+			expect(err).toHaveBeenCalledWith(
+				expect.stringContaining('Could not clear credentials from keyring')
+			)
+			expect(err).toHaveBeenCalledWith(expect.stringContaining('Keyring access denied'))
+			expect(exit).toHaveBeenCalledWith(1)
+		} finally {
+			mockState.keyringStore.delete = originalDelete
+		}
+	})
 })

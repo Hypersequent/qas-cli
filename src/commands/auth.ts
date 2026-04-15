@@ -66,7 +66,7 @@ async function handleDeviceLogin(): Promise<void> {
 	let currentInterval = deviceCodeResponse.interval
 
 	console.log('Opening browser to authorize...')
-	const normalizedCode = user_code.replace('-', '')
+	const normalizedCode = user_code.replaceAll('-', '')
 	const url = verification_uri_complete || `${verification_uri}?code=${normalizedCode}`
 	console.log(`\nIf the browser didn't open, visit:\n  ${url}\n`)
 	openBrowser(url)
@@ -191,6 +191,8 @@ const sourceLabels: Partial<Record<CredentialSource, string>> = {
 	env_var: 'environment variables (QAS_TOKEN, QAS_URL)',
 	'.env': 'a .env file in the current directory',
 	'.qaspherecli': 'a .qaspherecli file',
+	keyring: 'the system keyring',
+	'credentials.json': 'a credentials file (~/.config/qasphere/credentials.json)',
 }
 
 async function handleLogout(): Promise<void> {
