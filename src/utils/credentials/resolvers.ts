@@ -128,6 +128,9 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 			accessToken: tokenResponse.access_token,
 			refreshToken: tokenResponse.refresh_token,
 			accessTokenExpiresAt: new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString(),
+			refreshTokenExpiresAt: new Date(
+				Date.now() + tokenResponse.refresh_token_expires_in * 1000
+			).toISOString(),
 			tenantUrl: resolved.credentials.tenantUrl,
 		}
 

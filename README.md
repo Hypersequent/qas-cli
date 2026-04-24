@@ -90,6 +90,8 @@ qasphere auth login
 
 This opens your browser to complete authentication and securely stores your credentials in the system keyring. If a keyring is not available, credentials are stored in `~/.config/qasphere/credentials.json` with restricted file permissions.
 
+OAuth sessions are valid for 90 days. The 90-day window resets every time the CLI is used — as long as you keep running `qasphere` commands, you won't need to re-authenticate. `qasphere auth status` shows the current remaining time.
+
 Other auth commands:
 
 ```bash

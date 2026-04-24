@@ -34,13 +34,14 @@ const deviceCodeHandler = (interval = 0, expiresIn = 900) =>
 		})
 	})
 
-const tokenSuccessHandler = (expiresIn = 3600) =>
+const tokenSuccessHandler = (expiresIn = 3600, refreshExpiresIn = 90 * 24 * 3600) =>
 	http.post(`${tenantUrl}/api/oauth/token`, () => {
 		return HttpResponse.json({
 			access_token: testAccessToken,
 			token_type: 'Bearer',
 			expires_in: expiresIn,
 			refresh_token: testRefreshToken,
+			refresh_token_expires_in: refreshExpiresIn,
 		})
 	})
 
@@ -132,6 +133,7 @@ function writeOAuthCredentials(source: 'file' | 'keyring') {
 		accessToken: testAccessToken,
 		refreshToken: testRefreshToken,
 		accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+		refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
 		tenantUrl,
 	}
 	if (source === 'keyring') {
@@ -302,6 +304,7 @@ describe('auth login (device flow)', () => {
 					token_type: 'Bearer',
 					expires_in: 3600,
 					refresh_token: testRefreshToken,
+					refresh_token_expires_in: 90 * 24 * 3600,
 				})
 			})
 		)
@@ -392,7 +395,9 @@ describe('auth login → status → logout lifecycle', () => {
 			)
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
-			expect(log).toHaveBeenCalledWith(expect.stringContaining('Access token expires'))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringMatching(/Re-authentication required: in (89|90) days \(resets on each use\)/)
+			)
 
 			// Logout
 			log.mockClear()
@@ -522,7 +527,7 @@ describe('auth status credential sources', () => {
 			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
 		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining(source))
-		expect(log).toHaveBeenCalledWith(expect.stringContaining('Access token expires'))
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('Re-authentication required'))
 	})
 })
 
@@ -681,6 +686,7 @@ describe('credential storage (keyring unavailable)', () => {
 					token_type: 'Bearer',
 					expires_in: 3600,
 					refresh_token: secondRefreshToken,
+					refresh_token_expires_in: 90 * 24 * 3600,
 				})
 			})
 		)
@@ -853,6 +859,7 @@ describe('token refresh at load time', () => {
 				accessToken: 'expired-access-token',
 				refreshToken: testRefreshToken,
 				accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString(), // expired 1 min ago
+				refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
 				tenantUrl,
 			})
 		)
@@ -869,6 +876,7 @@ describe('token refresh at load time', () => {
 						token_type: 'Bearer',
 						expires_in: 3600,
 						refresh_token: refreshedRefreshToken,
+						refresh_token_expires_in: 90 * 24 * 3600,
 					})
 				}
 				return HttpResponse.json(
@@ -913,6 +921,7 @@ describe('token refresh at load time', () => {
 				accessToken: 'expired-access-token',
 				refreshToken: 'expired-refresh-token',
 				accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+				refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
 				tenantUrl,
 			})
 		)
@@ -964,6 +973,7 @@ describe('token refresh at load time', () => {
 						token_type: 'Bearer',
 						expires_in: 3600,
 						refresh_token: refreshedRefreshToken,
+						refresh_token_expires_in: 90 * 24 * 3600,
 					})
 				}
 				return HttpResponse.json(

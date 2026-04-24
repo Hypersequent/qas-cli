@@ -66,11 +66,10 @@ async function handleDeviceLogin(): Promise<void> {
 	let currentInterval = deviceCodeResponse.interval
 
 	console.log('Opening browser to authorize...')
-	const normalizedCode = user_code.replaceAll('-', '')
-	const url = verification_uri_complete || `${verification_uri}?code=${normalizedCode}`
+	const url = verification_uri_complete || `${verification_uri}?code=${user_code}`
 	console.log(`\nIf the browser didn't open, visit:\n  ${url}\n`)
 	openBrowser(url)
-	console.log(`Verify the code displayed in the browser: ${chalk.bold(normalizedCode)}\n`)
+	console.log(`Verify the code displayed in the browser: ${chalk.bold(user_code)}\n`)
 
 	const loader = twirlLoader()
 	loader.start('Waiting for authorization...')
@@ -100,6 +99,9 @@ async function handleDeviceLogin(): Promise<void> {
 					accessToken: result.data.access_token,
 					refreshToken: result.data.refresh_token,
 					accessTokenExpiresAt: new Date(Date.now() + result.data.expires_in * 1000).toISOString(),
+					refreshTokenExpiresAt: new Date(
+						Date.now() + result.data.refresh_token_expires_in * 1000
+					).toISOString(),
 					tenantUrl,
 				})
 
@@ -178,14 +180,12 @@ async function handleStatus(): Promise<void> {
 	}
 
 	if (valid && result.authType === 'bearer') {
-		const expiresAt = new Date(result.credentials.accessTokenExpiresAt)
+		const expiresAt = new Date(result.credentials.refreshTokenExpiresAt)
 		const remainingMs = expiresAt.getTime() - Date.now()
-		if (remainingMs > 0) {
-			const minutes = Math.floor(remainingMs / 60_000)
-			console.log(`  Access token expires: in ${minutes} minute${minutes !== 1 ? 's' : ''}`)
-		} else {
-			console.log(`  Access token expires: ${chalk.yellow('expired (will refresh on next use)')}`)
-		}
+		const days = Math.max(0, Math.floor(remainingMs / (24 * 60 * 60 * 1000)))
+		console.log(
+			`  Re-authentication required: in ${days} day${days !== 1 ? 's' : ''} (resets on each use)`
+		)
 	}
 }
 
