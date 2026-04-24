@@ -12,7 +12,10 @@
   - [Via NPX](#via-npx)
   - [Via NPM](#via-npm)
 - [Shell Completion](#shell-completion)
-- [Environment](#environment)
+- [Authentication](#authentication)
+  - [Other auth commands](#other-auth-commands)
+  - [Credential resolution order](#credential-resolution-order)
+  - [Manual configuration](#manual-configuration)
 - [Command: `api`](#command-api)
   - [API Command Tree](#api-command-tree)
 - [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
@@ -23,6 +26,8 @@
   - [JUnit XML](#junit-xml)
   - [Playwright JSON](#playwright-json)
   - [Allure](#allure)
+  - [Run-Level Logs](#run-level-logs)
+- [AI Agent Skill](#ai-agent-skill)
 - [Development](#development-for-those-who-want-to-contribute-to-the-tool)
 
 ## Description
@@ -73,30 +78,51 @@ qasphere completion >> ~/.bashrc
 
 Then restart your shell or source the profile (e.g., `source ~/.zshrc`). After that, pressing `Tab` will autocomplete commands and options.
 
-## Environment
+## Authentication
 
-The CLI requires the following variables to be defined:
+### OAuth (recommended)
+
+The recommended way to authenticate is using the interactive login command:
+
+```bash
+qasphere auth login
+```
+
+This opens your browser to complete authentication and securely stores your credentials in the system keyring. If a keyring is not available, credentials are stored in `~/.config/qasphere/credentials.json` with restricted file permissions.
+
+OAuth sessions are valid for 90 days. The 90-day window resets every time the CLI is used — as long as you keep running `qasphere` commands, you won't need to re-authenticate. `qasphere auth status` shows the current remaining time.
+
+Other auth commands:
+
+```bash
+qasphere auth status    # Show current authentication status
+qasphere auth logout    # Clear stored credentials
+```
+
+### API Key
+
+Instead of using `auth login`, you can manually set the required variables:
 
 - `QAS_TOKEN` - QA Sphere API token (see [docs](https://docs.qasphere.com/api/authentication) if you need help generating one)
 - `QAS_URL` - Base URL of your QA Sphere instance (e.g., `https://qas.eu2.qasphere.com`)
 
-These variables could be defined:
-
-- as environment variables
-- in .env of a current working directory
-- in a special `.qaspherecli` configuration file in your project directory (or any parent directory)
-
-Example: .qaspherecli
+These variables can be defined as environment variables, in a `.env` file, or in a `.qaspherecli` configuration file:
 
 ```sh
 # .qaspherecli
 QAS_TOKEN=your_token
 QAS_URL=https://qas.eu1.qasphere.com
-
-# Example with real values:
-# QAS_TOKEN=qas.1CKCEtest_JYyckc3zYtest.dhhjYY3BYEoQH41e62itest
-# QAS_URL=https://qas.eu1.qasphere.com
 ```
+
+### Credential resolution order
+
+OAuth (`auth login`) is the recommended source. The CLI resolves credentials in the following order (first match wins):
+
+1. `QAS_TOKEN` and `QAS_URL` environment variables
+2. `.env` file in the current working directory
+3. System keyring (set by `qasphere auth login`)
+4. `~/.config/qasphere/credentials.json` (fallback when keyring is unavailable)
+5. `.qaspherecli` file in the current directory or any parent directory
 
 ## Command: `api`
 
@@ -369,7 +395,7 @@ Allure results use one `*-result.json` file per test in a results directory. `al
 
 Only Allure JSON result files (`*-result.json`) are supported. Legacy Allure 1 XML files are ignored.
 
-## Run-Level Logs
+### Run-Level Logs
 
 The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
 

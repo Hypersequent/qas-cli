@@ -14,7 +14,8 @@ import { createTagApi } from './tags'
 import { createTCaseApi } from './tcases'
 import { createTestPlanApi } from './test-plans'
 import { createUserApi } from './users'
-import { withBaseUrl, withDevAuth, withHeaders, withHttpRetry } from './utils'
+import { withFetchMiddlewares, withBaseUrl, withAuth, withUserAgent, withHttpRetry } from './utils'
+import type { AuthType } from './utils'
 import { CLI_VERSION } from '../utils/version'
 
 const getApi = (fetcher: typeof fetch) => {
@@ -40,12 +41,13 @@ const getApi = (fetcher: typeof fetch) => {
 
 export type Api = ReturnType<typeof getApi>
 
-export const createApi = (baseUrl: string, apiKey: string) =>
+export const createApi = (baseUrl: string, token: string, authType: AuthType = 'apikey') =>
 	getApi(
-		withHttpRetry(
-			withHeaders(withDevAuth(withBaseUrl(fetch, baseUrl)), {
-				Authorization: `ApiKey ${apiKey}`,
-				'User-Agent': `qas-cli/${CLI_VERSION}`,
-			})
+		withFetchMiddlewares(
+			fetch,
+			withBaseUrl(baseUrl),
+			withUserAgent(CLI_VERSION),
+			withAuth(token, authType),
+			withHttpRetry
 		)
 	)

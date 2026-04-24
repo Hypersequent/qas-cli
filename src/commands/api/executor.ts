@@ -1,5 +1,5 @@
 import { existsSync, statSync } from 'node:fs'
-import { loadEnvs } from '../../utils/env'
+import { resolveAuth } from '../../utils/credentials'
 import { createApi } from '../../api/index'
 import {
 	ArgumentValidationError,
@@ -94,9 +94,9 @@ export async function executeCommand(
 	const transformQuery = spec.transformQuery ?? kebabToCamelCaseKeys
 	const query = transformQuery(rawQuery)
 
-	// 4. Connect to API (lazy env loading)
-	loadEnvs()
-	const api = createApi(process.env.QAS_URL!, process.env.QAS_TOKEN!)
+	// 4. Connect to API (lazy auth resolution)
+	const auth = await resolveAuth()
+	const api = createApi(auth.baseUrl, auth.token, auth.authType)
 
 	// 5. Build argument map for error mapping
 	const argumentMap: Record<string, string> = {}

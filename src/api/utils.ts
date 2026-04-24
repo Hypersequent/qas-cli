@@ -1,14 +1,26 @@
-export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
-	const normalizedBase = baseUrl.replace(/\/+$/, '')
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		if (typeof input === 'string') {
-			return fetcher(normalizedBase + input, init)
-		}
-		return fetcher(input, init)
-	}
-}
+type FetchMiddleware = (fetcher: typeof fetch) => typeof fetch
 
-export const withJson = (fetcher: typeof fetch): typeof fetch => {
+// TODO: Each middleware adds a frame to the stack trace. V8 defaults to 10 frames (Error.stackTraceLimit).
+// With too many middlewares, the call site gets truncated from the stack, making it hard to identify where the request originated.
+// Currently at ~4 middlewares which fits within the limit.
+export const withFetchMiddlewares = (
+	fetcher: typeof fetch,
+	...middlewares: FetchMiddleware[]
+): typeof fetch => middlewares.reduce((f, mw) => mw(f), fetcher)
+
+export const withBaseUrl =
+	(baseUrl: string): FetchMiddleware =>
+	(fetcher: typeof fetch): typeof fetch => {
+		const normalized = baseUrl.replace(/\/+$/, '')
+		return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
+			if (typeof input === 'string') {
+				return fetcher(normalized + input, init)
+			}
+			return fetcher(input, init)
+		}
+	}
+
+export const withJson: FetchMiddleware = (fetcher) => {
 	const JSON_CONFIG: RequestInit = {
 		headers: {
 			Accept: 'application/json',
@@ -42,35 +54,19 @@ export const withHeaders = (
 	}
 }
 
-export const withDevAuth = (fetcher: typeof fetch): typeof fetch => {
-	const devAuth = process.env.QAS_DEV_AUTH
-	if (!devAuth) return fetcher
+export const withUserAgent =
+	(version: string): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, { 'User-Agent': `qas-cli/${version}` })
 
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		const prev = (init?.headers as Record<string, string> | undefined) ?? {}
-		const existing = prev['Cookie']
-		const cookie = existing ? `${existing}; _devauth=${devAuth}` : `_devauth=${devAuth}`
-		return fetcher(input, {
-			...init,
-			headers: {
-				...prev,
-				Cookie: cookie,
-			},
-		})
-	}
-}
+export type AuthType = 'apikey' | 'bearer'
 
-export const withApiKey = (fetcher: typeof fetch, apiKey: string): typeof fetch => {
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		return fetcher(input, {
-			...init,
-			headers: {
-				Authorization: `ApiKey ${apiKey}`,
-				...init?.headers,
-			},
+export const withAuth =
+	(token: string, authType: AuthType): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, {
+			Authorization: authType === 'bearer' ? `Bearer ${token}` : `ApiKey ${token}`,
 		})
-	}
-}
 
 export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	const json = await response.json()

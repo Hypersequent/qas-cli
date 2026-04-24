@@ -5,6 +5,7 @@ import { dirname } from 'node:path'
 import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
+import type { AuthConfig } from '../credentials'
 import { TCase } from '../../api/tcases'
 import { ParseResult, TestCaseMarker, TestCaseResult } from './types'
 import { DuplicateTCaseMapping, TCaseTarget, mapResolvedResultsToTCases } from './mapping'
@@ -84,12 +85,11 @@ export class ResultUploadCommandHandler {
 
 	constructor(
 		private type: UploadCommandType,
-		private args: Arguments<ResultUploadCommandArgs>
+		private args: Arguments<ResultUploadCommandArgs>,
+		private auth: AuthConfig
 	) {
-		const apiToken = process.env.QAS_TOKEN!
-
-		this.baseUrl = process.env.QAS_URL!.replace(/\/+$/, '')
-		this.api = createApi(this.baseUrl, apiToken)
+		this.baseUrl = auth.baseUrl
+		this.api = createApi(this.baseUrl, auth.token, auth.authType)
 		this.markerParser = new MarkerParser(this.type)
 	}
 
@@ -557,11 +557,9 @@ export class ResultUploadCommandHandler {
 		runFailureLogs: string
 	}) {
 		const runUrl = `${this.baseUrl}/project/${projectCode}/run/${runId}`
-		const uploader = new ResultUploader(
-			this.type,
-			{ ...this.args, runUrl },
-			{ skipDuplicateValidation: this.skipUploaderDuplicateValidation }
-		)
+		const uploader = new ResultUploader(this.type, { ...this.args, runUrl }, this.auth, {
+			skipDuplicateValidation: this.skipUploaderDuplicateValidation,
+		})
 		await uploader.handle(results, runFailureLogs)
 	}
 

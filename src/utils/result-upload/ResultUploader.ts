@@ -4,6 +4,7 @@ import escapeHtml from 'escape-html'
 import { RunTCase } from '../../api/runs'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
+import type { AuthConfig } from '../credentials'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
 import { DuplicateTCaseMapping, TCaseWithResult, mapResolvedResultsToTCases } from './mapping'
@@ -21,14 +22,14 @@ export class ResultUploader {
 	constructor(
 		private type: UploadCommandType,
 		private args: Arguments<ResultUploadCommandArgs>,
+		auth: AuthConfig,
 		private options: { skipDuplicateValidation?: boolean } = {}
 	) {
-		const apiToken = process.env.QAS_TOKEN!
 		const { url, project, run } = parseRunUrl(args)
 
 		this.project = project
 		this.run = run
-		this.api = createApi(url, apiToken)
+		this.api = createApi(url, auth.token, auth.authType)
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {
