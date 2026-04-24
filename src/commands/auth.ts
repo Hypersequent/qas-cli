@@ -163,19 +163,21 @@ async function handleStatus(): Promise<void> {
 	}
 
 	const tenantUrl = result.authType === 'bearer' ? result.credentials.tenantUrl : result.tenantUrl
-	console.log(`Logged in to ${tenantUrl}`)
+	console.log(`Credentials connected via ${tenantUrl}`)
 	console.log(`  Source: ${result.source}`)
 
 	const token = result.authType === 'bearer' ? result.credentials.accessToken : result.token
+	let valid = false
 	try {
 		const api = createApi(tenantUrl, token, result.authType)
 		await api.projects.list()
 		console.log(`  Status: ${chalk.green('valid')}`)
+		valid = true
 	} catch {
 		console.log(`  Status: ${chalk.red('invalid or expired')}`)
 	}
 
-	if (result.authType === 'bearer') {
+	if (valid && result.authType === 'bearer') {
 		const expiresAt = new Date(result.credentials.accessTokenExpiresAt)
 		const remainingMs = expiresAt.getTime() - Date.now()
 		if (remainingMs > 0) {
@@ -219,7 +221,7 @@ async function handleLogout(): Promise<void> {
 		}
 
 		console.log(
-			'Note: your authorization is still active on the server. To revoke it, visit your QA Sphere account settings.'
+			'Note: your authorization is still active on the server. To revoke it, go to Settings > API Keys > OAuth Authorizations in QA Sphere.'
 		)
 		return
 	}
@@ -229,7 +231,7 @@ async function handleLogout(): Promise<void> {
 	if (source) {
 		const label = sourceLabels[source.source] || source.source
 		console.log(`Cannot log out: credentials are provided via ${label}.`)
-		console.log('Remove them manually to log out.')
+		console.log('Remove them manually.')
 		return
 	}
 

@@ -11,6 +11,7 @@ import { LOGIN_SERVICE_URL } from '../utils/config'
 
 const OAUTH_CLIENT_ID = 'qas-cli'
 const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
+const REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
 
 // --- Types ---
 
@@ -129,7 +130,7 @@ export async function refreshAccessToken(
 	const response = await fetcher('/api/oauth/token', {
 		method: 'POST',
 		body: JSON.stringify({
-			grant_type: 'refresh_token',
+			grant_type: REFRESH_TOKEN_GRANT_TYPE,
 			refresh_token: refreshToken,
 		}),
 	})

@@ -387,7 +387,9 @@ describe('auth login → status → logout lifecycle', () => {
 			// Status (valid)
 			log.mockClear()
 			await runCommand('auth status')
-			expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('Access token expires'))
@@ -417,7 +419,9 @@ describe('auth status credential sources', () => {
 
 		await runCommand('auth status')
 
-		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('env_var'))
 	})
 
@@ -430,7 +434,9 @@ describe('auth status credential sources', () => {
 		process.chdir(envDir)
 		try {
 			await runCommand('auth status')
-			expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('.env'))
 		} finally {
 			process.chdir(origCwd)
@@ -471,7 +477,9 @@ describe('auth status credential sources', () => {
 		process.chdir(subDir)
 		try {
 			await runCommand('auth status')
-			expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('.qaspherecli'))
 		} finally {
 			process.chdir(origCwd)
@@ -510,7 +518,9 @@ describe('auth status credential sources', () => {
 
 		await runCommand('auth status')
 
-		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining(source))
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('Access token expires'))
 	})
@@ -778,7 +788,9 @@ describe('credential resolution edge cases', () => {
 			await runCommand('auth status')
 			expect(log).not.toHaveBeenCalledWith(expect.stringContaining('env_var'))
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('.qaspherecli'))
-			expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
 		} finally {
 			process.chdir(origCwd)
 		}
@@ -875,7 +887,9 @@ describe('token refresh at load time', () => {
 
 		await runCommand('auth status')
 
-		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
 
 		// Verify credentials file was updated with new tokens
@@ -968,7 +982,9 @@ describe('token refresh at load time', () => {
 
 		await runCommand('auth status')
 
-		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
 
 		// Verify keyring was updated with new tokens
