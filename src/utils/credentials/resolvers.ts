@@ -153,10 +153,7 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 export async function resolveAuth(): Promise<AuthConfig> {
 	const resolved = await resolveCredentialSource()
 	if (!resolved) {
-		console.error(
-			chalk.red('Missing required environment variables: ') +
-				qasEnvs.filter((k) => !process.env[k]).join(', ')
-		)
+		console.error(chalk.red('Not authenticated.'))
 		console.error('\nYou can authenticate using:')
 		console.error(chalk.green('  qasphere auth login'))
 		console.error('\nOr create a .qaspherecli file with the following content:')
