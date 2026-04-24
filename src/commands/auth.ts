@@ -253,7 +253,8 @@ export const authCommand: CommandModule = {
 			})
 			.command({
 				command: 'status',
-				describe: 'Show current authentication status',
+				describe:
+					'Show currently active credential across all sources and verify the server is reachable',
 				handler: async () => {
 					await handleStatus()
 				},
