@@ -45,15 +45,23 @@ const tokenSuccessHandler = (expiresIn = 3600, refreshExpiresIn = 90 * 24 * 3600
 		})
 	})
 
-const projectsHandler = http.get(`${tenantUrl}/api/public/v0/project`, ({ request }) => {
+const testMeUser = {
+	id: 42,
+	email: 'tester@example.com',
+	name: 'Test User',
+	avatar: null,
+	role: 'admin',
+}
+
+const meHandler = http.get(`${tenantUrl}/api/public/v0/users/me`, ({ request }) => {
 	const auth = request.headers.get('Authorization')
 	if (auth === `ApiKey ${testApiKey}` || auth === `Bearer ${testAccessToken}`) {
-		return HttpResponse.json({ data: [], total: 0 })
+		return HttpResponse.json({ user: testMeUser })
 	}
 	return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
 })
 
-const server = setupServer(checkTenantHandler, projectsHandler)
+const server = setupServer(checkTenantHandler, meHandler)
 
 // --- Hoisted mock state ---
 // vi.hoisted runs before imports, so vi.mock factories can reference these.
@@ -395,6 +403,11 @@ describe('auth login → status → logout lifecycle', () => {
 			)
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
 			expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(
+					`User: ${testMeUser.name} <${testMeUser.email}> (${testMeUser.role})`
+				)
+			)
 			expect(log).toHaveBeenCalledWith(
 				expect.stringMatching(/Re-authentication required: in (89|90) days \(resets on each use\)/)
 			)
@@ -884,10 +897,10 @@ describe('token refresh at load time', () => {
 					{ status: 401 }
 				)
 			}),
-			http.get(`${tenantUrl}/api/public/v0/project`, ({ request }) => {
+			http.get(`${tenantUrl}/api/public/v0/users/me`, ({ request }) => {
 				const auth = request.headers.get('Authorization')
 				if (auth === `Bearer ${refreshedAccessToken}`) {
-					return HttpResponse.json({ data: [], total: 0 })
+					return HttpResponse.json({ user: testMeUser })
 				}
 				return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
 			})
@@ -981,10 +994,10 @@ describe('token refresh at load time', () => {
 					{ status: 401 }
 				)
 			}),
-			http.get(`${tenantUrl}/api/public/v0/project`, ({ request }) => {
+			http.get(`${tenantUrl}/api/public/v0/users/me`, ({ request }) => {
 				const auth = request.headers.get('Authorization')
 				if (auth === `Bearer ${refreshedAccessToken}`) {
-					return HttpResponse.json({ data: [], total: 0 })
+					return HttpResponse.json({ user: testMeUser })
 				}
 				return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
 			})

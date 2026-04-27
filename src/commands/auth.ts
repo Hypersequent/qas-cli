@@ -172,8 +172,9 @@ async function handleStatus(): Promise<void> {
 	let valid = false
 	try {
 		const api = createApi(tenantUrl, token, result.authType)
-		await api.projects.list()
+		const me = await api.users.me()
 		console.log(`  Status: ${chalk.green('valid')}`)
+		console.log(`  User: ${me.name} <${me.email}> (${me.role})`)
 		valid = true
 	} catch {
 		console.log(`  Status: ${chalk.red('invalid or expired')}`)
