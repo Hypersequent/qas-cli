@@ -7,6 +7,14 @@ export interface User {
 	role: string
 }
 
+export interface MeUser {
+	id: number
+	email: string
+	name: string
+	avatar: string | null
+	role: string
+}
+
 export const createUserApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
@@ -14,5 +22,9 @@ export const createUserApi = (fetcher: typeof fetch) => {
 			fetcher(`/api/public/v0/users`)
 				.then((r) => jsonResponse<{ users: User[] }>(r))
 				.then((r) => r.users),
+		me: () =>
+			fetcher(`/api/public/v0/users/me`)
+				.then((r) => jsonResponse<{ user: MeUser }>(r))
+				.then((r) => r.user),
 	}
 }
