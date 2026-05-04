@@ -15,6 +15,7 @@
 - [Environment](#environment)
 - [Command: `api`](#command-api)
   - [API Command Tree](#api-command-tree)
+  - [Example Workflows](#example-workflows)
 - [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload)
   - [Options](#options)
   - [Run Name Template Placeholders](#run-name-template-placeholders)
@@ -27,9 +28,12 @@
 
 ## Description
 
-The QAS CLI is a command-line tool for submitting your test automation results to [QA Sphere](https://qasphere.com/). It provides the most efficient way to collect and report test results from your test automation workflow, CI/CD pipeline, and build servers.
+QAS CLI (`qasphere`) is the official command-line interface for [QA Sphere](https://qasphere.com/). It exposes the full QA Sphere public API and supports the following use cases:
 
-The tool can upload test case results from JUnit XML files, Playwright JSON files, and Allure result directories to QA Sphere test runs by matching test case references to QA Sphere test cases. It also automatically detects global or suite-level failures (e.g., setup/teardown errors) and uploads them as run-level logs.
+- **Ad-hoc terminal use** — run one-off `qasphere api <resource> <action>` commands to inspect or change QA Sphere state. Every command prints JSON to stdout for easy inspection or piping into tools like `jq`. See [Command: `api`](#command-api).
+- **Scripts and CI/CD automation** — orchestrate QA Sphere projects, folders, test cases, milestones, runs, and results from shell scripts and CI pipelines. The same `api` commands that work for one-off use compose cleanly into automated flows. See [Example Workflows](#example-workflows).
+- **Test result uploads** — upload JUnit XML, Playwright JSON, and Allure result directories at the end of an automated test run. The CLI matches test case markers to QA Sphere test cases, attaches files, and surfaces global/suite-level setup and teardown failures as run-level logs. See [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload).
+- **AI agents** — the project ships a [SKILL.md](./SKILL.md) so coding agents (Claude Code, Cursor, etc.) can operate QA Sphere on the user's behalf — listing projects, authoring test cases, opening and closing runs, recording results, and more. See [AI Agent Skill](#ai-agent-skill).
 
 ## Installation
 
@@ -163,6 +167,70 @@ qasphere api
 ```
 
 Note: `qasphere api files upload --file ...` uses the public batch upload endpoint internally and returns the first uploaded file from that response.
+
+### Example Workflows
+
+The examples below chain `api` commands to show what end-to-end automation looks like. They assume `QAS_URL` and `QAS_TOKEN` are configured (see [Environment](#environment)) and use [`jq`](https://stedolan.github.io/jq/) for JSON parsing.
+
+**1. Bootstrap a project** — create the project, add a folder tree, and seed a first test case:
+
+```bash
+qasphere api projects create --code PRJ --title "Checkout"
+qasphere api folders bulk-create --project-code PRJ \
+  --folders '[{"path": ["Suite", "Auth"]}, {"path": ["Suite", "Cart"]}]'
+qasphere api test-cases create --project-code PRJ \
+  --title "User can sign in" --type standalone --folder-id 1 --priority high
+```
+
+For larger seed data, point `--body-file` at a JSON file instead of inlining the payload.
+
+**2. Open a run, post results, and close it** — useful when results come from a tool that doesn't produce JUnit/Playwright/Allure output:
+
+```bash
+RUN_ID=$(qasphere api runs create --project-code PRJ \
+  --title "Smoke {YYYY}-{MM}-{DD}" --type static \
+  --query-plans '[{"tcaseIds": ["abc123", "def456"]}]' | jq -r '.id')
+
+qasphere api results batch-create --project-code PRJ --run-id "$RUN_ID" \
+  --body '{"items": [{"tcaseId": "abc123", "status": "passed"}, {"tcaseId": "def456", "status": "failed", "comment": "timeout on /cart"}]}'
+
+qasphere api runs close --project-code PRJ --run-id "$RUN_ID"
+```
+
+**3. Inspect a run** — list test cases that haven't received a result yet:
+
+```bash
+qasphere api runs test-cases list --project-code PRJ --run-id 42 \
+  | jq '.[] | select(.status == "open") | {id, title}'
+```
+
+**4. Run progress report** — list open runs with their pass/fail/open counts:
+
+```bash
+qasphere api runs list --project-code PRJ --closed false \
+  | jq '.[] | {title, passed: .statusCounts.passed, failed: .statusCounts.failed, open: .statusCounts.open, total: .statusCounts.all}'
+```
+
+**5. Pair the API with the uploader** — pre-create a run with custom metadata in CI, then upload automation results into it:
+
+```bash
+RUN_ID=$(qasphere api runs create --project-code PRJ \
+  --title "CI build $BUILD_NUMBER" --type static \
+  --query-plans '[{"tcaseIds": ["abc123"]}]' \
+  --milestone-id 7 | jq -r '.id')
+
+qasphere junit-upload -r "$QAS_URL/project/PRJ/run/$RUN_ID" ./test-results.xml
+```
+
+**6. AI agent reports and visualizations** — once the [skill](#ai-agent-skill) is registered with a coding agent (Claude Code, Cursor, etc.), the agent can drive ad-hoc reporting, dashboards, and charts in natural language. Under the hood it calls `qasphere api ...` to fetch the data, then renders it however the conversation needs (Markdown tables, matplotlib/Plotly charts, HTML/SVG, CSV exports, etc.). Example prompts you can give the agent:
+
+- _"Plot the pass rate of the last 20 closed runs in project PRJ as a line chart."_ — agent calls `qasphere api runs list --project-code PRJ --closed true`, computes `passed / all` per run from `statusCounts`, renders the chart.
+- _"Which folders in PRJ have the most failing tests this week?"_ — agent combines `runs list`, `runs test-cases list`, and `folders list` to aggregate failures by folder.
+- _"Generate a markdown summary of run 42 with the pass/fail breakdown and a list of failing test case titles."_ — agent calls `runs test-cases list --project-code PRJ --run-id 42` and formats the output.
+
+Because the agent reads the same `--help` output a human would, you don't need to pre-script the queries — describe the report you want and let the agent compose the API calls.
+
+For the full list of resources and actions, run `qasphere api --help` or see the [API Command Tree](#api-command-tree) above. Each subcommand also has its own `--help` with examples and links to the [QA Sphere API docs](https://docs.qasphere.com/api).
 
 ## Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`
 
