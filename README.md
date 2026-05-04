@@ -32,7 +32,7 @@ QAS CLI (`qasphere`) is the official command-line interface for [QA Sphere](http
 
 - **Ad-hoc terminal use** — run one-off `qasphere api <resource> <action>` commands to inspect or change QA Sphere state. Every command prints JSON to stdout for easy inspection or piping into tools like `jq`. See [Command: `api`](#command-api).
 - **Scripts and CI/CD automation** — orchestrate QA Sphere projects, folders, test cases, milestones, runs, and results from shell scripts and CI pipelines. The same `api` commands that work for one-off use compose cleanly into automated flows. See [Example Workflows](#example-workflows).
-- **Test result uploads** — upload JUnit XML, Playwright JSON, and Allure result directories at the end of an automated test run. The CLI matches test case markers to QA Sphere test cases, attaches files, and surfaces global/suite-level setup and teardown failures as run-level logs. See [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload).
+- **Test result uploads** — upload JUnit XML, Playwright JSON, and Allure result directories at the end of an automated test run. The CLI matches test case markers to QA Sphere test cases and attaches files. See [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload).
 - **AI agents** — the project ships a [SKILL.md](./SKILL.md) so coding agents (Claude Code, Cursor, etc.) can operate QA Sphere on the user's behalf — listing projects, authoring test cases, opening and closing runs, recording results, and more. See [AI Agent Skill](#ai-agent-skill).
 
 ## Example Workflows
