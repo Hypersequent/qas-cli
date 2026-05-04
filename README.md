@@ -33,7 +33,7 @@ QAS CLI (`qasphere`) is the official command-line interface for [QA Sphere](http
 - **Ad-hoc terminal use** — run one-off `qasphere api <resource> <action>` commands to inspect or change QA Sphere state. Every command prints JSON to stdout for easy inspection or piping into tools like `jq`. See [Command: `api`](#command-api).
 - **Scripts and CI/CD automation** — orchestrate QA Sphere projects, folders, test cases, milestones, runs, and results from shell scripts and CI pipelines. The same `api` commands that work for one-off use compose cleanly into automated flows. See [Example Workflows](#example-workflows).
 - **Test result uploads** — upload JUnit XML, Playwright JSON, and Allure result directories at the end of an automated test run. The CLI matches test case markers to QA Sphere test cases and attaches files. See [Commands: `junit-upload`, `playwright-json-upload`, `allure-upload`](#commands-junit-upload-playwright-json-upload-allure-upload).
-- **AI agents** — the project ships a [SKILL.md](./SKILL.md) so coding agents (Claude Code, Cursor, etc.) can operate QA Sphere on the user's behalf — listing projects, authoring test cases, opening and closing runs, recording results, and more. See [AI Agent Skill](#ai-agent-skill).
+- **AI agents** — the project ships a [SKILL.md](./skills/qas-cli/SKILL.md) so coding agents (Claude Code, Cursor, etc.) can operate QA Sphere on the user's behalf — listing projects, authoring test cases, opening and closing runs, recording results, and more. See [AI Agent Skill](#ai-agent-skill).
 
 ## Example Workflows
 
@@ -43,11 +43,11 @@ The examples below show what end-to-end automation with `qas-cli` looks like. Th
 
 ```bash
 RUN_ID=$(qasphere api runs create --project-code PRJ \
-  --title "Smoke {YYYY}-{MM}-{DD}" --type static \
+  --title "Smoke $(date +%Y-%m-%d)" --type static \
   --query-plans '[{"tcaseIds": ["abc123", "def456"]}]' | jq -r '.id')
 
 qasphere api results batch-create --project-code PRJ --run-id "$RUN_ID" \
-  --body '{"items": [{"tcaseId": "abc123", "status": "passed"}, {"tcaseId": "def456", "status": "failed", "comment": "timeout on /cart"}]}'
+  --items '[{"tcaseId": "abc123", "status": "passed"}, {"tcaseId": "def456", "status": "failed", "comment": "timeout on /cart"}]'
 
 qasphere api runs close --project-code PRJ --run-id "$RUN_ID"
 ```
@@ -426,7 +426,7 @@ The CLI automatically detects global or suite-level failures and uploads them as
 
 ## AI Agent Skill
 
-qas-cli includes a [SKILL.md](./SKILL.md) file that enables AI coding agents (e.g., Claude Code, Cursor) to use the CLI effectively. To add this skill to your agent:
+qas-cli includes a [SKILL.md](./skills/qas-cli/SKILL.md) file that enables AI coding agents (e.g., Claude Code, Cursor) to use the CLI effectively. To add this skill to your agent:
 
 ```bash
 npx skills add Hypersequent/qas-cli
