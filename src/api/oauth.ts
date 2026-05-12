@@ -6,6 +6,8 @@ import {
 	withUserAgent,
 	withHttpRetry,
 	jsonResponse,
+	DEFAULT_HTTP_RETRY_OPTIONS,
+	parseRetryAfterMs,
 } from './utils'
 import { CLI_VERSION } from '../utils/version'
 import { LOGIN_SERVICE_URL } from '../utils/config'
@@ -25,8 +27,8 @@ export type CheckTenantResponse = z.infer<typeof CheckTenantResponseSchema>
 export const OAuthDeviceCodeResponseSchema = z.object({
 	device_code: z.string(),
 	user_code: z.string(),
-	verification_uri: z.string(),
-	verification_uri_complete: z.string(),
+	verification_uri: z.string().url(),
+	verification_uri_complete: z.string().url(),
 	expires_in: z.number(),
 	interval: z.number(),
 })
@@ -49,7 +51,7 @@ export type OAuthErrorResponse = z.infer<typeof OAuthErrorResponseSchema>
 
 export type OAuthTokenResult =
 	| { ok: true; data: OAuthTokenResponse }
-	| { ok: false; error: OAuthErrorResponse }
+	| { ok: false; error: OAuthErrorResponse; retryAfterMs?: number }
 
 export class OAuthProtocolError extends Error {
 	readonly code: string
@@ -76,14 +78,11 @@ function parseOAuthResponse<T>(schema: z.ZodType<T>, payload: unknown, context: 
 
 // --- Helpers ---
 
-const createFetcher = (baseUrl: string) =>
-	withFetchMiddlewares(
-		fetch,
-		withBaseUrl(baseUrl),
-		withUserAgent(CLI_VERSION),
-		withJson,
-		withHttpRetry
-	)
+const createFetcher = (baseUrl: string, opts: { retry?: boolean } = {}) => {
+	const middlewares = [withBaseUrl(baseUrl), withUserAgent(CLI_VERSION), withJson]
+	if (opts.retry !== false) middlewares.push(withHttpRetry)
+	return withFetchMiddlewares(fetch, ...middlewares)
+}
 
 async function oauthErrorResponse(response: Response): Promise<OAuthErrorResponse> {
 	try {
@@ -138,7 +137,9 @@ export async function pollDeviceToken(
 	tenantUrl: string,
 	deviceCode: string
 ): Promise<OAuthTokenResult> {
-	const fetcher = createFetcher(tenantUrl)
+	// Retries are intentionally disabled here — the caller already polls on a fixed
+	// interval, so withHttpRetry would silently consume the polling deadline.
+	const fetcher = createFetcher(tenantUrl, { retry: false })
 	const response = await fetcher('/api/oauth/token', {
 		method: 'POST',
 		body: JSON.stringify({
@@ -152,6 +153,19 @@ export async function pollDeviceToken(
 		return {
 			ok: true,
 			data: parseOAuthResponse(OAuthTokenResponseSchema, await response.json(), 'token'),
+		}
+	}
+
+	// Treat the same statuses as withHttpRetry would (429, 502, 503) as transient,
+	// so the polling loop can keep going instead of exiting on a single hiccup.
+	if (DEFAULT_HTTP_RETRY_OPTIONS.retryableStatuses.has(response.status)) {
+		return {
+			ok: false,
+			error: {
+				error: 'transient',
+				error_description: `HTTP ${response.status} ${response.statusText}`,
+			},
+			retryAfterMs: parseRetryAfterMs(response.headers.get('Retry-After')),
 		}
 	}
 

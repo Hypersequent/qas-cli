@@ -136,12 +136,22 @@ interface HttpRetryOptions {
 	retryableStatuses: Set<number>
 }
 
-const DEFAULT_HTTP_RETRY_OPTIONS: HttpRetryOptions = {
+export const DEFAULT_HTTP_RETRY_OPTIONS: HttpRetryOptions = {
 	maxRetries: 5,
 	baseDelayMs: 1000,
 	backoffFactor: 2,
 	jitterFraction: 0.25,
 	retryableStatuses: new Set([429, 502, 503]),
+}
+
+// RFC 7231 §7.1.3 — `Retry-After` is either delta-seconds or an HTTP-date.
+// Returns undefined when the header is absent or unparseable.
+export const parseRetryAfterMs = (header: string | null): number | undefined => {
+	if (header === null) return undefined
+	const seconds = Number(header)
+	if (!Number.isNaN(seconds)) return Math.max(0, seconds * 1000)
+	const date = Date.parse(header)
+	return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now())
 }
 
 export const withHttpRetry = (
@@ -163,20 +173,8 @@ export const withHttpRetry = (
 				break
 			}
 
-			const retryAfter = lastResponse.headers.get('Retry-After')
-			let delayMs: number
-
-			if (retryAfter !== null) {
-				const parsed = Number(retryAfter)
-				if (!Number.isNaN(parsed)) {
-					delayMs = parsed * 1000
-				} else {
-					const date = Date.parse(retryAfter)
-					delayMs = Number.isNaN(date) ? opts.baseDelayMs : Math.max(0, date - Date.now())
-				}
-			} else {
-				delayMs = opts.baseDelayMs * Math.pow(opts.backoffFactor, attempt)
-			}
+			const retryAfterMs = parseRetryAfterMs(lastResponse.headers.get('Retry-After'))
+			const delayMs = retryAfterMs ?? opts.baseDelayMs * Math.pow(opts.backoffFactor, attempt)
 
 			const jitter = delayMs * opts.jitterFraction * Math.random()
 			await new Promise((resolve) => setTimeout(resolve, delayMs + jitter))

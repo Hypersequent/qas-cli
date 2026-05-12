@@ -5,7 +5,7 @@ export type {
 	OAuthCredentialSource,
 	AuthConfig,
 } from './types'
-export { saveCredentials, clearCredentials } from './storage'
+export { saveCredentials, clearCredentials, credentialsFromTokenResponse } from './storage'
 export {
 	qasEnvFile,
 	qasEnvs,

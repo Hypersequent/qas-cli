@@ -7,16 +7,11 @@ import { refreshAccessToken, OAuthProtocolError } from '../../api/oauth'
 import {
 	saveCredentials,
 	clearCredentials,
+	credentialsFromTokenResponse,
 	loadCredentialsFromKeyring,
 	loadCredentialsFromFile,
 } from './storage'
-import type {
-	OAuthCredentials,
-	ApiKeyResolved,
-	OAuthResolved,
-	ResolvedCredentials,
-	AuthConfig,
-} from './types'
+import type { ApiKeyResolved, OAuthResolved, ResolvedCredentials, AuthConfig } from './types'
 
 export const qasEnvFile = '.qaspherecli'
 export const qasEnvs = ['QAS_TOKEN', 'QAS_URL']
@@ -172,17 +167,7 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 			resolved.credentials.refreshToken
 		)
 
-		const updated: OAuthCredentials = {
-			type: 'oauth',
-			accessToken: tokenResponse.access_token,
-			refreshToken: tokenResponse.refresh_token,
-			accessTokenExpiresAt: new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString(),
-			refreshTokenExpiresAt: new Date(
-				Date.now() + tokenResponse.refresh_token_expires_in * 1000
-			).toISOString(),
-			tenantUrl: resolved.credentials.tenantUrl,
-		}
-
+		const updated = credentialsFromTokenResponse(tokenResponse, resolved.credentials.tenantUrl)
 		const newSource = await saveCredentials(updated)
 		return { credentials: updated, authType: 'bearer', source: newSource }
 	} catch (e) {

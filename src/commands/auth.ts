@@ -9,6 +9,7 @@ import {
 	resolveCredentialSource,
 	resolvePersistedCredentialSource,
 	refreshIfNeeded,
+	credentialsFromTokenResponse,
 	type CredentialSource,
 } from '../utils/credentials'
 import { createApi } from '../api'
@@ -94,16 +95,7 @@ async function handleDeviceLogin(): Promise<void> {
 				loader.stop()
 				process.removeListener('SIGINT', onSigint)
 
-				const source = await saveCredentials({
-					type: 'oauth',
-					accessToken: result.data.access_token,
-					refreshToken: result.data.refresh_token,
-					accessTokenExpiresAt: new Date(Date.now() + result.data.expires_in * 1000).toISOString(),
-					refreshTokenExpiresAt: new Date(
-						Date.now() + result.data.refresh_token_expires_in * 1000
-					).toISOString(),
-					tenantUrl,
-				})
+				const source = await saveCredentials(credentialsFromTokenResponse(result.data, tenantUrl))
 
 				console.log(chalk.green('\u2713') + ` Logged in to ${tenantUrl}`)
 				console.log(`  Credentials saved to ${source}.`)
@@ -118,6 +110,14 @@ async function handleDeviceLogin(): Promise<void> {
 				case 'slow_down':
 					currentInterval += 5
 					break
+				case 'transient': {
+					// 429 / 5xx — keep polling, honor Retry-After if larger than current interval
+					if (result.retryAfterMs !== undefined) {
+						const seconds = Math.ceil(result.retryAfterMs / 1000)
+						if (seconds > currentInterval) currentInterval = seconds
+					}
+					break
+				}
 				case 'access_denied':
 					loader.stop()
 					console.error(chalk.red('\u2717') + ' Authorization denied by user.')

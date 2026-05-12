@@ -2,10 +2,26 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSy
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { getKeyringEntry } from './keyring'
+import type { OAuthTokenResponse } from '../../api/oauth'
 import { oauthCredentialsSchema, type OAuthCredentials, type OAuthCredentialSource } from './types'
 
 const CONFIG_DIR = join(homedir(), '.config', 'qasphere')
 const CREDENTIALS_FILE = join(CONFIG_DIR, 'credentials.json')
+
+export function credentialsFromTokenResponse(
+	response: OAuthTokenResponse,
+	tenantUrl: string
+): OAuthCredentials {
+	const now = Date.now()
+	return {
+		type: 'oauth',
+		accessToken: response.access_token,
+		refreshToken: response.refresh_token,
+		accessTokenExpiresAt: new Date(now + response.expires_in * 1000).toISOString(),
+		refreshTokenExpiresAt: new Date(now + response.refresh_token_expires_in * 1000).toISOString(),
+		tenantUrl,
+	}
+}
 
 export async function saveCredentials(
 	credentials: OAuthCredentials

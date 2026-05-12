@@ -342,6 +342,31 @@ describe('auth login (device flow)', () => {
 		expect(exit).toHaveBeenCalledWith(1)
 	})
 
+	test('device flow rejects malformed verification URI in device-code response', async () => {
+		const exit = mockProcessExit()
+
+		server.use(
+			http.post(`${tenantUrl}/api/oauth/device/code`, () => {
+				return HttpResponse.json({
+					device_code: 'long-random-device-code',
+					user_code: 'ABCD1234',
+					verification_uri: 'not a url',
+					verification_uri_complete: 'still not a url',
+					expires_in: 900,
+					interval: 0,
+				})
+			})
+		)
+
+		await runCommand('auth login').catch(() => {})
+
+		expect(err).toHaveBeenCalledWith(
+			expect.stringContaining('Invalid device-code response from OAuth server')
+		)
+		expect(err).toHaveBeenCalledWith(expect.stringContaining('verification_uri'))
+		expect(exit).toHaveBeenCalledWith(1)
+	})
+
 	test('device flow handles device code request failure', async () => {
 		const exit = mockProcessExit()
 
