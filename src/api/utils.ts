@@ -1,14 +1,26 @@
-export const withBaseUrl = (fetcher: typeof fetch, baseUrl: string): typeof fetch => {
-	const normalizedBase = baseUrl.replace(/\/+$/, '')
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		if (typeof input === 'string') {
-			return fetcher(normalizedBase + input, init)
-		}
-		return fetcher(input, init)
-	}
-}
+type FetchMiddleware = (fetcher: typeof fetch) => typeof fetch
 
-export const withJson = (fetcher: typeof fetch): typeof fetch => {
+// TODO: Each middleware adds a frame to the stack trace. V8 defaults to 10 frames (Error.stackTraceLimit).
+// With too many middlewares, the call site gets truncated from the stack, making it hard to identify where the request originated.
+// Currently at ~4 middlewares which fits within the limit.
+export const withFetchMiddlewares = (
+	fetcher: typeof fetch,
+	...middlewares: FetchMiddleware[]
+): typeof fetch => middlewares.reduce((f, mw) => mw(f), fetcher)
+
+export const withBaseUrl =
+	(baseUrl: string): FetchMiddleware =>
+	(fetcher: typeof fetch): typeof fetch => {
+		const normalized = baseUrl.replace(/\/+$/, '')
+		return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
+			if (typeof input === 'string') {
+				return fetcher(normalized + input, init)
+			}
+			return fetcher(input, init)
+		}
+	}
+
+export const withJson: FetchMiddleware = (fetcher) => {
 	const JSON_CONFIG: RequestInit = {
 		headers: {
 			Accept: 'application/json',
@@ -42,7 +54,21 @@ export const withHeaders = (
 	}
 }
 
-export const withDevAuth = (fetcher: typeof fetch): typeof fetch => {
+export const withUserAgent =
+	(version: string): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, { 'User-Agent': `qas-cli/${version}` })
+
+export type AuthType = 'apikey' | 'bearer'
+
+export const withAuth =
+	(token: string, authType: AuthType): FetchMiddleware =>
+	(fetcher) =>
+		withHeaders(fetcher, {
+			Authorization: authType === 'bearer' ? `Bearer ${token}` : `ApiKey ${token}`,
+		})
+
+export const withDevAuth: FetchMiddleware = (fetcher) => {
 	const devAuth = process.env.QAS_DEV_AUTH
 	if (!devAuth) return fetcher
 
@@ -55,18 +81,6 @@ export const withDevAuth = (fetcher: typeof fetch): typeof fetch => {
 			headers: {
 				...prev,
 				Cookie: cookie,
-			},
-		})
-	}
-}
-
-export const withApiKey = (fetcher: typeof fetch, apiKey: string): typeof fetch => {
-	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
-		return fetcher(input, {
-			...init,
-			headers: {
-				Authorization: `ApiKey ${apiKey}`,
-				...init?.headers,
 			},
 		})
 	}
@@ -122,12 +136,22 @@ interface HttpRetryOptions {
 	retryableStatuses: Set<number>
 }
 
-const DEFAULT_HTTP_RETRY_OPTIONS: HttpRetryOptions = {
+export const DEFAULT_HTTP_RETRY_OPTIONS: HttpRetryOptions = {
 	maxRetries: 5,
 	baseDelayMs: 1000,
 	backoffFactor: 2,
 	jitterFraction: 0.25,
 	retryableStatuses: new Set([429, 502, 503]),
+}
+
+// RFC 7231 §7.1.3 — `Retry-After` is either delta-seconds or an HTTP-date.
+// Returns undefined when the header is absent or unparseable.
+export const parseRetryAfterMs = (header: string | null): number | undefined => {
+	if (header === null) return undefined
+	const seconds = Number(header)
+	if (!Number.isNaN(seconds)) return Math.max(0, seconds * 1000)
+	const date = Date.parse(header)
+	return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now())
 }
 
 export const withHttpRetry = (
@@ -149,20 +173,8 @@ export const withHttpRetry = (
 				break
 			}
 
-			const retryAfter = lastResponse.headers.get('Retry-After')
-			let delayMs: number
-
-			if (retryAfter !== null) {
-				const parsed = Number(retryAfter)
-				if (!Number.isNaN(parsed)) {
-					delayMs = parsed * 1000
-				} else {
-					const date = Date.parse(retryAfter)
-					delayMs = Number.isNaN(date) ? opts.baseDelayMs : Math.max(0, date - Date.now())
-				}
-			} else {
-				delayMs = opts.baseDelayMs * Math.pow(opts.backoffFactor, attempt)
-			}
+			const retryAfterMs = parseRetryAfterMs(lastResponse.headers.get('Retry-After'))
+			const delayMs = retryAfterMs ?? opts.baseDelayMs * Math.pow(opts.backoffFactor, attempt)
 
 			const jitter = delayMs * opts.jitterFraction * Math.random()
 			await new Promise((resolve) => setTimeout(resolve, delayMs + jitter))

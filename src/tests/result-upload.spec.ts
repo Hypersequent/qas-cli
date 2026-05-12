@@ -24,8 +24,10 @@ process.env['QAS_URL'] = baseURL
 let lastCreatedRunTitle = '' // Stores title in the request, for the last create run API call
 let createRunTitleConflict = false // If true, the create run API returns a title conflict error
 let createTCasesResponse: CreateTCasesResponse | null = null // Stores mock response for the create tcases API call
-let overriddenGetPaginatedTCasesResponse: PaginatedResponse<TCase> | null = null // Stores overridden (non-default) response for the get tcases API call
-let overriddenGetFoldersResponse: PaginatedResponse<Folder> | null = null // Stores overridden (non-default) response for the get folders API call
+// Mocks intentionally include only the fields the SUT touches, so the response
+// types are loosened to Partial<> rather than the full API shape.
+let overriddenGetPaginatedTCasesResponse: PaginatedResponse<Partial<TCase>> | null = null
+let overriddenGetFoldersResponse: PaginatedResponse<Partial<Folder>> | null = null
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}`, ({ request }) => {
@@ -604,7 +606,6 @@ fileTypesWithAllure.forEach((fileType) => {
 							seq: 6,
 							title: 'The cart is still filled after refreshing the page',
 							version: 1,
-							projectId: 'projectid',
 							folderId: 1,
 						},
 					],
@@ -844,5 +845,50 @@ describe('Run-level log upload', () => {
 		await run(`allure-upload -r ${runURL} ${allureBasePath}/matching-tcases`)
 		expect(numRunLogCalls()).toBe(0)
 		expect(numResultUploadCalls()).toBe(1)
+	})
+})
+
+describe('Trailing slash in QAS_URL (regression for --run-url equality)', () => {
+	beforeEach(() => {
+		process.env['QAS_URL'] = `${baseURL}/`
+	})
+
+	afterEach(() => {
+		process.env['QAS_URL'] = baseURL
+	})
+
+	test('JUnit upload with --run-url succeeds when QAS_URL has trailing slash', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+		await run(`junit-upload -r ${runURL} ./src/tests/fixtures/junit-xml/matching-tcases.xml`)
+		expect(numResultUploadCalls()).toBe(1)
+	})
+})
+
+describe('--run-url host mismatch', () => {
+	test('rejects --run-url whose host differs from authenticated tenant', async () => {
+		const exit = vi.spyOn(process, 'exit').mockImplementation((() => {
+			throw new Error('process.exit')
+		}) as never)
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const otherHostRunUrl = `https://other-tenant.qasphere.com/project/${projectCode}/run/${runId}`
+
+		try {
+			await expect(
+				run(`junit-upload -r ${otherHostRunUrl} ./src/tests/fixtures/junit-xml/matching-tcases.xml`)
+			).rejects.toThrow('process.exit')
+
+			expect(errSpy).toHaveBeenCalledWith(
+				expect.stringContaining('does not match the authenticated tenant')
+			)
+			expect(errSpy).toHaveBeenCalledWith(
+				expect.stringContaining('https://other-tenant.qasphere.com')
+			)
+			expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(baseURL))
+			expect(exit).toHaveBeenCalledWith(1)
+		} finally {
+			exit.mockRestore()
+			errSpy.mockRestore()
+		}
 	})
 })

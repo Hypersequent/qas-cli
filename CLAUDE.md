@@ -89,12 +89,10 @@ Important note: Online documentation is available at https://docs.qasphere.com. 
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withApiKey`, `withJson`, `withDevAuth` decorators that wrap `fetch`; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings; `resourceIdSchema` for validating resource identifiers; `printJson()` for formatted JSON output
-- `index.ts` — `createApi(baseUrl, apiKey)` assembles the API client from all sub-modules
+- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson`, `withUserAgent`, `withHttpRetry` decorators that wrap `fetch` via middleware pattern; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
+- `index.ts` — `createApi(baseUrl, token, authType)` assembles the API client from all sub-modules using `withFetchMiddlewares`
 - `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `pageParam`, `limitParam`)
 - One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
-
-The main `createApi()` composes the fetch chain: `withDevAuth(withApiKey(withBaseUrl(fetch, baseUrl), apiKey))`.
 
 ### Configuration (src/utils/)
 

@@ -22,16 +22,35 @@ If working within the qas-cli repository itself, use `node build/bin/qasphere.js
 ## Prerequisites
 
 - **Node.js** 18.0.0+
-- **`QAS_TOKEN`** — QA Sphere API token ([how to generate](https://docs.qasphere.com/api/authentication))
-- **`QAS_URL`** — Base URL of your QA Sphere instance (e.g., `https://qas.eu2.qasphere.com`)
 
-### Configuration Methods
+### Authentication
+
+Two authentication methods are supported:
+
+#### Interactive Login (OAuth)
+
+```bash
+qasphere auth login      # Authenticate via browser-based OAuth device flow
+qasphere auth status     # Show current authentication status and token validity
+qasphere auth logout     # Clear stored credentials
+```
+
+`auth login` prompts for a team name, opens a browser for authorization, and stores OAuth tokens persistently. Requires an interactive terminal (TTY). Tokens are auto-refreshed when they expire (within 5 minutes of expiry).
+
+Credentials are stored in the system keyring (`qasphere-cli` service) when available, with fallback to `~/.config/qasphere/credentials.json` (mode `0600`).
+
+#### API Key
+
+Set `QAS_TOKEN` and `QAS_URL` via environment variables, `.env` file, or `.qaspherecli` file.
+
+### Credential Resolution Order
 
 Credentials are resolved in this order (first match wins):
 
 1. **Environment variables** — `export QAS_TOKEN=... QAS_URL=...`
 2. **`.env` file** — Standard dotenv file in the current working directory
-3. **`.qaspherecli` file** — Searched from the current directory upward to filesystem root
+3. **Keyring / credentials file** — OAuth tokens saved by `qasphere auth login`
+4. **`.qaspherecli` file** — Searched from the current directory upward to filesystem root
 
 Both `.env` and `.qaspherecli` use the same `KEY=value` format:
 
