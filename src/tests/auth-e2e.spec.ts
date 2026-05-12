@@ -210,6 +210,14 @@ describe('auth login (device flow)', () => {
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
 	})
 
+	test('device flow leaves no SIGINT listener on success', async () => {
+		server.use(deviceCodeHandler(), tokenSuccessHandler())
+
+		const baseline = process.listenerCount('SIGINT')
+		await runCommand('auth login')
+		expect(process.listenerCount('SIGINT')).toBe(baseline)
+	})
+
 	test('device flow saves OAuth credentials', async () => {
 		server.use(deviceCodeHandler(), tokenSuccessHandler())
 
@@ -314,6 +322,25 @@ describe('auth login (device flow)', () => {
 		expect(pollCount).toBe(2)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
 	}, 10_000)
+
+	test('device flow rejects malformed token response payload', async () => {
+		const exit = mockProcessExit()
+
+		server.use(
+			deviceCodeHandler(0, 900),
+			http.post(`${tenantUrl}/api/oauth/token`, () => {
+				// Missing access_token / refresh_token / expires_in
+				return HttpResponse.json({ token_type: 'Bearer' })
+			})
+		)
+
+		await runCommand('auth login').catch(() => {})
+
+		expect(err).toHaveBeenCalledWith(
+			expect.stringContaining('Invalid token response from OAuth server')
+		)
+		expect(exit).toHaveBeenCalledWith(1)
+	})
 
 	test('device flow handles device code request failure', async () => {
 		const exit = mockProcessExit()
@@ -428,6 +455,55 @@ describe('auth status credential sources', () => {
 			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
 		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('env_var'))
+	})
+
+	test('strips trailing slash from QAS_URL env var', async () => {
+		process.env.QAS_TOKEN = testApiKey
+		process.env.QAS_URL = `${tenantUrl}/`
+
+		await runCommand('auth status')
+
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+		)
+		expect(log).not.toHaveBeenCalledWith(expect.stringContaining(`${tenantUrl}/\n`))
+	})
+
+	test('strips trailing slash from .env QAS_URL', async () => {
+		const envDir = join(testHomeDir, 'project')
+		mkdirSync(envDir, { recursive: true })
+		writeFileSync(join(envDir, '.env'), `QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}/\n`)
+
+		const origCwd = process.cwd()
+		process.chdir(envDir)
+		try {
+			await runCommand('auth status')
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('strips trailing slash from .qaspherecli QAS_URL', async () => {
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(
+			join(projectDir, '.qaspherecli'),
+			`QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}/\n`
+		)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth status')
+			expect(log).toHaveBeenCalledWith(
+				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
+			)
+		} finally {
+			process.chdir(origCwd)
+		}
 	})
 
 	test('shows .env source when .env file exists', async () => {
@@ -778,6 +854,7 @@ describe('credential storage (keyring available)', () => {
 
 describe('credential resolution edge cases', () => {
 	test('partial env vars (only QAS_TOKEN) falls through to .qaspherecli', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 		process.env.QAS_TOKEN = 'env-only-token' // Invalid token should fail assertions below if it were used
 		// QAS_URL intentionally not set — should not resolve as env_var
 
@@ -797,6 +874,51 @@ describe('credential resolution edge cases', () => {
 			expect(log).toHaveBeenCalledWith(
 				expect.stringContaining(`Credentials connected via ${tenantUrl}`)
 			)
+			expect(warn).toHaveBeenCalledWith(
+				expect.stringMatching(/Environment variables.*QAS_URL is missing/)
+			)
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('partial .env (only QAS_URL) warns and falls through', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(join(projectDir, '.env'), `QAS_URL=${tenantUrl}\n`)
+		writeFileSync(
+			join(projectDir, '.qaspherecli'),
+			`QAS_TOKEN=${testApiKey}\nQAS_URL=${tenantUrl}\n`
+		)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth status')
+			expect(warn).toHaveBeenCalledWith(expect.stringMatching(/\.env.*QAS_TOKEN is missing/))
+			expect(log).toHaveBeenCalledWith(expect.stringContaining('.qaspherecli'))
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('partial .qaspherecli (only QAS_TOKEN) warns and reports not authenticated', async () => {
+		const exit = mockProcessExit()
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const projectDir = join(testHomeDir, 'project')
+		mkdirSync(projectDir, { recursive: true })
+		writeFileSync(join(projectDir, '.qaspherecli'), `QAS_TOKEN=${testApiKey}\n`)
+
+		const origCwd = process.cwd()
+		process.chdir(projectDir)
+		try {
+			await runCommand('auth status').catch(() => {})
+			expect(warn).toHaveBeenCalledWith(expect.stringMatching(/\.qaspherecli.*QAS_URL is missing/))
+			expect(log).toHaveBeenCalledWith('Not logged in.')
+			expect(exit).not.toHaveBeenCalled() // status shows "Not logged in." without exit(1)
 		} finally {
 			process.chdir(origCwd)
 		}
@@ -867,9 +989,11 @@ describe('token refresh at load time', () => {
 		const refreshedAccessToken = 'tenantId.authId7chars.refreshedAccessToken'
 		const refreshedRefreshToken = 'tenantId.authId7chars.refreshedRefreshToken'
 
+		let lastRefreshBody: Record<string, string> | null = null
 		server.use(
 			http.post(`${tenantUrl}/api/oauth/token`, async ({ request }) => {
 				const body = (await request.json()) as Record<string, string>
+				lastRefreshBody = body
 				if (body.grant_type === 'refresh_token' && body.refresh_token === testRefreshToken) {
 					return HttpResponse.json({
 						access_token: refreshedAccessToken,
@@ -899,6 +1023,13 @@ describe('token refresh at load time', () => {
 			expect.stringContaining(`Credentials connected via ${tenantUrl}`)
 		)
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('valid'))
+
+		// RFC 6749 §6: public clients must include client_id on refresh
+		expect(lastRefreshBody).toMatchObject({
+			grant_type: 'refresh_token',
+			client_id: 'qas-cli',
+			refresh_token: testRefreshToken,
+		})
 
 		// Verify credentials file was updated with new tokens
 		const parsed = JSON.parse(
@@ -946,6 +1077,135 @@ describe('token refresh at load time', () => {
 			expect(err).toHaveBeenCalledWith(expect.stringContaining('Session expired'))
 			expect(err).toHaveBeenCalledWith(expect.stringContaining('qasphere auth login'))
 			expect(exit).toHaveBeenCalledWith(1)
+			// Protocol error must clear the credentials file
+			expect(existsSync(credentialsFilePath())).toBe(false)
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('transient 500 on refresh preserves credentials', async () => {
+		const exit = mockProcessExit()
+
+		const credDir = join(testHomeDir, '.config', 'qasphere')
+		mkdirSync(credDir, { recursive: true })
+		writeFileSync(
+			join(credDir, 'credentials.json'),
+			JSON.stringify({
+				type: 'oauth',
+				accessToken: 'expired-access-token',
+				refreshToken: testRefreshToken,
+				accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+				refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
+				tenantUrl,
+			})
+		)
+
+		server.use(
+			http.post(`${tenantUrl}/api/oauth/token`, () => {
+				return HttpResponse.json(
+					{ error: 'server_error', error_description: 'upstream unavailable' },
+					{ status: 500 }
+				)
+			})
+		)
+
+		const emptyDir = join(testHomeDir, 'empty')
+		mkdirSync(emptyDir, { recursive: true })
+		const origCwd = process.cwd()
+		process.chdir(emptyDir)
+
+		try {
+			await runCommand('auth status').catch(() => {})
+
+			expect(err).toHaveBeenCalledWith(expect.stringContaining('Could not refresh session'))
+			expect(exit).toHaveBeenCalledWith(1)
+			// Transport error must NOT clear credentials
+			expect(existsSync(credentialsFilePath())).toBe(true)
+		} finally {
+			process.chdir(origCwd)
+		}
+	})
+
+	test('protocol error warns when clear-credentials fails', async () => {
+		const exit = mockProcessExit()
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		mockState.keyringMode = 'available'
+		const expiredCreds = {
+			type: 'oauth',
+			accessToken: 'expired-access-token',
+			refreshToken: 'expired-refresh-token',
+			accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+			refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
+			tenantUrl,
+		}
+		mockState.keyringStore.set('qasphere-cli:credentials', JSON.stringify(expiredCreds))
+
+		// Refresh fails with a protocol error → resolver will try to clear keyring
+		server.use(
+			http.post(`${tenantUrl}/api/oauth/token`, () => {
+				return HttpResponse.json(
+					{ error: 'invalid_grant', error_description: 'refresh token revoked' },
+					{ status: 401 }
+				)
+			})
+		)
+
+		// Make keyring delete throw so the clear path falls into the warn branch
+		const originalDelete = mockState.keyringStore.delete.bind(mockState.keyringStore)
+		mockState.keyringStore.delete = () => {
+			throw new Error('Keyring locked')
+		}
+
+		try {
+			await runCommand('auth status').catch(() => {})
+
+			expect(warn).toHaveBeenCalledWith(
+				expect.stringContaining('could not clear stale credentials')
+			)
+			expect(warn).toHaveBeenCalledWith(expect.stringContaining('Keyring locked'))
+			expect(err).toHaveBeenCalledWith(expect.stringContaining('Session expired'))
+			expect(exit).toHaveBeenCalledWith(1)
+		} finally {
+			mockState.keyringStore.delete = originalDelete
+		}
+	})
+
+	test('network failure on refresh preserves credentials', async () => {
+		const exit = mockProcessExit()
+
+		const credDir = join(testHomeDir, '.config', 'qasphere')
+		mkdirSync(credDir, { recursive: true })
+		writeFileSync(
+			join(credDir, 'credentials.json'),
+			JSON.stringify({
+				type: 'oauth',
+				accessToken: 'expired-access-token',
+				refreshToken: testRefreshToken,
+				accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+				refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
+				tenantUrl,
+			})
+		)
+
+		server.use(
+			http.post(`${tenantUrl}/api/oauth/token`, () => {
+				return HttpResponse.error()
+			})
+		)
+
+		const emptyDir = join(testHomeDir, 'empty')
+		mkdirSync(emptyDir, { recursive: true })
+		const origCwd = process.cwd()
+		process.chdir(emptyDir)
+
+		try {
+			await runCommand('auth status').catch(() => {})
+
+			expect(err).toHaveBeenCalledWith(expect.stringContaining('Could not refresh session'))
+			expect(exit).toHaveBeenCalledWith(1)
+			expect(existsSync(credentialsFilePath())).toBe(true)
 		} finally {
 			process.chdir(origCwd)
 		}

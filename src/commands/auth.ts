@@ -120,19 +120,16 @@ async function handleDeviceLogin(): Promise<void> {
 					break
 				case 'access_denied':
 					loader.stop()
-					process.removeListener('SIGINT', onSigint)
 					console.error(chalk.red('\u2717') + ' Authorization denied by user.')
 					process.exit(1)
 					break // unreachable, but satisfies linter
 				case 'expired_token':
 					loader.stop()
-					process.removeListener('SIGINT', onSigint)
 					console.error(chalk.red('\u2717') + ' Authorization timed out. Please try again.')
 					process.exit(1)
 					break // unreachable
 				default:
 					loader.stop()
-					process.removeListener('SIGINT', onSigint)
 					console.error(
 						chalk.red('Error:') +
 							` Authorization failed: ${result.error.error_description || result.error.error}`

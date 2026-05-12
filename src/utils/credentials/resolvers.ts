@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { config } from 'dotenv'
 import type { DotenvPopulateInput } from 'dotenv'
 import chalk from 'chalk'
-import { refreshAccessToken } from '../../api/oauth'
+import { refreshAccessToken, OAuthProtocolError } from '../../api/oauth'
 import {
 	saveCredentials,
 	clearCredentials,
@@ -23,58 +23,103 @@ export const qasEnvs = ['QAS_TOKEN', 'QAS_URL']
 
 const REFRESH_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
 
-function resolveFromEnvVars(): ApiKeyResolved | null {
-	if (process.env.QAS_TOKEN && process.env.QAS_URL) {
-		return {
-			token: process.env.QAS_TOKEN,
-			tenantUrl: process.env.QAS_URL,
-			authType: 'apikey',
-			source: 'env_var',
-		}
-	}
-	return null
+const normalizeTenantUrl = (url: string) => url.replace(/\/+$/, '')
+
+interface ResolveResult {
+	credentials: ApiKeyResolved | null
+	errorMessage?: string
 }
 
-function resolveFromDotenv(): ApiKeyResolved | null {
+function partialConfigMessage(
+	sourceLabel: string,
+	hasToken: boolean,
+	hasUrl: boolean
+): string | undefined {
+	if (hasToken === hasUrl) return undefined
+	const missing = hasToken ? 'QAS_URL' : 'QAS_TOKEN'
+	const present = hasToken ? 'QAS_TOKEN' : 'QAS_URL'
+	return `${sourceLabel}: ${present} is set but ${missing} is missing — skipping.`
+}
+
+function resolveFromEnvVars(): ResolveResult {
+	const token = process.env.QAS_TOKEN
+	const url = process.env.QAS_URL
+	if (token && url) {
+		return {
+			credentials: {
+				token,
+				tenantUrl: normalizeTenantUrl(url),
+				authType: 'apikey',
+				source: 'env_var',
+			},
+		}
+	}
+	return {
+		credentials: null,
+		errorMessage: partialConfigMessage('Environment variables', !!token, !!url),
+	}
+}
+
+function resolveFromDotenv(): ResolveResult {
 	const dotenvPath = join(process.cwd(), '.env')
-	if (!existsSync(dotenvPath)) return null
+	if (!existsSync(dotenvPath)) return { credentials: null }
 
 	const fileEnvs: DotenvPopulateInput = {}
 	config({ path: dotenvPath, processEnv: fileEnvs })
-	if (fileEnvs.QAS_TOKEN && fileEnvs.QAS_URL) {
+	const token = fileEnvs.QAS_TOKEN
+	const url = fileEnvs.QAS_URL
+	if (token && url) {
 		return {
-			token: fileEnvs.QAS_TOKEN,
-			tenantUrl: fileEnvs.QAS_URL,
-			authType: 'apikey',
-			source: '.env',
+			credentials: {
+				token,
+				tenantUrl: normalizeTenantUrl(url),
+				authType: 'apikey',
+				source: '.env',
+			},
 		}
 	}
-	return null
+	return {
+		credentials: null,
+		errorMessage: partialConfigMessage(`.env file at ${dotenvPath}`, !!token, !!url),
+	}
 }
 
-function resolveFromQaspherecli(): ApiKeyResolved | null {
+function resolveFromQaspherecli(): ResolveResult {
 	let dir = process.cwd()
 	for (;;) {
 		const envPath = join(dir, qasEnvFile)
 		if (existsSync(envPath)) {
 			const fileEnvs: DotenvPopulateInput = {}
 			config({ path: envPath, processEnv: fileEnvs })
-			if (fileEnvs.QAS_TOKEN && fileEnvs.QAS_URL) {
+			const token = fileEnvs.QAS_TOKEN
+			const url = fileEnvs.QAS_URL
+			if (token && url) {
 				return {
-					token: fileEnvs.QAS_TOKEN,
-					tenantUrl: fileEnvs.QAS_URL,
-					authType: 'apikey',
-					source: '.qaspherecli',
+					credentials: {
+						token,
+						tenantUrl: normalizeTenantUrl(url),
+						authType: 'apikey',
+						source: '.qaspherecli',
+					},
 				}
 			}
-			break
+			return {
+				credentials: null,
+				errorMessage: partialConfigMessage(`.qaspherecli at ${envPath}`, !!token, !!url),
+			}
 		}
 
 		const parentDir = dirname(dir)
 		if (parentDir === dir) break
 		dir = parentDir
 	}
-	return null
+	return { credentials: null }
+}
+
+function warnIfHasError(result: ResolveResult): void {
+	if (result.errorMessage) {
+		console.warn(chalk.yellow('Warning:') + ` ${result.errorMessage}`)
+	}
 }
 
 export async function resolvePersistedCredentialSource(): Promise<OAuthResolved | null> {
@@ -97,18 +142,22 @@ export async function resolvePersistedCredentialSource(): Promise<OAuthResolved 
 export async function resolveCredentialSource(): Promise<ResolvedCredentials | null> {
 	// 1. Environment variables
 	const envResult = resolveFromEnvVars()
-	if (envResult) return envResult
+	if (envResult.credentials) return envResult.credentials
+	warnIfHasError(envResult)
 
 	// 2. .env file in cwd
 	const dotenvResult = resolveFromDotenv()
-	if (dotenvResult) return dotenvResult
+	if (dotenvResult.credentials) return dotenvResult.credentials
+	warnIfHasError(dotenvResult)
 
 	// 3. Keyring or credentials.json (OAuth only)
 	const persisted = await resolvePersistedCredentialSource()
 	if (persisted) return persisted
 
 	// 4. .qaspherecli file
-	return resolveFromQaspherecli()
+	const cliResult = resolveFromQaspherecli()
+	warnIfHasError(cliResult)
+	return cliResult.credentials
 }
 
 export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthResolved> {
@@ -136,16 +185,26 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 
 		const newSource = await saveCredentials(updated)
 		return { credentials: updated, authType: 'bearer', source: newSource }
-	} catch {
-		// Refresh failed — clear stale credentials and tell user to re-login
-		try {
-			await clearCredentials(resolved.source)
-		} catch {
-			// Ignore clear errors
+	} catch (e) {
+		if (e instanceof OAuthProtocolError) {
+			// Protocol-level rejection (e.g., invalid_grant) — credentials are no longer
+			// valid; clear them and ask the user to re-authenticate.
+			try {
+				await clearCredentials(resolved.source)
+			} catch (clearErr) {
+				const msg = clearErr instanceof Error ? clearErr.message : String(clearErr)
+				console.warn(chalk.yellow('Warning:') + ` could not clear stale credentials: ${msg}`)
+			}
+
+			console.error(chalk.red('Session expired.') + ' Please log in again:')
+			console.error(chalk.green('  qasphere auth login'))
+			process.exit(1)
 		}
 
-		console.error(chalk.red('Session expired.') + ' Please log in again:')
-		console.error(chalk.green('  qasphere auth login'))
+		// Transport error (network failure, 5xx, malformed payload). Do NOT clear
+		// credentials — they may still be valid; the failure is upstream.
+		const message = e instanceof Error ? e.message : String(e)
+		console.error(chalk.red('Could not refresh session:') + ` ${message}. Please try again later.`)
 		process.exit(1)
 	}
 }

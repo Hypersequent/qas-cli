@@ -12,19 +12,23 @@ export const oauthCredentialsSchema = z.object({
 
 export type OAuthCredentials = z.infer<typeof oauthCredentialsSchema>
 
-export type CredentialSource = 'env_var' | '.env' | 'keyring' | 'credentials.json' | '.qaspherecli'
+export type ApiKeyCredentialSource = 'env_var' | '.env' | '.qaspherecli'
+
+export type OAuthCredentialSource = 'keyring' | 'credentials.json'
+
+export type CredentialSource = ApiKeyCredentialSource | OAuthCredentialSource
 
 export interface ApiKeyResolved {
 	token: string
 	tenantUrl: string
 	authType: 'apikey'
-	source: CredentialSource
+	source: ApiKeyCredentialSource
 }
 
 export interface OAuthResolved {
 	credentials: OAuthCredentials
 	authType: 'bearer'
-	source: CredentialSource
+	source: OAuthCredentialSource
 }
 
 export type ResolvedCredentials = ApiKeyResolved | OAuthResolved

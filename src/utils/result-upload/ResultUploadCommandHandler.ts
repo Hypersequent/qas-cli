@@ -109,7 +109,7 @@ export class ResultUploadCommandHandler {
 			const urlParsed = parseRunUrl(this.args)
 			if (urlParsed.url !== this.baseUrl) {
 				printErrorThenExit(
-					`Invalid --run-url specified. Must be in the format: ${this.baseUrl}/project/PROJECT/run/RUN`
+					`--run-url host (${urlParsed.url}) does not match the authenticated tenant (${this.baseUrl}). Run "qasphere auth status" to see which tenant your credentials belong to.`
 				)
 			}
 

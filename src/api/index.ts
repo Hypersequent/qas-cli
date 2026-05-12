@@ -14,7 +14,14 @@ import { createTagApi } from './tags'
 import { createTCaseApi } from './tcases'
 import { createTestPlanApi } from './test-plans'
 import { createUserApi } from './users'
-import { withFetchMiddlewares, withBaseUrl, withAuth, withUserAgent, withHttpRetry } from './utils'
+import {
+	withFetchMiddlewares,
+	withBaseUrl,
+	withAuth,
+	withDevAuth,
+	withUserAgent,
+	withHttpRetry,
+} from './utils'
 import type { AuthType } from './utils'
 import { CLI_VERSION } from '../utils/version'
 
@@ -46,6 +53,7 @@ export const createApi = (baseUrl: string, token: string, authType: AuthType = '
 		withFetchMiddlewares(
 			fetch,
 			withBaseUrl(baseUrl),
+			withDevAuth,
 			withUserAgent(CLI_VERSION),
 			withAuth(token, authType),
 			withHttpRetry

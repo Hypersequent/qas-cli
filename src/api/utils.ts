@@ -68,6 +68,24 @@ export const withAuth =
 			Authorization: authType === 'bearer' ? `Bearer ${token}` : `ApiKey ${token}`,
 		})
 
+export const withDevAuth: FetchMiddleware = (fetcher) => {
+	const devAuth = process.env.QAS_DEV_AUTH
+	if (!devAuth) return fetcher
+
+	return (input: URL | RequestInfo, init?: RequestInit | undefined) => {
+		const prev = (init?.headers as Record<string, string> | undefined) ?? {}
+		const existing = prev['Cookie']
+		const cookie = existing ? `${existing}; _devauth=${devAuth}` : `_devauth=${devAuth}`
+		return fetcher(input, {
+			...init,
+			headers: {
+				...prev,
+				Cookie: cookie,
+			},
+		})
+	}
+}
+
 export const jsonResponse = async <T>(response: Response): Promise<T> => {
 	const json = await response.json()
 	if (response.ok) {

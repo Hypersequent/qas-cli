@@ -2,12 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSy
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { getKeyringEntry } from './keyring'
-import { oauthCredentialsSchema, type OAuthCredentials, type CredentialSource } from './types'
+import { oauthCredentialsSchema, type OAuthCredentials, type OAuthCredentialSource } from './types'
 
 const CONFIG_DIR = join(homedir(), '.config', 'qasphere')
 const CREDENTIALS_FILE = join(CONFIG_DIR, 'credentials.json')
 
-export async function saveCredentials(credentials: OAuthCredentials): Promise<CredentialSource> {
+export async function saveCredentials(
+	credentials: OAuthCredentials
+): Promise<OAuthCredentialSource> {
 	const json = JSON.stringify(credentials)
 
 	const entry = await getKeyringEntry()
@@ -64,15 +66,12 @@ export function loadCredentialsFromFile(): OAuthCredentials | null {
 	}
 }
 
-export async function clearCredentials(source: CredentialSource): Promise<void> {
+export async function clearCredentials(source: OAuthCredentialSource): Promise<void> {
 	if (source === 'keyring') {
 		const entry = await getKeyringEntry()
 		if (!entry) throw new Error('Keyring is not available')
 		entry.deletePassword()
 		return
-	} else if (source === 'credentials.json') {
-		unlinkSync(CREDENTIALS_FILE)
-		return
 	}
-	throw new Error(`Cannot clear credentials from ${source}`)
+	unlinkSync(CREDENTIALS_FILE)
 }

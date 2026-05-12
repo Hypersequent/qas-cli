@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
 	withFetchMiddlewares,
 	withBaseUrl,
@@ -13,38 +14,65 @@ const OAUTH_CLIENT_ID = 'qas-cli'
 const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 const REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
 
-// --- Types ---
+// --- Schemas & types ---
 
-export interface CheckTenantResponse {
-	redirectUrl: string
-	suspended: boolean
-}
+export const CheckTenantResponseSchema = z.object({
+	redirectUrl: z.string().url(),
+	suspended: z.boolean(),
+})
+export type CheckTenantResponse = z.infer<typeof CheckTenantResponseSchema>
 
-export interface OAuthDeviceCodeResponse {
-	device_code: string
-	user_code: string
-	verification_uri: string
-	verification_uri_complete: string
-	expires_in: number
-	interval: number
-}
+export const OAuthDeviceCodeResponseSchema = z.object({
+	device_code: z.string(),
+	user_code: z.string(),
+	verification_uri: z.string(),
+	verification_uri_complete: z.string(),
+	expires_in: z.number(),
+	interval: z.number(),
+})
+export type OAuthDeviceCodeResponse = z.infer<typeof OAuthDeviceCodeResponseSchema>
 
-export interface OAuthTokenResponse {
-	access_token: string
-	token_type: string
-	expires_in: number
-	refresh_token: string
-	refresh_token_expires_in: number
-}
+export const OAuthTokenResponseSchema = z.object({
+	access_token: z.string(),
+	token_type: z.string(),
+	expires_in: z.number(),
+	refresh_token: z.string(),
+	refresh_token_expires_in: z.number(),
+})
+export type OAuthTokenResponse = z.infer<typeof OAuthTokenResponseSchema>
 
-export interface OAuthErrorResponse {
-	error: string
-	error_description?: string
-}
+export const OAuthErrorResponseSchema = z.object({
+	error: z.string(),
+	error_description: z.string().optional(),
+})
+export type OAuthErrorResponse = z.infer<typeof OAuthErrorResponseSchema>
 
 export type OAuthTokenResult =
 	| { ok: true; data: OAuthTokenResponse }
 	| { ok: false; error: OAuthErrorResponse }
+
+export class OAuthProtocolError extends Error {
+	readonly code: string
+	readonly description?: string
+
+	constructor(error: OAuthErrorResponse) {
+		super(error.error_description || error.error)
+		this.name = 'OAuthProtocolError'
+		this.code = error.error
+		this.description = error.error_description
+	}
+}
+
+function parseOAuthResponse<T>(schema: z.ZodType<T>, payload: unknown, context: string): T {
+	const result = schema.safeParse(payload)
+	if (!result.success) {
+		const issues = result.error.issues
+			.map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
+			.join('; ')
+		throw new Error(`Invalid ${context} response from OAuth server: ${issues}`)
+	}
+	return result.data
+}
 
 // --- Helpers ---
 
@@ -59,11 +87,15 @@ const createFetcher = (baseUrl: string) =>
 
 async function oauthErrorResponse(response: Response): Promise<OAuthErrorResponse> {
 	try {
-		const json = (await response.json()) as OAuthErrorResponse
-		return {
-			error: json.error || 'unknown_error',
-			error_description: json.error_description || response.statusText,
+		const json = await response.json()
+		const parsed = OAuthErrorResponseSchema.safeParse(json)
+		if (parsed.success) {
+			return {
+				error: parsed.data.error || 'unknown_error',
+				error_description: parsed.data.error_description || response.statusText,
+			}
 		}
+		return { error: 'unknown_error', error_description: response.statusText }
 	} catch {
 		return { error: 'unknown_error', error_description: response.statusText }
 	}
@@ -78,7 +110,8 @@ export async function checkTenant(
 	const response = await fetcher(`/api/check-tenant?name=${encodeURIComponent(teamName)}`, {
 		method: 'GET',
 	})
-	const data = await jsonResponse<CheckTenantResponse>(response)
+	const raw = await jsonResponse<unknown>(response)
+	const data = parseOAuthResponse(CheckTenantResponseSchema, raw, 'check-tenant')
 
 	// The check-tenant endpoint returns a redirect URL (e.g. http://tenant.localhost:5173/login).
 	// Extract just the origin for use as the API base URL.
@@ -98,7 +131,7 @@ export async function requestDeviceCode(tenantUrl: string): Promise<OAuthDeviceC
 		throw new Error(err.error_description || err.error)
 	}
 
-	return (await response.json()) as OAuthDeviceCodeResponse
+	return parseOAuthResponse(OAuthDeviceCodeResponseSchema, await response.json(), 'device-code')
 }
 
 export async function pollDeviceToken(
@@ -116,7 +149,10 @@ export async function pollDeviceToken(
 	})
 
 	if (response.ok) {
-		return { ok: true, data: (await response.json()) as OAuthTokenResponse }
+		return {
+			ok: true,
+			data: parseOAuthResponse(OAuthTokenResponseSchema, await response.json(), 'token'),
+		}
 	}
 
 	const error = await oauthErrorResponse(response)
@@ -132,14 +168,21 @@ export async function refreshAccessToken(
 		method: 'POST',
 		body: JSON.stringify({
 			grant_type: REFRESH_TOKEN_GRANT_TYPE,
+			client_id: OAUTH_CLIENT_ID,
 			refresh_token: refreshToken,
 		}),
 	})
 
 	if (!response.ok) {
 		const err = await oauthErrorResponse(response)
-		throw new Error(err.error_description || err.error)
+		// 4xx with a recognized OAuth error code is a protocol-level rejection
+		// (refresh token revoked, invalid client, etc.). Anything else (5xx,
+		// unrecognized 4xx) is treated as transport so callers can preserve credentials.
+		if (response.status >= 400 && response.status < 500 && err.error !== 'unknown_error') {
+			throw new OAuthProtocolError(err)
+		}
+		throw new Error(err.error_description || err.error || response.statusText)
 	}
 
-	return (await response.json()) as OAuthTokenResponse
+	return parseOAuthResponse(OAuthTokenResponseSchema, await response.json(), 'refresh-token')
 }

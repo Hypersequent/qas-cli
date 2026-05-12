@@ -1,11 +1,17 @@
 import { execFile } from 'node:child_process'
 
-const onError = (err: Error | null) => {
-	if (err) console.error('Could not open browser. Please visit the URL manually.')
+const onError = (err: Error | null, _stdout: string, stderr: string) => {
+	if (!err) return
+	const detail = stderr.trim()
+	const suffix = detail ? ` (${detail})` : ''
+	console.error(`Could not open browser${suffix}. Please visit the URL manually.`)
 }
 
 export function openBrowser(url: string): void {
-	new URL(url) // Validate URL to prevent shell injection
+	const parsed = new URL(url)
+	if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+		throw new Error(`Refusing to open browser for non-http(s) URL: ${parsed.protocol}`)
+	}
 
 	switch (process.platform) {
 		case 'darwin':

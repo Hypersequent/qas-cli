@@ -1,4 +1,10 @@
-export type { OAuthCredentials, CredentialSource, AuthConfig } from './types'
+export type {
+	OAuthCredentials,
+	CredentialSource,
+	ApiKeyCredentialSource,
+	OAuthCredentialSource,
+	AuthConfig,
+} from './types'
 export { saveCredentials, clearCredentials } from './storage'
 export {
 	qasEnvFile,
