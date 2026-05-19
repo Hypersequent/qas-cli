@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
 	CreateRunRequestSchema,
+	CreateRunLogRequestSchema,
 	QueryPlansSchema,
 	CloneRunRequestSchema,
 	type ListRunTCasesRequest,
@@ -31,6 +32,7 @@ const help = {
 	tags: 'Comma-separated tag IDs to filter by.',
 	priorities: 'Comma-separated priorities to filter by (e.g., "low,high").',
 	include: 'Include additional fields. Use "folder" to include folder details.',
+	comment: 'Log message body (supports HTML).',
 	create: {
 		describe: 'Create a new test run.',
 		epilog: apiDocsEpilog('run', 'create-new-run'),
@@ -99,6 +101,21 @@ const help = {
 			{
 				usage: '$0 api runs test-cases get --project-code PRJ --run-id 1 --tcase-id tc1',
 				description: 'Get a specific test case in a run',
+			},
+		],
+	},
+	logsCreate: {
+		describe: 'Create a log entry on a test run.',
+		epilog: apiDocsEpilog('run', 'create-run-log'),
+		examples: [
+			{
+				usage: '$0 api runs logs create --project-code PRJ --run-id 1 --comment "Deploy finished"',
+				description: 'Create a run log with --comment',
+			},
+			{
+				usage:
+					'$0 api runs logs create --project-code PRJ --run-id 1 --body \'{"comment": "Deploy finished"}\'',
+				description: 'Create a run log using --body',
 			},
 		],
 	},
@@ -332,4 +349,44 @@ const tcasesGet: ApiEndpointSpec = {
 	},
 }
 
-export const runSpecs: ApiEndpointSpec[] = [create, list, clone, close, tcasesList, tcasesGet]
+const logsCreate: ApiEndpointSpec = {
+	id: 'runs.logs.create',
+	commandPath: ['runs', 'logs', 'create'],
+	describe: help.logsCreate.describe,
+	bodyMode: 'json',
+	pathParams: [projectCodeParam, runIdParam],
+	fieldOptions: [
+		{
+			name: 'comment',
+			type: 'string',
+			describe: help.comment,
+			schema: CreateRunLogRequestSchema.shape.comment,
+		},
+	],
+	check: (argv) => {
+		return argv.body !== undefined || argv['body-file'] !== undefined || argv.comment !== undefined
+			? true
+			: 'Either --body, --body-file, or --comment is required'
+	},
+	epilog: help.logsCreate.epilog,
+	examples: help.logsCreate.examples,
+	execute: async (api, { pathParams, body }) => {
+		printJson(
+			await api.runs.createLog(
+				pathParams['project-code'],
+				pathParams['run-id'],
+				body as Parameters<typeof api.runs.createLog>[2]
+			)
+		)
+	},
+}
+
+export const runSpecs: ApiEndpointSpec[] = [
+	create,
+	list,
+	clone,
+	close,
+	tcasesList,
+	tcasesGet,
+	logsCreate,
+]

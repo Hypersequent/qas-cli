@@ -209,9 +209,11 @@ qasphere api
 │   ├── list --project-code                     # List runs
 │   ├── clone --project-code --run-id --title   # Clone run
 │   ├── close --project-code --run-id           # Close run
-│   └── test-cases
-│       ├── list --project-code --run-id        # List test cases in run
-│       └── get --project-code --run-id --tcase-id  # Get test case in run
+│   ├── test-cases
+│   │   ├── list --project-code --run-id        # List test cases in run
+│   │   └── get --project-code --run-id --tcase-id  # Get test case in run
+│   └── logs
+│       └── create --project-code --run-id --comment  # Create run log
 ├── settings
 │   ├── list-statuses                           # List result statuses
 │   └── update-statuses --statuses              # Update custom statuses
