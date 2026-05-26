@@ -446,11 +446,15 @@ Only Allure JSON result files (`*-result.json`) are supported. Legacy Allure 1 X
 
 ### Run-Level Logs
 
+Run-level logs are HTML messages attached to a test run rather than to a specific test case. They are useful for capturing CI/CD output, automation framework output, or any external system message produced during test execution.
+
 The CLI automatically detects global or suite-level failures and uploads them as run-level logs to QA Sphere. These failures are typically caused by setup/teardown issues that aren't tied to specific test cases.
 
 - **JUnit XML**: Suite-level `<system-err>` elements and empty-name `<testcase>` entries with `<error>` or `<failure>` (synthetic entries from setup/teardown failures, e.g., Maven Surefire) are extracted as run-level logs.
 - **Playwright JSON**: Top-level `errors` array entries (global setup/teardown failures) are extracted as run-level logs.
 - **Allure**: Failed or broken `befores`/`afters` fixtures in `*-container.json` files (e.g., session/module-level setup/teardown failures from pytest) are extracted as run-level logs.
+
+Run-level logs can also be created manually via [`qasphere api runs logs create`](#api-command-tree).
 
 ## AI Agent Skill
 

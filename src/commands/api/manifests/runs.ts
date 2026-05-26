@@ -105,7 +105,8 @@ const help = {
 		],
 	},
 	logsCreate: {
-		describe: 'Create a log entry on a test run.',
+		describe:
+			'Append a run-level log message (e.g. CI/CD or automation framework output) to a test run.',
 		epilog: apiDocsEpilog('run', 'create-run-log'),
 		examples: [
 			{
