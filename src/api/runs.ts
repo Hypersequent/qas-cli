@@ -105,7 +105,7 @@ export interface Run {
 }
 
 export const CreateRunLogRequestSchema = z.object({
-	comment: z.string(),
+	comment: z.string().min(1, 'comment must not be empty'),
 })
 
 export type CreateRunLogRequest = z.infer<typeof CreateRunLogRequestSchema>
@@ -151,86 +151,64 @@ export const RunSchema = z
 
 export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
-
-	const getTCases = (projectCode: ResourceId, runId: ResourceId) =>
-		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
-			.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-			.then((r) => r.tcases)
-
-	const create = async (projectCode: ResourceId, req: CreateRunRequest) => {
-		const validated = validateRequest(req, CreateRunRequestSchema)
-		return fetcher(`/api/public/v0/project/${projectCode}/run`, {
-			method: 'POST',
-			body: JSON.stringify(validated),
-		}).then((r) => jsonResponse<CreateRunResponse>(r))
-	}
-
-	const list = async (projectCode: ResourceId, params?: ListRunsRequest) => {
-		const validated = params ? validateRequest(params, ListRunsRequestSchema) : {}
-		return fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, validated))
-			.then((r) => jsonResponse<{ runs: Run[] }>(r))
-			.then((r) => r.runs)
-	}
-
-	const clone = async (projectCode: ResourceId, req: CloneRunRequest) => {
-		const validated = validateRequest(req, CloneRunRequestSchema)
-		return fetcher(`/api/public/v0/project/${projectCode}/run/clone`, {
-			method: 'POST',
-			body: JSON.stringify(validated),
-		}).then((r) => jsonResponse<CloneRunResponse>(r))
-	}
-
-	const close = (projectCode: ResourceId, runId: ResourceId) =>
-		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/close`, {
-			method: 'POST',
-		}).then((r) => jsonResponse<MessageResponse>(r))
-
-	const createLog = async (
-		projectCode: ResourceId,
-		runId: ResourceId,
-		req: CreateRunLogRequest
-	) => {
-		const validated = validateRequest(req, CreateRunLogRequestSchema)
-		return fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
-			method: 'POST',
-			body: JSON.stringify(validated),
-		}).then((r) => jsonResponse<{ id: string }>(r))
-	}
-
-	const listTCases = async (
-		projectCode: ResourceId,
-		runId: ResourceId,
-		params?: ListRunTCasesRequest
-	) => {
-		const validated = params ? validateRequest(params, ListRunTCasesRequestSchema) : {}
-		return fetcher(
-			appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, validated)
-		)
-			.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-			.then((r) => r.tcases)
-	}
-
-	const getTCase = (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
-		fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>
-			jsonResponse<RunTCase>(r)
-		)
-
 	return {
-		getTCases,
-		create,
-		list,
-		clone,
-		close,
-		createLog,
-		listTCases,
-		getTCase,
-		getRunTCases: getTCases,
-		createRun: create,
-		listRuns: list,
-		cloneRun: clone,
-		closeRun: close,
-		createRunLog: createLog,
-		listRunTCases: listTCases,
-		getRunTCase: getTCase,
+		getTCases: (projectCode: ResourceId, runId: ResourceId) =>
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
+				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
+				.then((r) => r.tcases),
+
+		create: async (projectCode: ResourceId, req: CreateRunRequest) => {
+			const validated = validateRequest(req, CreateRunRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/run`, {
+				method: 'POST',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<CreateRunResponse>(r))
+		},
+
+		list: async (projectCode: ResourceId, params?: ListRunsRequest) => {
+			const validated = params ? validateRequest(params, ListRunsRequestSchema) : {}
+			return fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, validated))
+				.then((r) => jsonResponse<{ runs: Run[] }>(r))
+				.then((r) => r.runs)
+		},
+
+		clone: async (projectCode: ResourceId, req: CloneRunRequest) => {
+			const validated = validateRequest(req, CloneRunRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/run/clone`, {
+				method: 'POST',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<CloneRunResponse>(r))
+		},
+
+		close: (projectCode: ResourceId, runId: ResourceId) =>
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/close`, {
+				method: 'POST',
+			}).then((r) => jsonResponse<MessageResponse>(r)),
+
+		createLog: async (projectCode: ResourceId, runId: ResourceId, req: CreateRunLogRequest) => {
+			const validated = validateRequest(req, CreateRunLogRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/log`, {
+				method: 'POST',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<{ id: string }>(r))
+		},
+
+		listTCases: async (
+			projectCode: ResourceId,
+			runId: ResourceId,
+			params?: ListRunTCasesRequest
+		) => {
+			const validated = params ? validateRequest(params, ListRunTCasesRequestSchema) : {}
+			return fetcher(
+				appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, validated)
+			)
+				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
+				.then((r) => r.tcases)
+		},
+
+		getTCase: (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>
+			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase/${tcaseId}`).then((r) =>
+				jsonResponse<RunTCase>(r)
+			),
 	}
 }

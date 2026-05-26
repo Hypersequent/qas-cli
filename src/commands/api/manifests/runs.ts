@@ -5,6 +5,7 @@ import {
 	QueryPlansSchema,
 	CloneRunRequestSchema,
 	type ListRunTCasesRequest,
+	CreateRunLogRequest,
 } from '../../../api/runs'
 import { limitParam, sortFieldParam, sortOrderParam, resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
@@ -376,7 +377,7 @@ const logsCreate: ApiEndpointSpec = {
 			await api.runs.createLog(
 				pathParams['project-code'],
 				pathParams['run-id'],
-				body as Parameters<typeof api.runs.createLog>[2]
+				body as CreateRunLogRequest
 			)
 		)
 	},

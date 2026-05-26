@@ -1,5 +1,5 @@
 import { HttpResponse, http, type PathParams } from 'msw'
-import { beforeEach, describe, expect } from 'vitest'
+import { beforeEach, describe, expect, vi } from 'vitest'
 import type { CreateRunLogRequest } from '../../../api/runs'
 import {
 	test,
@@ -70,6 +70,7 @@ describe('mocked', () => {
 				requiredArgs,
 			})
 			h.testInvalidJson(requiredArgs)
+			h.testInvalidBody({ comment: '' }, /must not be empty/, requiredArgs)
 		}
 	)
 })
@@ -88,6 +89,23 @@ describe('validation errors', () => {
 		'--comment',
 		'msg',
 	])
+
+	test('rejects empty --comment', async () => {
+		const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+			throw new Error('process.exit')
+		})
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		try {
+			await expect(
+				runCommand('--project-code', 'PRJ', '--run-id', '1', '--comment', '')
+			).rejects.toThrow('process.exit')
+			const errorOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+			expect(errorOutput).toMatch(/--comment.*must not be empty/)
+		} finally {
+			exitSpy.mockRestore()
+			errorSpy.mockRestore()
+		}
+	})
 })
 
 test('creates a run log on live server', { tags: ['live'] }, async ({ project }) => {
