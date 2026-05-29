@@ -151,9 +151,11 @@ qasphere api
 │   ├── list --project-code                     # List runs
 │   ├── clone --project-code --run-id --title   # Clone run
 │   ├── close --project-code --run-id           # Close run
-│   └── test-cases
-│       ├── list --project-code --run-id        # List test cases in run
-│       └── get --project-code --run-id --tcase-id  # Get test case in run
+│   ├── test-cases
+│   │   ├── list --project-code --run-id        # List test cases in run
+│   │   └── get --project-code --run-id --tcase-id  # Get test case in run
+│   └── logs
+│       └── create --project-code --run-id --comment  # Append a run-level log message (e.g. CI/CD or automation framework output) to a test run.
 ├── settings
 │   ├── list-statuses                           # List result statuses
 │   └── update-statuses --statuses              # Update custom statuses
