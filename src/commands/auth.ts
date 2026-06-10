@@ -168,7 +168,7 @@ async function handleStatus(): Promise<void> {
 	const token = result.authType === 'bearer' ? result.credentials.accessToken : result.token
 	let valid = false
 	try {
-		const api = createApi(tenantUrl, token, result.authType)
+		const api = createApi(tenantUrl, token)
 		const me = await api.users.me()
 		console.log(`  Status: ${chalk.green('valid')}`)
 		console.log(`  User: ${me.name} <${me.email}> (${me.role})`)

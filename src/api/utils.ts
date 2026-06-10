@@ -59,13 +59,11 @@ export const withUserAgent =
 	(fetcher) =>
 		withHeaders(fetcher, { 'User-Agent': `qas-cli/${version}` })
 
-export type AuthType = 'apikey' | 'bearer'
-
 export const withAuth =
-	(token: string, authType: AuthType): FetchMiddleware =>
+	(token: string): FetchMiddleware =>
 	(fetcher) =>
 		withHeaders(fetcher, {
-			Authorization: authType === 'bearer' ? `Bearer ${token}` : `ApiKey ${token}`,
+			Authorization: `Bearer ${token}`,
 		})
 
 export const withDevAuth: FetchMiddleware = (fetcher) => {

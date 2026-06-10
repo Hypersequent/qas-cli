@@ -24,7 +24,7 @@ describe('mocked', () => {
 		http.post(
 			`${baseURL}/api/public/v0/project/:projectCode/run/:runId/close`,
 			({ request, params }) => {
-				expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 				lastParams = params
 				return HttpResponse.json({ message: 'Run closed' })
 			}

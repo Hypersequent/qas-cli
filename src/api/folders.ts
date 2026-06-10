@@ -3,6 +3,7 @@ import {
 	PaginatedResponse,
 	ResourceId,
 	limitParam,
+	offsetParam,
 	pageParam,
 	sortFieldParam,
 	sortOrderParam,
@@ -20,6 +21,7 @@ export interface Folder {
 }
 
 export const GetFoldersRequestSchema = z.object({
+	offset: offsetParam,
 	page: pageParam,
 	limit: limitParam,
 	search: z.string().optional(),

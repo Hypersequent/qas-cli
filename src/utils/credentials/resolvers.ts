@@ -224,13 +224,11 @@ export QAS_URL=https://tenant_id.eu1.qasphere.com`)
 		return {
 			token: refreshed.credentials.accessToken,
 			baseUrl: refreshed.credentials.tenantUrl,
-			authType: 'bearer',
 		}
 	}
 
 	return {
 		token: resolved.token,
 		baseUrl: resolved.tenantUrl,
-		authType: 'apikey',
 	}
 }

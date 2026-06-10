@@ -46,11 +46,11 @@ const server = setupServer(
 	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/folders`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ data: [], total: 0, page: 1, limit: 50 })
+		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 50 })
 	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ data: [], total: 0, page: 1, limit: 50 })
+		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 50 })
 	}),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)

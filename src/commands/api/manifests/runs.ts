@@ -28,6 +28,7 @@ const help = {
 	'query-plans':
 		'JSON array of query plan objects that select which test cases to include.\nExample: \'[{"tcaseIds": ["abc123"]}]\'',
 	closed: 'Filter by closed status. If true, returns only closed runs.',
+	limit: 'Maximum number of runs to return.',
 	'milestone-ids': 'Comma-separated milestone IDs to filter by (e.g., "1,2,3").',
 	search: 'Search text to filter test cases.',
 	tags: 'Comma-separated tag IDs to filter by.',

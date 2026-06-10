@@ -55,7 +55,7 @@ const testMeUser = {
 
 const meHandler = http.get(`${tenantUrl}/api/public/v0/users/me`, ({ request }) => {
 	const auth = request.headers.get('Authorization')
-	if (auth === `ApiKey ${testApiKey}` || auth === `Bearer ${testAccessToken}`) {
+	if (auth === `Bearer ${testApiKey}` || auth === `Bearer ${testAccessToken}`) {
 		return HttpResponse.json({ user: testMeUser })
 	}
 	return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })

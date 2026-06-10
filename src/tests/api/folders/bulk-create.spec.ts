@@ -21,7 +21,7 @@ describe('mocked', () => {
 		http.post(
 			`${baseURL}/api/public/v0/project/:projectCode/tcase/folder/bulk`,
 			async ({ request, params }) => {
-				expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 				lastParams = params
 				lastRequest = await request.json()
 				return HttpResponse.json({ ids: [[1]] })

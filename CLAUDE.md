@@ -90,8 +90,8 @@ Important note: Online documentation is available at https://docs.qasphere.com. 
 Composable fetch wrappers using higher-order functions:
 
 - `utils.ts` — `withBaseUrl`, `withAuth`, `withJson`, `withUserAgent`, `withHttpRetry` decorators that wrap `fetch` via middleware pattern; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
-- `index.ts` — `createApi(baseUrl, token, authType)` assembles the API client from all sub-modules using `withFetchMiddlewares`
-- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `pageParam`, `limitParam`)
+- `index.ts` — `createApi(baseUrl, token)` assembles the API client from all sub-modules using `withFetchMiddlewares`. All requests authenticate with `Authorization: Bearer <token>` (works for both API keys and OAuth access tokens)
+- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `offsetParam`, `limitParam`, plus the deprecated `pageParam`). Pagination is offset/limit-based; the legacy `page` param is still accepted by the API but ignored when `offset` is set
 - One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
 
 ### Configuration (src/utils/)

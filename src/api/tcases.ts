@@ -3,6 +3,7 @@ import {
 	PaginatedResponse,
 	ResourceId,
 	limitParam,
+	offsetParam,
 	pageParam,
 	priorityEnum,
 	sortFieldParam,
@@ -116,6 +117,7 @@ export interface CreateTCasesResponse {
 }
 
 export const GetTCasesRequestSchema = z.object({
+	offset: offsetParam,
 	page: pageParam,
 	limit: limitParam,
 	folders: z.array(z.number().int().positive()).optional(),
@@ -125,6 +127,7 @@ export type GetTCasesRequest = z.infer<typeof GetTCasesRequestSchema>
 
 export const GetTCasesBySeqRequestSchema = z.object({
 	seqIds: z.array(z.string()),
+	offset: offsetParam,
 	page: pageParam,
 	limit: limitParam,
 })
@@ -132,6 +135,7 @@ export const GetTCasesBySeqRequestSchema = z.object({
 export type GetTCasesBySeqRequest = z.infer<typeof GetTCasesBySeqRequestSchema>
 
 export const ListTCasesRequestSchema = z.object({
+	offset: offsetParam,
 	page: pageParam,
 	limit: limitParam,
 	folders: z.array(z.number().int().positive()).optional(),

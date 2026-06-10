@@ -19,7 +19,7 @@ describe('mocked', () => {
 	const mockResponse = {
 		data: [{ id: 1, parentId: 0, pos: 0, title: 'Root' }],
 		total: 1,
-		page: 1,
+		offset: 0,
 		limit: 25,
 	}
 
@@ -30,7 +30,7 @@ describe('mocked', () => {
 		http.get(
 			`${baseURL}/api/public/v0/project/:projectCode/tcase/folders`,
 			({ request, params }) => {
-				expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 				lastParams = params
 				lastUrl = new URL(request.url)
 				return HttpResponse.json(mockResponse)
@@ -47,6 +47,14 @@ describe('mocked', () => {
 		const result = await runCommand('--project-code', project.code)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(result).toEqual(mockResponse)
+	})
+
+	test('passes offset and limit as query parameters', async ({ project }) => {
+		await runCommand('--project-code', project.code, '--offset', '10', '--limit', '5')
+		expect(lastParams.projectCode).toBe(project.code)
+		expect(lastUrl).not.toBeNull()
+		expect(lastUrl!.searchParams.get('offset')).toEqual('10')
+		expect(lastUrl!.searchParams.get('limit')).toEqual('5')
 	})
 
 	test('passes sort-field as query parameter', async ({ project }) => {
@@ -82,10 +90,17 @@ describe('validation errors', () => {
 		)
 	})
 
-	test('rejects --limit 0', async () => {
+	test('rejects --offset -1', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--limit', '0'),
-			/--limit.*must be greater than 0/i
+			() => runCommand('--project-code', 'PRJ', '--offset', '-1'),
+			/--offset.*greater than or equal to 0/i
+		)
+	})
+
+	test('rejects --limit -1', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--limit', '-1'),
+			/--limit.*greater than or equal to 0/i
 		)
 	})
 })

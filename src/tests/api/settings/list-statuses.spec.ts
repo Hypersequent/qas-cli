@@ -13,7 +13,7 @@ describe('mocked', () => {
 
 	useMockServer(
 		http.get(`${baseURL}/api/public/v0/settings/preferences/status`, ({ request }) => {
-			expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 			return HttpResponse.json({ statuses: mockStatuses })
 		})
 	)

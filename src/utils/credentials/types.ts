@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { AuthType } from '../../api/utils'
 
 export const oauthCredentialsSchema = z.object({
 	type: z.literal('oauth'),
@@ -36,5 +35,4 @@ export type ResolvedCredentials = ApiKeyResolved | OAuthResolved
 export interface AuthConfig {
 	token: string
 	baseUrl: string
-	authType: AuthType
 }

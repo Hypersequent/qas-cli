@@ -22,7 +22,6 @@ import {
 	withUserAgent,
 	withHttpRetry,
 } from './utils'
-import type { AuthType } from './utils'
 import { CLI_VERSION } from '../utils/version'
 
 const getApi = (fetcher: typeof fetch) => {
@@ -48,14 +47,14 @@ const getApi = (fetcher: typeof fetch) => {
 
 export type Api = ReturnType<typeof getApi>
 
-export const createApi = (baseUrl: string, token: string, authType: AuthType = 'apikey') =>
+export const createApi = (baseUrl: string, token: string) =>
 	getApi(
 		withFetchMiddlewares(
 			fetch,
 			withBaseUrl(baseUrl),
 			withDevAuth,
 			withUserAgent(CLI_VERSION),
-			withAuth(token, authType),
+			withAuth(token),
 			withHttpRetry
 		)
 	)
