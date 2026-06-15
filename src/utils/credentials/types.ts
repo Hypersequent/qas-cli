@@ -26,7 +26,7 @@ export interface ApiKeyResolved {
 
 export interface OAuthResolved {
 	credentials: OAuthCredentials
-	authType: 'bearer'
+	authType: 'oauth'
 	source: OAuthCredentialSource
 }
 

@@ -120,12 +120,12 @@ function warnIfHasError(result: ResolveResult): void {
 export async function resolvePersistedCredentialSource(): Promise<OAuthResolved | null> {
 	const keyringCreds = await loadCredentialsFromKeyring()
 	if (keyringCreds) {
-		return { credentials: keyringCreds, authType: 'bearer', source: 'keyring' }
+		return { credentials: keyringCreds, authType: 'oauth', source: 'keyring' }
 	}
 
 	const fileCreds = loadCredentialsFromFile()
 	if (fileCreds) {
-		return { credentials: fileCreds, authType: 'bearer', source: 'credentials.json' }
+		return { credentials: fileCreds, authType: 'oauth', source: 'credentials.json' }
 	}
 	return null
 }
@@ -169,7 +169,7 @@ export async function refreshIfNeeded(resolved: OAuthResolved): Promise<OAuthRes
 
 		const updated = credentialsFromTokenResponse(tokenResponse, resolved.credentials.tenantUrl)
 		const newSource = await saveCredentials(updated)
-		return { credentials: updated, authType: 'bearer', source: newSource }
+		return { credentials: updated, authType: 'oauth', source: newSource }
 	} catch (e) {
 		if (e instanceof OAuthProtocolError) {
 			// Protocol-level rejection (e.g., invalid_grant) — credentials are no longer
@@ -219,7 +219,7 @@ export QAS_URL=https://tenant_id.eu1.qasphere.com`)
 		process.exit(1)
 	}
 
-	if (resolved.authType === 'bearer') {
+	if (resolved.authType === 'oauth') {
 		const refreshed = await refreshIfNeeded(resolved)
 		return {
 			token: refreshed.credentials.accessToken,
