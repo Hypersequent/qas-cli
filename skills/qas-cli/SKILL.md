@@ -183,7 +183,7 @@ Note: `qasphere api files upload --file ...` uses the public batch upload endpoi
 
 ### Pagination
 
-List commands support pagination via `--page` and `--limit`. Some also support `--sort-field` and `--sort-order` (asc/desc). The `audit-logs list` command uses cursor-based pagination with `--after` and `--count` instead.
+List commands support pagination via `--offset` and `--limit`. Some commands also support `--sort-field` and `--sort-order` (asc/desc). The `audit-logs list` command uses cursor-based pagination with `--after` and `--count` instead.
 
 ### JSON Body Commands
 

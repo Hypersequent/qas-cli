@@ -157,18 +157,18 @@ async function handleStatus(): Promise<void> {
 	}
 
 	// Refresh OAuth tokens if expired before validating
-	if (result.authType === 'bearer') {
+	if (result.authType === 'oauth') {
 		result = await refreshIfNeeded(result)
 	}
 
-	const tenantUrl = result.authType === 'bearer' ? result.credentials.tenantUrl : result.tenantUrl
+	const tenantUrl = result.authType === 'oauth' ? result.credentials.tenantUrl : result.tenantUrl
 	console.log(`Credentials connected via ${tenantUrl}`)
 	console.log(`  Source: ${result.source}`)
 
-	const token = result.authType === 'bearer' ? result.credentials.accessToken : result.token
+	const token = result.authType === 'oauth' ? result.credentials.accessToken : result.token
 	let valid = false
 	try {
-		const api = createApi(tenantUrl, token, result.authType)
+		const api = createApi(tenantUrl, token)
 		const me = await api.users.me()
 		console.log(`  Status: ${chalk.green('valid')}`)
 		console.log(`  User: ${me.name} <${me.email}> (${me.role})`)
@@ -177,7 +177,7 @@ async function handleStatus(): Promise<void> {
 		console.log(`  Status: ${chalk.red('invalid or expired')}`)
 	}
 
-	if (valid && result.authType === 'bearer') {
+	if (valid && result.authType === 'oauth') {
 		const expiresAt = new Date(result.credentials.refreshTokenExpiresAt)
 		const remainingMs = expiresAt.getTime() - Date.now()
 		const days = Math.max(0, Math.floor(remainingMs / (24 * 60 * 60 * 1000)))

@@ -65,6 +65,7 @@ interface TestCaseResultWithSeqAndFile {
 
 type PendingTCaseCreations = Record<string, TestCaseResult[]>
 
+// Must not exceed the server-side pagination cap of 5000
 const DEFAULT_PAGE_SIZE = 5000
 export const DEFAULT_FOLDER_TITLE = 'cli-import'
 const DEFAULT_TCASE_TAGS = ['cli-import']
@@ -89,7 +90,7 @@ export class ResultUploadCommandHandler {
 		private auth: AuthConfig
 	) {
 		this.baseUrl = auth.baseUrl
-		this.api = createApi(this.baseUrl, auth.token, auth.authType)
+		this.api = createApi(this.baseUrl, auth.token)
 		this.markerParser = new MarkerParser(this.type)
 	}
 
@@ -234,10 +235,10 @@ export class ResultUploadCommandHandler {
 				this.markerParser.formatMarker(projectCode, v)
 			)
 
-			for (let page = 1; ; page++) {
+			for (let offset = 0; ; offset += DEFAULT_PAGE_SIZE) {
 				const response = await this.api.testCases.getBySeq(projectCode, {
 					seqIds: tcaseMarkers,
-					page,
+					offset,
 					limit: DEFAULT_PAGE_SIZE,
 				})
 
@@ -380,10 +381,10 @@ export class ResultUploadCommandHandler {
 		// First fetch the default folder ID where we are creating new test cases.
 		// Ideally, there shouldn't be the need to fetch more than one page.
 		let defaultFolderId = null
-		for (let page = 1; ; page++) {
+		for (let offset = 0; ; offset += DEFAULT_PAGE_SIZE) {
 			const response = await this.api.folders.getPaginated(projectCode, {
 				search: DEFAULT_FOLDER_TITLE,
-				page,
+				offset,
 				limit: DEFAULT_PAGE_SIZE,
 			})
 
@@ -405,10 +406,10 @@ export class ResultUploadCommandHandler {
 		}
 
 		const pendingTitles = new Set(tcasesToCreate)
-		for (let page = 1; pendingTitles.size > 0; page++) {
+		for (let offset = 0; pendingTitles.size > 0; offset += DEFAULT_PAGE_SIZE) {
 			const response = await this.api.testCases.getPaginated(projectCode, {
 				folders: [defaultFolderId],
-				page,
+				offset,
 				limit: DEFAULT_PAGE_SIZE,
 			})
 

@@ -22,7 +22,7 @@ describe('mocked', () => {
 
 	useMockServer(
 		http.post(`${baseURL}/api/public/v0/project/:projectCode/plan`, async ({ request, params }) => {
-			expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 			lastParams = params
 			lastRequest = await request.json()
 			return HttpResponse.json({ id: 1 })

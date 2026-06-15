@@ -18,14 +18,14 @@ const runCommand = <T = unknown>(...args: string[]) =>
 	runCli<T>('api', 'test-cases', 'list', ...args)
 
 describe('mocked', () => {
-	const mockResponse = { data: [{ id: 'tc1', title: 'Test' }], total: 1, page: 1, limit: 25 }
+	const mockResponse = { data: [{ id: 'tc1', title: 'Test' }], total: 1, offset: 0, limit: 25 }
 
 	let lastParams: PathParams = {}
 	let lastSearchParams: URLSearchParams | null = null
 
 	useMockServer(
 		http.get(`${baseURL}/api/public/v0/project/:projectCode/tcase`, ({ request, params }) => {
-			expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 			lastParams = params
 			lastSearchParams = new URL(request.url).searchParams
 			return HttpResponse.json(mockResponse)
@@ -41,6 +41,14 @@ describe('mocked', () => {
 		const result = await runCommand('--project-code', project.code)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(result).toEqual(mockResponse)
+	})
+
+	test('passes offset and limit as query parameters', async ({ project }) => {
+		await runCommand('--project-code', project.code, '--offset', '20', '--limit', '10')
+		expect(lastParams.projectCode).toBe(project.code)
+		expect(lastSearchParams).not.toBeNull()
+		expect(lastSearchParams!.get('offset')).toBe('20')
+		expect(lastSearchParams!.get('limit')).toBe('10')
 	})
 
 	test('passes filter params', async ({ project }) => {
@@ -79,10 +87,17 @@ describe('validation errors', () => {
 		)
 	})
 
-	test('rejects --limit 0', async () => {
+	test('rejects --offset -1', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--limit', '0'),
-			/--limit.*must be greater than 0/i
+			() => runCommand('--project-code', 'PRJ', '--offset', '-1'),
+			/--offset.*greater than or equal to 0/i
+		)
+	})
+
+	test('rejects --limit -1', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--limit', '-1'),
+			/--limit.*greater than or equal to 0/i
 		)
 	})
 
@@ -126,8 +141,6 @@ describe('live', { tags: ['live'] }, () => {
 		)
 
 		expect(result).toHaveProperty('total')
-		expect(result).toHaveProperty('page')
-		expect(result).toHaveProperty('limit')
 		expect(Array.isArray(result.data)).toBe(true)
 		expect(result.data.length).toBe(1)
 		expectBaseFields(result.data[0])

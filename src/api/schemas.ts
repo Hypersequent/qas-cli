@@ -16,12 +16,16 @@ export type ResultStatus =
 export interface PaginatedResponse<T> {
 	data: T[]
 	total: number
-	page: number
-	limit: number
+	/** Offset that was applied to the query. Present when pagination was applied. */
+	offset?: number
+	/** Limit that was applied to the query. Present when pagination was applied. */
+	limit?: number
+	/** @deprecated Echo of the legacy `page` request param. Present only when the request used `page`. */
+	page?: number
 }
 
 export interface PaginatedRequest {
-	page?: number
+	offset?: number
 	limit?: number
 }
 export interface MessageResponse {
@@ -52,8 +56,11 @@ export function validateRequest<T>(value: unknown, schema: ZodType<T>): T {
 export const sortFieldParam = z.string().optional()
 export const sortOrderParam = z.enum(['asc', 'desc']).optional()
 export type SortOrder = z.infer<typeof sortOrderParam>
+export const offsetParam = z.number().int().nonnegative().optional()
+/** @deprecated Use `offsetParam`. The API ignores `page` when `offset` is set. */
 export const pageParam = z.number().int().positive().optional()
-export const limitParam = z.number().int().positive().optional()
+// Limit 0 is valid and returns only the total count (no rows)
+export const limitParam = z.number().int().nonnegative().optional()
 export const priorityEnum = z.enum(['low', 'medium', 'high'])
 export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
 export const resourceIdSchema = z

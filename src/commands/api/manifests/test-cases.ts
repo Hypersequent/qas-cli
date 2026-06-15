@@ -10,6 +10,7 @@ import {
 	type CountTCasesRequest,
 } from '../../../api/tcases'
 import {
+	offsetParam,
 	pageParam,
 	limitParam,
 	sortFieldParam,
@@ -114,8 +115,9 @@ const list: ApiEndpointSpec = {
 	bodyMode: 'none',
 	pathParams: [projectCodeParam],
 	queryOptions: [
-		{ name: 'page', type: 'number', describe: help.page, schema: pageParam },
+		{ name: 'offset', type: 'number', describe: help.offset, schema: offsetParam },
 		{ name: 'limit', type: 'number', describe: help.limit, schema: limitParam },
+		{ name: 'page', type: 'number', describe: help.page, schema: pageParam },
 		{ name: 'folders', type: 'string', describe: help.folders },
 		{ name: 'tags', type: 'string', describe: help.tagsFilter },
 		{ name: 'priorities', type: 'string', describe: help.priorities },

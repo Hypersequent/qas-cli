@@ -96,7 +96,7 @@ export async function executeCommand(
 
 	// 4. Connect to API (lazy auth resolution)
 	const auth = await resolveAuth()
-	const api = createApi(auth.baseUrl, auth.token, auth.authType)
+	const api = createApi(auth.baseUrl, auth.token)
 
 	// 5. Build argument map for error mapping
 	const argumentMap: Record<string, string> = {}

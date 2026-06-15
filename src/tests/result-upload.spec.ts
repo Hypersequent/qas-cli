@@ -31,30 +31,39 @@ let overriddenGetFoldersResponse: PaginatedResponse<Partial<Folder>> | null = nu
 
 const server = setupServer(
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		return HttpResponse.json({ exists: true })
 	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/folders`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
+		const searchParams = new URL(request.url).searchParams
+		expect(searchParams.get('offset')).not.toBeNull()
+		expect(searchParams.get('page')).toBeNull()
 		return HttpResponse.json(
-			overriddenGetFoldersResponse || { data: [], total: 0, page: 1, limit: 50 }
+			overriddenGetFoldersResponse || { data: [], total: 0, offset: 0, limit: 50 }
 		)
 	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
+		const searchParams = new URL(request.url).searchParams
+		expect(searchParams.get('offset')).not.toBeNull()
+		expect(searchParams.get('page')).toBeNull()
 		return HttpResponse.json(
-			overriddenGetPaginatedTCasesResponse || { data: [], total: 0, page: 1, limit: 50 }
+			overriddenGetPaginatedTCasesResponse || { data: [], total: 0, offset: 0, limit: 50 }
 		)
 	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, async ({ request }) => {
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
+		const body = (await request.json()) as { offset?: number; page?: number }
+		expect(body.offset).toBeTypeOf('number')
+		expect(body.page).toBeUndefined()
 		return HttpResponse.json({
 			data: runTestCases,
 			total: runTestCases.length,
 		})
 	}),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/bulk`, async ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 
 		if (!createTCasesResponse) {
 			return HttpResponse.json(
@@ -81,7 +90,7 @@ const server = setupServer(
 		return HttpResponse.json(createTCasesResponse)
 	}),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/run`, async ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		const body = (await request.json()) as { title: string }
 		lastCreatedRunTitle = body.title
 
@@ -101,7 +110,7 @@ const server = setupServer(
 		})
 	}),
 	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		return HttpResponse.json({
 			tcases: runTestCases,
 		})
@@ -109,18 +118,18 @@ const server = setupServer(
 	http.post(
 		new RegExp(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/result/batch`),
 		({ request }) => {
-			expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+			expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 			return HttpResponse.json({
 				ids: [0],
 			})
 		}
 	),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/log`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		return HttpResponse.json({ id: 'log-1' })
 	}),
 	http.post(`${baseURL}/api/public/v0/file/batch`, async ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('ApiKey QAS_TOKEN')
+		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		expect(request.headers.get('Content-Type')).includes('multipart/form-data')
 
 		const formData = await request.formData()
@@ -596,7 +605,7 @@ fileTypesWithAllure.forEach((fileType) => {
 				overriddenGetFoldersResponse = {
 					data: [{ id: 1, title: DEFAULT_FOLDER_TITLE, parentId: 0, pos: 0 }],
 					total: 1,
-					page: 1,
+					offset: 0,
 					limit: 50,
 				}
 				overriddenGetPaginatedTCasesResponse = {
@@ -610,7 +619,7 @@ fileTypesWithAllure.forEach((fileType) => {
 						},
 					],
 					total: 1,
-					page: 1,
+					offset: 0,
 					limit: 50,
 				}
 				createTCasesResponse = {

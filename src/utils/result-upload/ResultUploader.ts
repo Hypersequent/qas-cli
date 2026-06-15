@@ -29,7 +29,7 @@ export class ResultUploader {
 
 		this.project = project
 		this.run = run
-		this.api = createApi(url, auth.token, auth.authType)
+		this.api = createApi(url, auth.token)
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {

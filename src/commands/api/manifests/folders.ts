@@ -1,5 +1,11 @@
 import { BulkCreateFoldersRequestSchema } from '../../../api/folders'
-import { pageParam, limitParam, sortFieldParam, sortOrderParam } from '../../../api/schemas'
+import {
+	offsetParam,
+	pageParam,
+	limitParam,
+	sortFieldParam,
+	sortOrderParam,
+} from '../../../api/schemas'
 import { printJson, apiDocsEpilog } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
@@ -42,8 +48,9 @@ const list: ApiEndpointSpec = {
 	bodyMode: 'none',
 	pathParams: [projectCodeParam],
 	queryOptions: [
-		{ name: 'page', type: 'number', describe: help.page, schema: pageParam },
+		{ name: 'offset', type: 'number', describe: help.offset, schema: offsetParam },
 		{ name: 'limit', type: 'number', describe: help.limit, schema: limitParam },
+		{ name: 'page', type: 'number', describe: help.page, schema: pageParam },
 		{
 			name: 'sort-field',
 			type: 'string',

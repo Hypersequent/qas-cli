@@ -20,7 +20,7 @@ describe('mocked', () => {
 
 	useMockServer(
 		http.get(`${baseURL}/api/public/v0/project/:projectCode/milestone`, ({ request, params }) => {
-			expect(request.headers.get('Authorization')).toEqual(`ApiKey ${token}`)
+			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 			lastParams = params
 			return HttpResponse.json({ milestones: mockMilestones })
 		})
