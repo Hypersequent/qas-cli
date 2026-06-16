@@ -17,7 +17,7 @@ npm install -g qas-cli    # Global install — provides the `qasphere` command
 npx qas-cli <command>     # Or run without installing
 ```
 
-If working within the qas-cli repository itself, use `node build/bin/qasphere.js` (after `npm run build`).
+If working within the qas-cli repository itself, use `node build/bin/qasphere.js` (after `pnpm build`).
 
 ## Prerequisites
 

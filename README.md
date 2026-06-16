@@ -468,9 +468,11 @@ The skill provides the agent with full documentation of the CLI commands, option
 
 ## Development (for those who want to contribute to the tool)
 
-1. Install and build: `npm install && npm run build && npm link`
+This project uses [pnpm](https://pnpm.io/) (declared via the `packageManager` field — `corepack enable` will pick it up automatically).
+
+1. Install and build: `pnpm install && pnpm build && pnpm link --global`
 2. Get test account at [qasphere.com](https://qasphere.com/) (includes demo project)
 3. Configure `.qaspherecli` with credentials
 4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
-Tests: `npm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
+Tests: `pnpm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)

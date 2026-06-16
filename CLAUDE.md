@@ -8,18 +8,20 @@ QAS CLI (`qas-cli`) is a Node.js CLI tool for uploading test automation results 
 
 ## Commands
 
+This project uses **pnpm** (declared via the `packageManager` field in `package.json`; run `corepack enable` to use it automatically).
+
 ```bash
-npm install              # Install dependencies
-npm run build            # Clean, compile TS, add .js extensions, chmod entry point
-npm run check            # Typecheck + lint + format check
-npm test                 # Run all tests (Vitest)
-npx vitest run src/tests/junit-xml-parsing.spec.ts   # Run a single test file
-npx vitest run -t "test name"                        # Run a specific test by name
-npm run lint             # ESLint
-npm run lint:fix         # ESLint — auto-fix
-npm run format           # Prettier — auto-fix
-npm run format:check     # Prettier — check only
-npm run typecheck        # tsc --noEmit
+pnpm install             # Install dependencies
+pnpm build               # Clean, compile TS, add .js extensions, chmod entry point
+pnpm check               # Typecheck + lint + format check
+pnpm test                # Run all tests (Vitest)
+pnpm exec vitest run src/tests/junit-xml-parsing.spec.ts   # Run a single test file
+pnpm exec vitest run -t "test name"                        # Run a specific test by name
+pnpm lint                # ESLint
+pnpm lint:fix            # ESLint — auto-fix
+pnpm format              # Prettier — auto-fix
+pnpm format:check        # Prettier — check only
+pnpm typecheck           # tsc --noEmit
 ```
 
 Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docker, tests against Node 18+).
@@ -145,8 +147,8 @@ Tests for the `api` command are organized by resource under `src/tests/api/`, wi
 ### Running Tests
 
 ```bash
-npm run test                                    # Run all tests (mocked only by default)
-npm run test:live                               # Run live tests only (requires env vars)
+pnpm test                                       # Run all tests (mocked only by default)
+pnpm test:live                                  # Run live tests only (requires env vars)
 ```
 
 ### Environment Variables for Live API Tests
