@@ -13,7 +13,7 @@ jobs:
     concurrency:
       group: claude-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write
@@ -42,6 +42,12 @@ jobs:
 
             Read and execute the code review instructions in `.claude/commands/review-pr.md`.
             Use the context above for all API calls.
+
+            IMPORTANT — scope the diff before reviewing: do NOT fetch, paginate
+            through, or review generated or lock files. Skip these entirely
+            (do not comment on them): `pnpm-lock.yaml`, `package-lock.json`,
+            `yarn.lock`, `*.snap`, and anything under `build/` or `dist/`.
+            Review only human-authored source changes.
 
           # Allowed tools organized by category:
           # 1. Core:     Task, Read, Glob, Grep (read-only, no Edit/Write)
