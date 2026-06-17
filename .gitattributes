@@ -1,0 +1,5 @@
+# Lockfiles are generated; collapse them in diffs and exclude from language stats.
+# `-diff` keeps the (very large) lockfile body out of PR/API diffs, which also
+# stops diff-consuming bots (e.g. the Claude PR reviewer) from churning on it.
+pnpm-lock.yaml -diff linguist-generated=true
+package-lock.json -diff linguist-generated=true
