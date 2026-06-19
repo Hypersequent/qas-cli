@@ -21,7 +21,7 @@ If working within the qas-cli repository itself, use `node build/bin/qasphere.js
 
 ## Prerequisites
 
-- **Node.js** 18.0.0+
+- **Node.js** 22.0.0+
 
 ### Authentication
 
