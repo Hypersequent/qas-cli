@@ -12,25 +12,28 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Use Node.js 20
-        uses: actions/setup-node@v3
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 24
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run checks
-        run: npm run check
+        run: pnpm check
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
 
       - name: Build project
-        run: npm run build
+        run: pnpm build
 
       - name: CLI smoke test
         run: node ./build/bin/qasphere.js --help
@@ -64,4 +67,4 @@ jobs:
           QAS_TEST_USERNAME: ${{ secrets.QAS_TEST_USERNAME }}
           QAS_TEST_PASSWORD: ${{ secrets.QAS_TEST_PASSWORD }}
           QAS_DEV_AUTH: ${{ secrets.QAS_DEV_AUTH }}
-        run: npm run test:live
+        run: pnpm test:live

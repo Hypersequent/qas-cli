@@ -6,7 +6,7 @@ Use the **Owner**, **Repository**, and **Pull Request Number** from the context 
 
 1. Use `gh pr view` to get the PR title, body, and linked issues
 2. If the PR body contains issue references (e.g., "Fixes #123", "Closes #123"), use `gh issue view <number>` to understand the requirements
-3. Use `mcp__github__get_pull_request_diff` to get the full diff (paginate if needed)
+3. Use `mcp__github__get_pull_request_diff` to get the diff (paginate if needed). **Exclude generated and lock files** — do not fetch, paginate through, or review them: `pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, `*.snap`, and anything under `build/`/`dist/`. These can be huge (e.g. an 88k-line lockfile) and reviewing them wastes turns and risks the job timeout. Review only human-authored source changes.
 4. Do NOT fetch/read existing review comments yet. Subagents should review the diff independently; we'll fetch comments later for deduplication and cleanup.
 
 ## Step 2: Launch Specialized Review Subagents

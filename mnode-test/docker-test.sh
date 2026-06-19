@@ -28,9 +28,9 @@ echo "Building and packing qas-cli..."
 cd "${PROJECT_DIR}"
 
 # Build the project first
-npm run build
+pnpm build
 
-# Create the package tarball
+# Create the package tarball (npm pack — the published artifact end users install)
 npm pack
 
 # Get the package filename (it will be qas-cli-VERSION.tgz)

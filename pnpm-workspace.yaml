@@ -1,0 +1,9 @@
+# msw ships a postinstall that sets up its browser service worker; harmless for our
+# node-based tests, but approving it keeps installs warning-free.
+allowBuilds:
+  msw: true
+
+# Supply-chain protection: refuse to install any package version younger than 7 days
+# (10080 minutes). Applies to direct adds and transitive resolution.
+# Emergency override for a specific package: minimumReleaseAgeExclude: ['<name>']
+minimumReleaseAge: 10080
