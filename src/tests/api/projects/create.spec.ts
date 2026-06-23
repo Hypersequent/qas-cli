@@ -116,7 +116,7 @@ describe('validation errors', () => {
 					'--links',
 					'[{"title": "Docs", "url": "https://example.com"}]'
 				),
-			/--links.*Required/
+			/--links.*received undefined/
 		)
 	})
 

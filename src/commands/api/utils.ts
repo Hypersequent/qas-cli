@@ -104,7 +104,7 @@ function parseJsonFieldValue(value: unknown, fieldName: string): unknown {
 		return JSON.parse(value)
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e)
-		throw new Error(`Failed to parse --${fieldName} as JSON: ${msg}`)
+		throw new Error(`Failed to parse --${fieldName} as JSON: ${msg}`, { cause: e })
 	}
 }
 
@@ -205,7 +205,8 @@ export function parseBodyInput(args: Record<string, unknown>): unknown {
 				`Failed to parse --body as JSON: ${errorMessage}\n` +
 					`  Provide valid inline JSON or use --body-file to read from a file.\n` +
 					`  Inline example: --body '{"title": "Test"}'\n` +
-					`  File example:   --body-file body.json`
+					`  File example:   --body-file body.json`,
+				{ cause: e }
 			)
 		}
 	}
@@ -219,7 +220,10 @@ export function parseBodyInput(args: Record<string, unknown>): unknown {
 			return JSON.parse(content)
 		} catch (e) {
 			const errorMessage = e instanceof Error ? e.message : String(e)
-			throw new Error(`Failed to parse JSON from file ${bodyFile} for --body-file: ${errorMessage}`)
+			throw new Error(
+				`Failed to parse JSON from file ${bodyFile} for --body-file: ${errorMessage}`,
+				{ cause: e }
+			)
 		}
 	}
 

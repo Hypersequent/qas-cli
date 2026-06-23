@@ -114,7 +114,7 @@ describe('validation errors', () => {
 					'--items',
 					JSON.stringify([{ tcaseId: 'tc1', status: 'invalid-status' }])
 				),
-			/Invalid enum value/
+			/Invalid option/
 		)
 	})
 
@@ -129,7 +129,7 @@ describe('validation errors', () => {
 					'--items',
 					JSON.stringify([{ status: 'passed' }])
 				),
-			/tcaseId: Required/
+			/tcaseId.*expected string, received undefined/
 		)
 	})
 

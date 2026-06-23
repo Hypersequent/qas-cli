@@ -43,14 +43,14 @@ describe('validation errors', () => {
 	test('rejects --after -1', async () => {
 		await expectValidationError(
 			() => runCommand('--after', '-1'),
-			/--after.*must be greater than or equal to 0/i
+			/--after.*expected number to be >=0/i
 		)
 	})
 
 	test('rejects --count 0', async () => {
 		await expectValidationError(
 			() => runCommand('--count', '0'),
-			/--count.*must be greater than 0/i
+			/--count.*expected number to be >0/i
 		)
 	})
 })

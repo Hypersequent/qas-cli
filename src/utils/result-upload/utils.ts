@@ -13,7 +13,7 @@ const getFile = async (filePath: string, basePath?: string): Promise<Buffer> => 
 			typeof e.code === 'string' &&
 			e.code === 'ENOENT'
 		) {
-			throw new Error(`Attachment not found: "${filePath}"`)
+			throw new Error(`Attachment not found: "${filePath}"`, { cause: e })
 		}
 		throw e
 	}
