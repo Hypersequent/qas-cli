@@ -61,6 +61,9 @@ jobs:
         run: cd mnode-test && ./docker-test.sh
 
       - name: Run live API tests
+        # Dependabot PRs don't have access to repository secrets, so live tests
+        # would always fail. Skip them for Dependabot-triggered runs.
+        if: github.actor != 'dependabot[bot]'
         env:
           QAS_TEST_URL: ${{ secrets.QAS_TEST_URL }}
           QAS_TEST_TOKEN: ${{ secrets.QAS_TEST_TOKEN }}
