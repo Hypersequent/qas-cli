@@ -12,13 +12,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Use Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: 'pnpm'
@@ -39,10 +39,10 @@ jobs:
         run: node ./build/bin/qasphere.js --help
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Cache Docker images
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-docker-${{ hashFiles('mnode-test/docker-test.sh') }}
@@ -61,6 +61,9 @@ jobs:
         run: cd mnode-test && ./docker-test.sh
 
       - name: Run live API tests
+        # Dependabot PRs don't have access to repository secrets, so live tests
+        # would always fail. Skip them for Dependabot-triggered runs.
+        if: github.actor != 'dependabot[bot]'
         env:
           QAS_TEST_URL: ${{ secrets.QAS_TEST_URL }}
           QAS_TEST_TOKEN: ${{ secrets.QAS_TEST_TOKEN }}
