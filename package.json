@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.1.2",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "main": "./build/bin/qasphere.js",
   "types": "./build/bin/qasphere.d.ts",
@@ -46,7 +46,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@types/escape-html": "^1.0.4",
-    "@types/node": "^20.17.32",
+    "@types/node": "^22.0.0",
     "@types/semver": "^7.7.0",
     "@types/xml2js": "^0.4.14",
     "@types/yargs": "^17.0.33",

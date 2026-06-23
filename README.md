@@ -87,7 +87,7 @@ Because the agent reads the same `--help` output a human would, you don't need t
 
 ### Requirements
 
-Node.js version 18.0.0 or higher.
+Node.js version 22.0.0 or higher.
 
 ### Via NPX
 
@@ -472,7 +472,7 @@ This project uses [pnpm](https://pnpm.io/) (declared via the `packageManager` fi
 
 1. Install and build: `pnpm install && pnpm build && pnpm link --global`
 2. Get test account at [qasphere.com](https://qasphere.com/) (includes demo project)
-3. Configure `.qaspherecli` with credentials
+3. Authenticate: run `qasphere auth login` (OAuth via browser — no API key to create or `.qaspherecli` to manage), or configure `QAS_TOKEN`/`QAS_URL` in a `.qaspherecli` file
 4. Test with sample reports from [bistro-e2e](https://github.com/Hypersequent/bistro-e2e)
 
-Tests: `pnpm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 18+ compatibility)
+Tests: `pnpm test` (Vitest) and `cd mnode-test && ./docker-test.sh` (Node.js 22+ compatibility)

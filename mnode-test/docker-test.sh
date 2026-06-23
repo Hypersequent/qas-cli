@@ -52,7 +52,7 @@ EXPECTED_VERSION=$(node -p "require('${PROJECT_DIR}/package.json').version")
 echo "Expected version: ${EXPECTED_VERSION}"
 echo ""
 
-NODE_VERSIONS=("18" "20" "22" "24")
+NODE_VERSIONS=("22" "24")
 
 # Get current user ID for fixing permissions on Linux
 FIX_PERMS="true"  # Default no-op command
