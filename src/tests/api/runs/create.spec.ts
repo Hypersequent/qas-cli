@@ -311,7 +311,7 @@ describe('validation errors', () => {
 					'--query-plans',
 					'[{"priorities": ["critical"]}]'
 				),
-			/Invalid enum value.*Expected 'low' \| 'medium' \| 'high'/
+			/Invalid option.*expected one of "low"\|"medium"\|"high"/
 		)
 	})
 
@@ -388,7 +388,7 @@ describe('validation errors', () => {
 					'--query-plans',
 					'[{"folderIds": [1.5]}]'
 				),
-			/integer/
+			/expected int/
 		)
 	})
 })

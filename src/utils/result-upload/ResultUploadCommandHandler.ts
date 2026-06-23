@@ -100,8 +100,8 @@ export class ResultUploadCommandHandler {
 		}
 
 		let fileResults = await this.parseFiles()
-		let projectCode = ''
-		let runId = 0
+		let projectCode: string
+		let runId: number
 
 		if ('runUrl' in this.args && this.args.runUrl) {
 			// Handle existing run URL

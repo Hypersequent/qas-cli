@@ -59,7 +59,7 @@
     "prettier": "^3.4.2",
     "ts-add-js-extension": "^1.6.6",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.31.1",
+    "typescript-eslint": "^8.61.1",
     "vitest": "^4.1.0"
   },
   "dependencies": {

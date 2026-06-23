@@ -76,28 +76,28 @@ describe('validation errors', () => {
 	test('rejects --page 0', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--page', '0'),
-			/--page.*must be greater than 0/i
+			/--page.*expected number to be >0/i
 		)
 	})
 
 	test('rejects --page -1', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--page', '-1'),
-			/--page.*must be greater than 0/i
+			/--page.*expected number to be >0/i
 		)
 	})
 
 	test('rejects --offset -1', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--offset', '-1'),
-			/--offset.*greater than or equal to 0/i
+			/--offset.*expected number to be >=0/i
 		)
 	})
 
 	test('rejects --limit -1', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--limit', '-1'),
-			/--limit.*greater than or equal to 0/i
+			/--limit.*expected number to be >=0/i
 		)
 	})
 

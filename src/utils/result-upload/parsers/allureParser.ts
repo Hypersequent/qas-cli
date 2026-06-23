@@ -119,7 +119,8 @@ export const parseAllureResults: Parser = async (
 		containerFiles = allFiles.filter((f) => f.endsWith('-container.json'))
 	} catch (error) {
 		throw new Error(
-			`Failed to read Allure results directory "${resultsDirectory}": ${getErrorMessage(error)}`
+			`Failed to read Allure results directory "${resultsDirectory}": ${getErrorMessage(error)}`,
+			{ cause: error }
 		)
 	}
 
@@ -146,7 +147,8 @@ export const parseAllureResults: Parser = async (
 			}
 
 			throw new Error(
-				`Failed to parse Allure result file "${resultFilePath}": ${getErrorMessage(error)}`
+				`Failed to parse Allure result file "${resultFilePath}": ${getErrorMessage(error)}`,
+				{ cause: error }
 			)
 		}
 
@@ -305,7 +307,8 @@ const extractRunFailureLogs = (
 				continue
 			}
 			throw new Error(
-				`Failed to parse Allure container file "${filePath}": ${getErrorMessage(error)}`
+				`Failed to parse Allure container file "${filePath}": ${getErrorMessage(error)}`,
+				{ cause: error }
 			)
 		}
 
