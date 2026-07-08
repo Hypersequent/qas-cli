@@ -28,7 +28,7 @@ const upload: ApiEndpointSpec = {
 	execute: async (api, { body }) => {
 		const filePath = body as string
 		const filename = basename(filePath)
-		const blob = new Blob([await readFile(filePath)])
+		const blob = new Blob([new Uint8Array(await readFile(filePath))])
 		const [result] = await api.files.upload([{ blob, filename }])
 		printJson(result)
 	},

@@ -21,8 +21,9 @@ import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
-// CreateTCaseRequestSchema uses .superRefine() → ZodEffects, so extract inner ZodObject
-const CreateTCaseShape = CreateTCaseRequestSchema.sourceType().shape
+// CreateTCaseRequestSchema stays a ZodObject despite its .superRefine() refinement,
+// so its field definitions are available directly via .shape.
+const CreateTCaseShape = CreateTCaseRequestSchema.shape
 
 const help = {
 	...commonHelp,

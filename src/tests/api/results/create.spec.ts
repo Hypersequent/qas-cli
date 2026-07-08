@@ -116,7 +116,7 @@ describe('mocked', () => {
 				requiredArgs,
 			})
 			h.testInvalidJson(requiredArgs)
-			h.testInvalidBody({ status: 'invalid-status' }, /Invalid enum value/, requiredArgs)
+			h.testInvalidBody({ status: 'invalid-status' }, /Invalid option/, requiredArgs)
 		}
 	)
 })

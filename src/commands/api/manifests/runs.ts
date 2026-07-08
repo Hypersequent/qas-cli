@@ -12,8 +12,9 @@ import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
-// CreateRunRequestSchema uses .superRefine() → ZodEffects, so extract inner ZodObject
-const CreateRunShape = CreateRunRequestSchema.sourceType().shape
+// CreateRunRequestSchema stays a ZodObject despite its .superRefine() refinement,
+// so its field definitions are available directly via .shape.
+const CreateRunShape = CreateRunRequestSchema.shape
 
 const help = {
 	...commonHelp,
