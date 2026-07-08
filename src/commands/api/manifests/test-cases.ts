@@ -21,8 +21,8 @@ import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import { commonHelp, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
-// CreateTCaseRequestSchema attaches a refinement via .superRefine(), but in Zod 4
-// the result stays a ZodObject, so .shape is accessed directly.
+// CreateTCaseRequestSchema stays a ZodObject despite its .superRefine() refinement,
+// so its field definitions are available directly via .shape.
 const CreateTCaseShape = CreateTCaseRequestSchema.shape
 
 const help = {
