@@ -27,11 +27,11 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
-          # A PAT / GitHub App token is required so the pushed commit retriggers
-          # CI (commits pushed with the default GITHUB_TOKEN do NOT start new
-          # workflow runs, so the failing check would stay stale). Falls back to
-          # GITHUB_TOKEN — the fix still lands, but CI won't re-run on its own.
-          token: ${{ secrets.DEPENDABOT_AUTOFIX_TOKEN || secrets.GITHUB_TOKEN }}
+          # Do not persist any credential: the install/format steps below execute
+          # code controlled by the dependency bump (install scripts, prettier,
+          # eslint), which could otherwise read a persisted write token from
+          # .git/config. The write token is injected only in the push step.
+          persist-credentials: false
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -51,6 +51,12 @@ jobs:
           pnpm lint:fix
 
       - name: Commit and push if changed
+        env:
+          # A PAT / GitHub App token is required so the pushed commit retriggers
+          # CI (commits pushed with the default GITHUB_TOKEN do NOT start new
+          # workflow runs, so the failing check would stay stale). Falls back to
+          # GITHUB_TOKEN — the fix still lands, but CI won't re-run on its own.
+          PUSH_TOKEN: ${{ secrets.DEPENDABOT_AUTOFIX_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           if [[ -z "$(git status --porcelain)" ]]; then
             echo "No formatting changes needed."
@@ -59,4 +65,4 @@ jobs:
           git config user.name 'dependabot[bot]'
           git config user.email '49699333+dependabot[bot]@users.noreply.github.com'
           git commit -am 'chore(deps): apply formatting after dependency bump'
-          git push
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_HEAD_REF}"
