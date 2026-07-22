@@ -1,0 +1,68 @@
+name: Dependabot auto-format
+
+# Dependabot regenerates the whole lockfile on every bump, which can silently
+# move the *resolved* prettier/eslint version (within the existing semver range)
+# and reformat source files. Dependabot never runs project scripts, and its
+# commits are made via the API so they bypass the local husky/lint-staged hook.
+# The result is that `pnpm check` fails on style even though no source was
+# touched. This workflow reformats such PRs and pushes the fix back.
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependabot-autoformat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  autoformat:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          # Do not persist any credential: the install/format steps below execute
+          # code controlled by the dependency bump (install scripts, prettier,
+          # eslint), which could otherwise read a persisted write token from
+          # .git/config. The write token is injected only in the push step.
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply formatting and lint fixes
+        run: |
+          pnpm format
+          pnpm lint:fix
+
+      - name: Commit and push if changed
+        env:
+          # A PAT / GitHub App token is required so the pushed commit retriggers
+          # CI (commits pushed with the default GITHUB_TOKEN do NOT start new
+          # workflow runs, so the failing check would stay stale). Falls back to
+          # GITHUB_TOKEN — the fix still lands, but CI won't re-run on its own.
+          PUSH_TOKEN: ${{ secrets.DEPENDABOT_AUTOFIX_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+          git config user.name 'dependabot[bot]'
+          git config user.email '49699333+dependabot[bot]@users.noreply.github.com'
+          git commit -am 'chore(deps): apply formatting after dependency bump'
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_HEAD_REF}"
