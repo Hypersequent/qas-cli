@@ -378,6 +378,54 @@ describe('mocked', () => {
 			steps: [{ description: 'Step 1', expected: 'Result 1' }],
 		})
 	})
+
+	test('--tags "" sends an empty tags array', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'No tags',
+			'--type',
+			'standalone',
+			'--folder-id',
+			'1',
+			'--priority',
+			'medium',
+			'--tags',
+			''
+		)
+		expect(lastRequest).toEqual({
+			title: 'No tags',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'medium',
+			tags: [],
+		})
+	})
+
+	test('trims tag names and drops empty ones', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'Messy tags',
+			'--type',
+			'standalone',
+			'--folder-id',
+			'1',
+			'--priority',
+			'medium',
+			'--tags',
+			' smoke , ,regression, '
+		)
+		expect(lastRequest).toEqual({
+			title: 'Messy tags',
+			type: 'standalone',
+			folderId: 1,
+			priority: 'medium',
+			tags: ['smoke', 'regression'],
+		})
+	})
 })
 
 test('creates a test case on live server', { tags: ['live'] }, async ({ project }) => {

@@ -151,6 +151,23 @@ describe('mocked', () => {
 		})
 	})
 
+	test('--tags "" clears tags by sending an empty array', async ({ project }) => {
+		await runCommand('--project-code', project.code, '--tcase-id', 'tc1', '--tags', '')
+		expect(lastRequest).toEqual({ tags: [] })
+	})
+
+	test('trims tag names and drops empty ones', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--tcase-id',
+			'tc1',
+			'--tags',
+			' smoke , ,e2e '
+		)
+		expect(lastRequest).toEqual({ tags: ['smoke', 'e2e'] })
+	})
+
 	test('updates a test case with custom fields', async ({ project }) => {
 		const body = {
 			customFields: {

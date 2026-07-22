@@ -33,7 +33,7 @@ const help = {
 	'precondition-text':
 		'Precondition text (supports HTML). Mutually exclusive with --precondition-id.',
 	'precondition-id': 'Shared precondition ID. Mutually exclusive with --precondition-text.',
-	tags: 'Comma-separated tag names (e.g., "smoke,regression").',
+	tags: 'Comma-separated tag names (e.g., "smoke,regression"). On update, --tags "" clears all tags.',
 	'is-draft': 'Whether the test case is a draft.',
 	draft: 'Filter by draft status (true or false).',
 	steps:
@@ -223,7 +223,10 @@ function transformTCaseFields(fields: Record<string, unknown>): Record<string, u
 
 	// Handle comma-separated tags
 	if (typeof fields.tags === 'string') {
-		result.tags = fields.tags.split(',')
+		result.tags = fields.tags
+			.split(',')
+			.map((tag) => tag.trim())
+			.filter((tag) => !!tag)
 	}
 
 	return result
