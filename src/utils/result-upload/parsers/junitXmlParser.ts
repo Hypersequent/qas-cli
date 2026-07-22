@@ -261,9 +261,7 @@ const getResult = (
 interface GetResultMessageOption {
 	header?: string
 	result?: (
-		| string
-		| Partial<z.infer<typeof failureErrorSchema>>
-		| Partial<z.infer<typeof skippedSchema>>
+		string | Partial<z.infer<typeof failureErrorSchema>> | Partial<z.infer<typeof skippedSchema>>
 	)[]
 	type?: 'paragraph' | 'code'
 }
