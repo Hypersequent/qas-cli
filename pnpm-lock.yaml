@@ -55,7 +55,7 @@ importers:
         specifier: ^17.0.33
         version: 17.0.35
       eslint:
-        specifier: ^10.5.0
+        specifier: 10.7.0
         version: 10.7.0
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -73,7 +73,7 @@ importers:
         specifier: ^2.7.5
         version: 2.15.0(@types/node@26.1.1)(typescript@6.0.3)
       prettier:
-        specifier: ^3.4.2
+        specifier: 3.9.6
         version: 3.9.6
       ts-add-js-extension:
         specifier: ^1.6.6
@@ -82,7 +82,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.61.1
+        specifier: 8.66.0
         version: 8.66.0(eslint@10.7.0)(typescript@6.0.3)
       vite:
         specifier: ^8.2.1
