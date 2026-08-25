@@ -1,11 +1,14 @@
 name: Dependabot auto-format
 
-# Dependabot regenerates the whole lockfile on every bump, which can silently
-# move the *resolved* prettier/eslint version (within the existing semver range)
-# and reformat source files. Dependabot never runs project scripts, and its
-# commits are made via the API so they bypass the local husky/lint-staged hook.
-# The result is that `pnpm check` fails on style even though no source was
-# touched. This workflow reformats such PRs and pushes the fix back.
+# A prettier/eslint/typescript-eslint bump can reformat source files. Dependabot
+# never runs project scripts, and its commits are made via the API so they bypass
+# the local husky/lint-staged hook. The result is that `pnpm check` fails on style
+# even though no source was touched. This workflow reformats such PRs and pushes
+# the fix back.
+#
+# Those three are exact-pinned in package.json, so the version can no longer drift
+# *silently* inside a caret range on an unrelated bump — but an explicit bump of
+# one of them still needs this.
 
 on:
   pull_request:
