@@ -1,3 +1,5 @@
+import { MAX_PAGE_SIZE, type PaginatedResponse } from './schemas'
+
 type FetchMiddleware = (fetcher: typeof fetch) => typeof fetch
 
 // TODO: Each middleware adds a frame to the stack trace. V8 defaults to 10 frames (Error.stackTraceLimit).
@@ -85,10 +87,11 @@ export const withDevAuth: FetchMiddleware = (fetcher) => {
 }
 
 export const jsonResponse = async <T>(response: Response): Promise<T> => {
-	const json = await response.json()
 	if (response.ok) {
-		return json as T
+		return (await response.json()) as T
 	}
+	// Proxies in front of the API can answer 502-504 without a JSON body
+	const json: unknown = await response.json().catch(() => null)
 	if (
 		json !== null &&
 		typeof json === 'object' &&
@@ -190,4 +193,18 @@ export const appendSearchParams = <T extends object>(pathname: string, obj: T): 
 		return `${pathname}?${searchParams.toString()}`
 	}
 	return pathname
+}
+
+/** Reads every page of a paginated list, at the largest page size the API allows. */
+export const fetchAllPages = async <T>(
+	fetchPage: (page: { offset: number; limit: number }) => Promise<PaginatedResponse<T>>
+): Promise<{ total: number; data: T[] }> => {
+	const data: T[] = []
+	for (let offset = 0; ; offset += MAX_PAGE_SIZE) {
+		const page = await fetchPage({ offset, limit: MAX_PAGE_SIZE })
+		data.push(...page.data)
+		if (page.data.length < MAX_PAGE_SIZE || data.length >= page.total) {
+			return { total: page.total, data }
+		}
+	}
 }

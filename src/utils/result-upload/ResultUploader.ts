@@ -4,6 +4,7 @@ import escapeHtml from 'escape-html'
 import { RunTCase } from '../../api/runs'
 import { parseRunUrl, printError, printErrorThenExit, twirlLoader } from '../misc'
 import { Api, createApi } from '../../api'
+import { fetchAllPages } from '../../api/utils'
 import type { AuthConfig } from '../credentials'
 import { Attachment, TestCaseResult } from './types'
 import { ResultUploadCommandArgs, UploadCommandType } from './ResultUploadCommandHandler'
@@ -33,7 +34,9 @@ export class ResultUploader {
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {
-		const tcases = await this.api.runs.getTCases(this.project, this.run).catch(printErrorThenExit)
+		const { data: tcases } = await fetchAllPages((page) =>
+			this.api.runs.listTCases(this.project, this.run, page)
+		).catch(printErrorThenExit)
 
 		const { results: mappedResults, missing, duplicates } = this.mapTestCaseResults(results, tcases)
 		this.validateAndPrintMissingTestCases(missing)

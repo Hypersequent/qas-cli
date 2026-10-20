@@ -1,4 +1,5 @@
 import type { RunTCase } from '../../../api/runs'
+import type { PaginatedResponse } from '../../../api/schemas'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
 import {
@@ -72,7 +73,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 	const folderId = folder.ids[0][0]
 	const tcase = await createTCase(project.code, folderId)
 	const run = await createRun(project.code, [tcase.id])
-	const tcases = await runCli<RunTCase[]>(
+	const tcases = await runCli<PaginatedResponse<RunTCase>>(
 		'api',
 		'runs',
 		'test-cases',
@@ -82,7 +83,7 @@ test('gets a test case in a run on live server', { tags: ['live'] }, async ({ pr
 		'--run-id',
 		String(run.id)
 	)
-	const firstTcase = tcases[0]
+	const firstTcase = tcases.data[0]
 	const result = await runCli<RunTCase>(
 		'api',
 		'runs',

@@ -1,5 +1,7 @@
 import type { ApiEndpointSpec } from '../types'
+import { aiRuleSpecs } from './ai-rules'
 import { auditLogSpecs } from './audit-logs'
+import { configurationSpecs } from './configurations'
 import { customFieldSpecs } from './custom-fields'
 import { fileSpecs } from './files'
 import { folderSpecs } from './folders'
@@ -14,10 +16,13 @@ import { sharedStepSpecs } from './shared-steps'
 import { tagSpecs } from './tags'
 import { testCaseSpecs } from './test-cases'
 import { testPlanSpecs } from './test-plans'
+import { trashSpecs } from './trash'
 import { userSpecs } from './users'
 
 export const allSpecs: ApiEndpointSpec[] = [
+	...aiRuleSpecs,
 	...auditLogSpecs,
+	...configurationSpecs,
 	...customFieldSpecs,
 	...fileSpecs,
 	...folderSpecs,
@@ -32,5 +37,6 @@ export const allSpecs: ApiEndpointSpec[] = [
 	...tagSpecs,
 	...testCaseSpecs,
 	...testPlanSpecs,
+	...trashSpecs,
 	...userSpecs,
 ]

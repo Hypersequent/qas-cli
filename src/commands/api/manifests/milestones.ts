@@ -1,6 +1,6 @@
-import { CreateMilestoneRequestSchema } from '../../../api/milestones'
+import { CreateMilestoneRequestSchema, type ListMilestonesRequest } from '../../../api/milestones'
 import { printJson, apiDocsEpilog } from '../utils'
-import { commonHelp, projectCodeParam } from './utils'
+import { commonHelp, paginationOptions, projectCodeParam } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
 const help = {
@@ -9,7 +9,7 @@ const help = {
 	title: 'Display title for the milestone (max 255 characters).',
 	list: {
 		describe: 'List milestones in a project.',
-		epilog: apiDocsEpilog('milestone', 'list-project-milestones'),
+		epilog: apiDocsEpilog('milestone', 'list-milestones'),
 		examples: [
 			{
 				usage: '$0 api milestones list --project-code PRJ',
@@ -39,16 +39,14 @@ const list: ApiEndpointSpec = {
 	describe: help.list.describe,
 	bodyMode: 'none',
 	pathParams: [projectCodeParam],
-	queryOptions: [{ name: 'archived', type: 'boolean', describe: help.archived }],
+	queryOptions: [
+		{ name: 'archived', type: 'boolean', describe: help.archived },
+		...paginationOptions(['title', 'created_at', 'updated_at', 'archived_at']),
+	],
 	epilog: help.list.epilog,
 	examples: help.list.examples,
 	execute: async (api, { pathParams, query }) => {
-		printJson(
-			await api.milestones.list(
-				pathParams['project-code'],
-				query as Parameters<typeof api.milestones.list>[1]
-			)
-		)
+		printJson(await api.milestones.list(pathParams['project-code'], query as ListMilestonesRequest))
 	},
 }
 
