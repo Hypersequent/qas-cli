@@ -4,12 +4,13 @@ import {
 	CreateRunLogRequestSchema,
 	QueryPlansSchema,
 	CloneRunRequestSchema,
+	type ListRunsRequest,
 	type ListRunTCasesRequest,
 	CreateRunLogRequest,
 } from '../../../api/runs'
-import { limitParam, sortFieldParam, sortOrderParam, resourceIdSchema } from '../../../api/schemas'
+import { resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
-import { commonHelp, projectCodeParam } from './utils'
+import { commonHelp, paginationOptions, projectCodeParam, splitList } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
 // CreateRunRequestSchema stays a ZodObject despite its .superRefine() refinement,
@@ -29,12 +30,12 @@ const help = {
 	'query-plans':
 		'JSON array of query plan objects that select which test cases to include.\nExample: \'[{"tcaseIds": ["abc123"]}]\'',
 	closed: 'Filter by closed status. If true, returns only closed runs.',
-	limit: 'Maximum number of runs to return.',
 	'milestone-ids': 'Comma-separated milestone IDs to filter by (e.g., "1,2,3").',
 	search: 'Search text to filter test cases.',
 	tags: 'Comma-separated tag IDs to filter by.',
 	priorities: 'Comma-separated priorities to filter by (e.g., "low,high").',
-	include: 'Include additional fields. Use "folder" to include folder details.',
+	include: 'Comma-separated additional fields to include.',
+	'run-include': 'Comma-separated related data to include.',
 	comment: 'Log message body (supports HTML).',
 	create: {
 		describe: 'Create a new test run.',
@@ -54,11 +55,15 @@ const help = {
 	},
 	list: {
 		describe: 'List test runs in a project.',
-		epilog: apiDocsEpilog('run', 'list-project-runs'),
+		epilog: apiDocsEpilog('run', 'list-runs'),
 		examples: [
 			{
 				usage: '$0 api runs list --project-code PRJ',
 				description: 'List test runs in a project',
+			},
+			{
+				usage: '$0 api runs list --project-code PRJ --closed false --include statusCounts',
+				description: 'List open runs with their result counts',
 			},
 		],
 	},
@@ -205,7 +210,13 @@ const list: ApiEndpointSpec = {
 	queryOptions: [
 		{ name: 'closed', type: 'boolean', describe: help.closed },
 		{ name: 'milestone-ids', type: 'string', describe: help['milestone-ids'] },
-		{ name: 'limit', type: 'number', describe: help.limit, schema: limitParam },
+		{
+			name: 'include',
+			type: 'string',
+			describe: help['run-include'],
+			helpChoices: ['project', 'plan', 'milestone', 'assignment', 'configuration', 'statusCounts'],
+		},
+		...paginationOptions(['title', 'created_at', 'last_activity_at', 'closed_at']),
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
@@ -213,13 +224,12 @@ const list: ApiEndpointSpec = {
 			typeof query['milestone-ids'] === 'string'
 				? query['milestone-ids'].split(',').map(Number)
 				: query['milestone-ids'],
+		include: splitList(query.include),
 	}),
 	epilog: help.list.epilog,
 	examples: help.list.examples,
 	execute: async (api, { pathParams, query }) => {
-		printJson(
-			await api.runs.list(pathParams['project-code'], query as Parameters<typeof api.runs.list>[1])
-		)
+		printJson(await api.runs.list(pathParams['project-code'], query as ListRunsRequest))
 	},
 }
 
@@ -301,21 +311,20 @@ const tcasesList: ApiEndpointSpec = {
 		{ name: 'search', type: 'string', describe: help.search },
 		{ name: 'tags', type: 'string', describe: help.tags },
 		{ name: 'priorities', type: 'string', describe: help.priorities },
-		{ name: 'include', type: 'string', describe: help.include },
-		{ name: 'sort-field', type: 'string', describe: help['sort-field'], schema: sortFieldParam },
 		{
-			name: 'sort-order',
+			name: 'include',
 			type: 'string',
-			describe: help['sort-order'],
-			schema: sortOrderParam,
-			choices: ['asc', 'desc'],
+			describe: help.include,
+			helpChoices: ['folder', 'steps', 'tags', 'precondition', 'requirements', 'customFields'],
 		},
+		...paginationOptions(['seq', 'folder_id', 'pos', 'title', 'priority', 'status']),
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
 		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
 		priorities:
 			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
+		include: splitList(query.include),
 	}),
 	epilog: help.tcasesList.epilog,
 	examples: help.tcasesList.examples,

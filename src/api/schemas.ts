@@ -16,18 +16,10 @@ export type ResultStatus =
 export interface PaginatedResponse<T> {
 	data: T[]
 	total: number
-	/** Offset that was applied to the query. Present when pagination was applied. */
-	offset?: number
-	/** Limit that was applied to the query. Present when pagination was applied. */
-	limit?: number
-	/** @deprecated Echo of the legacy `page` request param. Present only when the request used `page`. */
-	page?: number
+	offset: number
+	limit: number
 }
 
-export interface PaginatedRequest {
-	offset?: number
-	limit?: number
-}
 export interface MessageResponse {
 	message: string
 }
@@ -57,10 +49,31 @@ export const sortFieldParam = z.string().optional()
 export const sortOrderParam = z.enum(['asc', 'desc']).optional()
 export type SortOrder = z.infer<typeof sortOrderParam>
 export const offsetParam = z.number().int().nonnegative().optional()
-/** @deprecated Use `offsetParam`. The API ignores `page` when `offset` is set. */
-export const pageParam = z.number().int().positive().optional()
+// The paginated endpoints return at most 1,000 rows a page
+export const MAX_PAGE_SIZE = 1000
+// Bulk endpoints take at most 1,000 items a request
+export const MAX_BULK_ITEMS = 1000
 // Limit 0 is valid and returns only the total count (no rows)
-export const limitParam = z.number().int().nonnegative().optional()
+export const limitParam = z
+	.number()
+	.int()
+	.nonnegative()
+	.max(MAX_PAGE_SIZE, `must be at most ${MAX_PAGE_SIZE}`)
+	.optional()
+export const paginationParams = {
+	offset: offsetParam,
+	limit: limitParam,
+	sortField: sortFieldParam,
+	sortOrder: sortOrderParam,
+}
+// The API takes http and https URLs only.
+export const httpUrlSchema = z
+	.url({ protocol: /^https?$/, error: 'must be an http or https URL' })
+	.max(255, 'must be at most 255 characters')
+export const linkSchema = z.object({
+	text: z.string().min(1, 'text must not be empty').max(255, 'text must be at most 255 characters'),
+	url: httpUrlSchema,
+})
 export const priorityEnum = z.enum(['low', 'medium', 'high'])
 export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
 export const resourceIdSchema = z

@@ -123,67 +123,117 @@ qasphere api <resource> <action> [options]
 
 All commands output JSON to stdout, errors to stderr. Exit code 0 on success, 1 on failure.
 
+Each line lists the options a command requires. Commands that send a request body also take it whole with `--body '<json>'` or `--body-file <path>`, and their field options override its keys (see JSON Body Commands below). Run any command with `-h` to see all of its options.
+
 ```
 qasphere api
+├── ai-rules
+│   └── list --project-code                                          # List AI rules that apply in a project
 ├── audit-logs
-│   └── list                                    # List audit log entries
+│   └── list                                                         # List audit log entries
+├── configurations
+│   ├── list --project-code                                          # List configurations
+│   ├── get --project-code --configuration-id                        # Get configuration
+│   ├── create --project-code --title                                # Create configuration
+│   ├── update --project-code --configuration-id --title             # Rename configuration
+│   └── delete --project-code --configuration-id                     # Delete configuration
 ├── custom-fields
-│   └── list --project-code                     # List custom fields
+│   └── list --project-code                                          # List custom fields
 ├── files
-│   └── upload --file                           # Upload a file attachment
+│   └── upload --file                                                # Upload a file attachment
 ├── folders
-│   ├── list --project-code                     # List folders
-│   └── bulk-create --project-code --folders    # Create/update folders
+│   ├── list --project-code                                          # List folders
+│   ├── get --project-code --folder-id                               # Get folder
+│   ├── tree --project-code                                          # Get folder tree
+│   ├── path --project-code --folder-id                              # Get folder path
+│   ├── create --project-code --title                                # Create folder
+│   ├── update --project-code --folder-id                            # Rename folder or edit its comment
+│   ├── move --project-code --new-parent-id --items                  # Move folders
+│   ├── copy --project-code --folder-ids                             # Copy folders
+│   ├── delete --project-code --folder-ids                           # Delete folders (to trash)
+│   └── bulk-create --project-code --folders                         # Create/update folders
 ├── milestones
-│   ├── list --project-code                     # List milestones
-│   └── create --project-code --title           # Create milestone
+│   ├── list --project-code                                          # List milestones
+│   └── create --project-code --title                                # Create milestone
 ├── projects
-│   ├── list                                    # List all projects
-│   ├── get --project-code                      # Get project by code
-│   └── create --code --title                   # Create project
+│   ├── list                                                         # List all projects
+│   ├── get --project-code                                           # Get project by code
+│   ├── create --code --title                                        # Create project
+│   ├── update --project-code                                        # Update project (owner/admin)
+│   └── users
+│       └── list --project-code                                      # List users with access to project
 ├── requirements
-│   └── list --project-code                     # List requirements
+│   ├── list --project-code                                          # List requirements
+│   ├── get --project-code --requirement-id                          # Get requirement
+│   ├── create --project-code --text                                 # Create requirement
+│   ├── update --project-code --requirement-id                       # Update requirement
+│   └── delete --project-code --requirement-id                       # Delete requirement
 ├── results
-│   ├── create --project-code --run-id --tcase-id --status  # Create result
-│   └── batch-create --project-code --run-id --items        # Batch create results
+│   ├── create --project-code --run-id --tcase-id --status           # Create result
+│   └── batch-create --project-code --run-id --items                 # Batch create results
 ├── runs
-│   ├── create --project-code --title --type --query-plans  # Create run
-│   ├── list --project-code                     # List runs
-│   ├── clone --project-code --run-id --title   # Clone run
-│   ├── close --project-code --run-id           # Close run
+│   ├── create --project-code --title --type --query-plans           # Create run
+│   ├── list --project-code                                          # List runs
+│   ├── clone --project-code --run-id --title                        # Clone run
+│   ├── close --project-code --run-id                                # Close run
 │   ├── test-cases
-│   │   ├── list --project-code --run-id        # List test cases in run
-│   │   └── get --project-code --run-id --tcase-id  # Get test case in run
+│   │   ├── list --project-code --run-id                             # List test cases in run
+│   │   └── get --project-code --run-id --tcase-id                   # Get test case in run
 │   └── logs
-│       └── create --project-code --run-id --comment  # Append a run-level log message (e.g. CI/CD or automation framework output) to a test run.
+│       └── create --project-code --run-id --comment                 # Append a run-level log message (e.g. CI/CD or automation framework output) to a test run.
 ├── settings
-│   ├── list-statuses                           # List result statuses
-│   └── update-statuses --statuses              # Update custom statuses
+│   ├── list-statuses                                                # List result statuses
+│   └── update-statuses --statuses                                   # Update custom statuses
 ├── shared-preconditions
-│   ├── list --project-code                     # List shared preconditions
-│   └── get --project-code --id                 # Get shared precondition
+│   ├── list --project-code                                          # List shared preconditions
+│   ├── get --project-code --id                                      # Get shared precondition
+│   ├── create --project-code --title --text                         # Create shared precondition
+│   ├── update --project-code --id                                   # Update shared precondition
+│   └── delete --project-code --id                                   # Delete shared precondition
 ├── shared-steps
-│   ├── list --project-code                     # List shared steps
-│   └── get --project-code --id                 # Get shared step
+│   ├── list --project-code                                          # List shared steps
+│   ├── get --project-code --id                                      # Get shared step
+│   ├── create --project-code --title --sub-steps                    # Create shared step
+│   ├── update --project-code --id                                   # Update shared step
+│   └── delete --project-code --id                                   # Delete shared step
 ├── tags
-│   └── list --project-code                     # List tags
+│   ├── list --project-code                                          # List tags
+│   ├── create --project-code --title                                # Create tag
+│   ├── update --project-code --tag-id --title                       # Update tag
+│   ├── rename --project-code --tags                                 # Rename several tags
+│   └── delete --project-code --tag-ids                              # Delete tags
 ├── test-cases
-│   ├── list --project-code                     # List test cases
-│   ├── get --project-code --tcase-id           # Get test case
-│   ├── count --project-code                    # Count test cases
-│   ├── create --project-code --body            # Create test case
-│   └── update --project-code --tcase-id --body # Update test case
+│   ├── list --project-code                                          # List test cases
+│   ├── get --project-code --tcase-id                                # Get test case
+│   ├── get-version --project-code --tcase-id --tcase-version        # Get a test case version
+│   ├── count --project-code                                         # Count test cases
+│   ├── create --project-code --title --type --folder-id --priority  # Create test case
+│   ├── update --project-code --tcase-id                             # Update test case
+│   ├── rollback --project-code --tcase-id --tcase-version           # Roll back to a version
+│   ├── move --project-code --new-parent-id --items                  # Move test cases
+│   ├── copy --project-code --tcase-ids --target-folder-id           # Copy test cases
+│   ├── update-priority --project-code --tcase-ids --priority        # Set priority
+│   ├── update-tags --project-code --tcase-ids                       # Add/remove tags
+│   ├── update-requirements --project-code --tcase-ids               # Add/remove requirements
+│   ├── delete --project-code --tcase-ids                            # Delete test cases (to trash)
+│   └── results
+│       └── list --project-code --tcase-id                           # List a test case's result history
 ├── test-plans
-│   └── create --project-code --body            # Create test plan
+│   └── create --project-code --title --runs                         # Create test plan
+├── trash
+│   ├── list --project-code                                          # List trash entries
+│   └── restore --project-code --ids                                 # Restore trash entries
 └── users
-    └── list                                    # List all users
+    └── list                                                         # List all users
 ```
 
 Note: `qasphere api files upload --file ...` uses the public batch upload endpoint internally and returns the first uploaded file from that response.
 
+Deleted folders and test cases go to the project's trash, where `qasphere api trash restore` brings them back within 60 days. Deleted tags, requirements, shared steps, shared preconditions and configurations can't be restored.
+
 ### Pagination
 
-List commands support pagination via `--offset` and `--limit`. Some commands also support `--sort-field` and `--sort-order` (asc/desc). The `audit-logs list` command uses cursor-based pagination with `--after` and `--count` instead.
+List commands that take `--offset` and `--limit` return one page, as `{"total": N, "offset": O, "limit": L, "data": [...]}`. `--offset` defaults to 0 and `--limit` to 100, at most 1000; `--limit 0` returns only the total. Use `--offset` to read further pages. Most also take `--sort-field` and `--sort-order` (asc/desc). The `audit-logs list` command uses cursor-based pagination with `--after` and `--count` instead.
 
 ### JSON Body Commands
 
