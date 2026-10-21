@@ -1,4 +1,6 @@
+import { createAIRuleApi } from './ai-rules'
 import { createAuditLogApi } from './audit-logs'
+import { createConfigurationApi } from './configurations'
 import { createCustomFieldApi } from './custom-fields'
 import { createFileApi } from './file'
 import { createFolderApi } from './folders'
@@ -13,6 +15,7 @@ import { createSharedStepApi } from './shared-steps'
 import { createTagApi } from './tags'
 import { createTCaseApi } from './tcases'
 import { createTestPlanApi } from './test-plans'
+import { createTrashApi } from './trash'
 import { createUserApi } from './users'
 import {
 	withFetchMiddlewares,
@@ -26,7 +29,9 @@ import { CLI_VERSION } from '../utils/version'
 
 const getApi = (fetcher: typeof fetch) => {
 	return {
+		aiRules: createAIRuleApi(fetcher),
 		auditLogs: createAuditLogApi(fetcher),
+		configurations: createConfigurationApi(fetcher),
 		customFields: createCustomFieldApi(fetcher),
 		files: createFileApi(fetcher),
 		folders: createFolderApi(fetcher),
@@ -41,6 +46,7 @@ const getApi = (fetcher: typeof fetch) => {
 		tags: createTagApi(fetcher),
 		testCases: createTCaseApi(fetcher),
 		testPlans: createTestPlanApi(fetcher),
+		trash: createTrashApi(fetcher),
 		users: createUserApi(fetcher),
 	}
 }

@@ -15,6 +15,7 @@ import { appendSearchParams, jsonResponse, withJson } from './utils'
 import type { Folder } from './folders'
 import type { Project, ProjectLink } from './projects'
 import type { Tag } from './tags'
+import type { TrashEntry } from './trash'
 
 export interface TCaseFile {
 	id: string
@@ -251,6 +252,114 @@ export const UpdateTCaseRequestSchema = z.object({
 
 export type UpdateTCaseRequest = z.infer<typeof UpdateTCaseRequestSchema>
 
+export interface TCaseRef {
+	id: string
+	seq: number
+}
+
+export interface TCasesResponse {
+	tcases: TCaseRef[]
+}
+
+export interface TCaseResult {
+	id: number
+	status: string
+	comment: string
+	tcaseId: string
+	tcaseVersion: number
+	authorId: number
+	timeTaken: number | null
+	isAutomated: boolean
+	internal: boolean
+	createdAt: string
+	author?: { id: number; name: string; email: string; avatar: string | null; role: string }
+	run?: { id: number; title: string }
+	links?: { id: number; url: string; text: string }[]
+}
+
+// Test case references accept an ID, sequence number or legacy ID.
+const tcaseRefsSchema = z
+	.array(z.string().min(1, 'test case reference must not be empty'))
+	.min(1, 'Must contain at least one test case')
+
+const requirementRefSchema = z.object({
+	text: z.string().min(1, 'text must not be empty').max(255, 'text must be at most 255 characters'),
+	url: z.string().max(255, 'url must be at most 255 characters').optional(),
+})
+
+export const DeleteTCasesRequestSchema = z.object({
+	tcaseIds: tcaseRefsSchema,
+})
+
+export type DeleteTCasesRequest = z.infer<typeof DeleteTCasesRequestSchema>
+
+export const CopyTCasesRequestSchema = z.object({
+	tcaseIds: tcaseRefsSchema,
+	targetFolderId: z.number().int().positive('targetFolderId must be a positive integer'),
+	sourceProjectId: z.string().min(1, 'sourceProjectId must not be empty').optional(),
+})
+
+export type CopyTCasesRequest = z.infer<typeof CopyTCasesRequestSchema>
+
+export const MoveTCaseItemsSchema = z
+	.array(
+		z.object({
+			id: z.string().min(1, 'id must not be empty'),
+			pos: z.number().int('pos must be an integer'),
+		})
+	)
+	.min(1, 'Must contain at least one item')
+
+export const MoveTCasesRequestSchema = z.object({
+	newParentId: z.number().int().positive('newParentId must be a positive integer'),
+	items: MoveTCaseItemsSchema,
+})
+
+export type MoveTCasesRequest = z.infer<typeof MoveTCasesRequestSchema>
+
+export const UpdateTCasesPriorityRequestSchema = z.object({
+	tcaseIds: tcaseRefsSchema,
+	priority: priorityEnum,
+})
+
+export type UpdateTCasesPriorityRequest = z.infer<typeof UpdateTCasesPriorityRequestSchema>
+
+const tagTitleSchema = z
+	.string()
+	.min(1, 'tag must not be empty')
+	.max(255, 'tag must be at most 255 characters')
+
+export const UpdateTCasesTagsRequestSchema = z.object({
+	tcaseIds: tcaseRefsSchema,
+	add: z.array(tagTitleSchema).optional(),
+	remove: z.array(tagTitleSchema).optional(),
+})
+
+export type UpdateTCasesTagsRequest = z.infer<typeof UpdateTCasesTagsRequestSchema>
+
+export const RequirementRefsSchema = z.array(requirementRefSchema)
+
+export const UpdateTCasesRequirementsRequestSchema = z.object({
+	tcaseIds: tcaseRefsSchema,
+	add: RequirementRefsSchema.optional(),
+	remove: RequirementRefsSchema.optional(),
+})
+
+export type UpdateTCasesRequirementsRequest = z.infer<typeof UpdateTCasesRequirementsRequestSchema>
+
+export const ListTCaseResultsRequestSchema = z.object({
+	offset: offsetParam,
+	limit: limitParam,
+	sortField: sortFieldParam,
+	sortOrder: sortOrderParam,
+	include: z.array(z.enum(['run', 'links', 'author'])).optional(),
+	createdAfter: z.string().optional(),
+	excludeStatus: z.array(z.string()).optional(),
+	internal: z.boolean().optional(),
+})
+
+export type ListTCaseResultsRequest = z.infer<typeof ListTCaseResultsRequestSchema>
+
 export const createTCaseApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
 	return {
@@ -310,6 +419,78 @@ export const createTCaseApi = (fetcher: typeof fetch) => {
 				method: 'PATCH',
 				body: JSON.stringify(validated),
 			}).then((r) => jsonResponse<{ message: string }>(r))
+		},
+
+		delete: async (projectCode: ResourceId, req: DeleteTCasesRequest) => {
+			const validated = validateRequest(req, DeleteTCasesRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/delete`, {
+				method: 'POST',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TrashEntry>(r))
+		},
+
+		copy: async (projectCode: ResourceId, req: CopyTCasesRequest) => {
+			const validated = validateRequest(req, CopyTCasesRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/copy`, {
+				method: 'POST',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TCasesResponse>(r))
+		},
+
+		move: async (projectCode: ResourceId, req: MoveTCasesRequest) => {
+			const validated = validateRequest(req, MoveTCasesRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/location`, {
+				method: 'PATCH',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TCasesResponse>(r))
+		},
+
+		updatePriority: async (projectCode: ResourceId, req: UpdateTCasesPriorityRequest) => {
+			const validated = validateRequest(req, UpdateTCasesPriorityRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/priority`, {
+				method: 'PATCH',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TCasesResponse>(r))
+		},
+
+		updateTags: async (projectCode: ResourceId, req: UpdateTCasesTagsRequest) => {
+			const validated = validateRequest(req, UpdateTCasesTagsRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/tags`, {
+				method: 'PATCH',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TCasesResponse>(r))
+		},
+
+		updateRequirements: async (projectCode: ResourceId, req: UpdateTCasesRequirementsRequest) => {
+			const validated = validateRequest(req, UpdateTCasesRequirementsRequestSchema)
+			return fetcher(`/api/public/v0/project/${projectCode}/tcase/requirements`, {
+				method: 'PATCH',
+				body: JSON.stringify(validated),
+			}).then((r) => jsonResponse<TCasesResponse>(r))
+		},
+
+		getVersion: (projectCode: ResourceId, id: ResourceId, version: number) =>
+			fetcher(`/api/public/v0/project/${projectCode}/tcase/${id}/version/${version}`).then((r) =>
+				jsonResponse<TCase>(r)
+			),
+
+		rollback: (projectCode: ResourceId, id: ResourceId, version: number) =>
+			fetcher(`/api/public/v0/project/${projectCode}/tcase/${id}/version/${version}/rollback`, {
+				method: 'POST',
+			}).then((r) => jsonResponse<TCase>(r)),
+
+		listResults: async (
+			projectCode: ResourceId,
+			id: ResourceId,
+			params?: ListTCaseResultsRequest
+		) => {
+			const validated = params ? validateRequest(params, ListTCaseResultsRequestSchema) : {}
+			return fetcher(
+				appendSearchParams(
+					`/api/public/v0/project/${projectCode}/tcase/${id}/result/paginated`,
+					validated
+				)
+			).then((r) => jsonResponse<PaginatedResponse<TCaseResult>>(r))
 		},
 	}
 }

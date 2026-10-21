@@ -155,24 +155,40 @@ describe('mocked', () => {
 	})
 
 	test('creates a test case with requirements and links', async ({ project }) => {
-		const body = JSON.stringify({
+		const requirements = [{ text: 'REQ-1', url: 'https://example.com/req/1' }]
+		const links = [{ text: 'Docs', url: 'https://example.com/docs' }]
+		const expected = {
 			title: 'With links',
 			type: 'standalone',
 			folderId: 1,
 			priority: 'low',
-			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
-			links: [{ text: 'Docs', url: 'https://example.com/docs' }],
-		})
-		await runCommand('--project-code', project.code, '--body', body)
+			pos: 0,
+			requirements,
+			links,
+		}
+		await runCommand('--project-code', project.code, '--body', JSON.stringify(expected))
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({
-			title: 'With links',
-			type: 'standalone',
-			folderId: 1,
-			priority: 'low',
-			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
-			links: [{ text: 'Docs', url: 'https://example.com/docs' }],
-		})
+		expect(lastRequest).toEqual(expected)
+
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'With links',
+			'--type',
+			'standalone',
+			'--folder-id',
+			'1',
+			'--priority',
+			'low',
+			'--pos',
+			'0',
+			'--requirements',
+			JSON.stringify(requirements),
+			'--links',
+			JSON.stringify(links)
+		)
+		expect(lastRequest).toEqual(expected)
 	})
 
 	test('creates a test case using individual fields', async ({ project }) => {
@@ -337,7 +353,9 @@ describe('mocked', () => {
 			'--priority',
 			'high',
 			'--parameter-values',
-			JSON.stringify(parameterValues)
+			JSON.stringify(parameterValues),
+			'--title-suffix-params',
+			'browser, device'
 		)
 		expect(lastRequest).toEqual({
 			title: 'Login ${browser}',
@@ -345,6 +363,7 @@ describe('mocked', () => {
 			folderId: 1,
 			priority: 'high',
 			parameterValues,
+			filledTCaseTitleSuffixParams: ['browser', 'device'],
 		})
 	})
 

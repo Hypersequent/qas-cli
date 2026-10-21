@@ -129,7 +129,7 @@ describe('mocked', () => {
 		})
 	})
 
-	test('updates with --tags, --is-draft, --steps', async ({ project }) => {
+	test('updates with --tags, --is-draft, --steps, --requirements, --links', async ({ project }) => {
 		await runCommand(
 			'--project-code',
 			project.code,
@@ -141,13 +141,22 @@ describe('mocked', () => {
 			'smoke,e2e',
 			'--is-draft',
 			'--steps',
-			'[{"description": "Click", "expected": "Opens"}]'
+			'[{"description": "Click", "expected": "Opens"}]',
+			'--requirements',
+			'[{"text": "REQ-1", "url": "https://example.com/req/1"}]',
+			'--links',
+			'[{"text": "Spec", "url": "https://example.com/spec"}]',
+			'--title-suffix-params',
+			'browser'
 		)
 		expect(lastRequest).toEqual({
 			title: 'With extras',
 			tags: ['smoke', 'e2e'],
 			isDraft: true,
 			steps: [{ description: 'Click', expected: 'Opens' }],
+			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
+			links: [{ text: 'Spec', url: 'https://example.com/spec' }],
+			filledTCaseTitleSuffixParams: ['browser'],
 		})
 	})
 

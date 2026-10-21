@@ -46,15 +46,24 @@ describe('validation errors', () => {
 
 describe('live', { tags: ['live'] }, () => {
 	test('lists shared preconditions', async ({ project }) => {
-		const result = await runCli<SharedPrecondition[] | null>(
+		const created = await runCli<SharedPrecondition>(
+			'api',
+			'shared-preconditions',
+			'create',
+			'--project-code',
+			project.code,
+			'--title',
+			'CLI listed precondition',
+			'--text',
+			'<p>Logged in</p>'
+		)
+		const result = await runCli<SharedPrecondition[]>(
 			'api',
 			'shared-preconditions',
 			'list',
 			'--project-code',
 			project.code
 		)
-		// Fresh project has no shared preconditions; API returns null for empty list
-		// Currently there's no way to create shared preconditions via the public API
-		expect(result === null || Array.isArray(result)).toBe(true)
+		expect(result.some((p) => p.id === created.id)).toBe(true)
 	})
 })
