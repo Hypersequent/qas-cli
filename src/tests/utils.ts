@@ -1,7 +1,7 @@
-import { SetupServerApi } from 'msw/node'
+import { SetupServer } from 'msw/node'
 
 export const countMockedApiCalls = (
-	server: SetupServerApi,
+	server: SetupServer,
 	url: string | RegExp | ((req: Request) => boolean)
 ) => {
 	let count = 0

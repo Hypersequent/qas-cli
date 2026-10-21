@@ -104,7 +104,7 @@ async function runFresh(args: string) {
 	await run(args.split(' '))
 }
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterAll(() => server.close())
 
 beforeEach(() => {

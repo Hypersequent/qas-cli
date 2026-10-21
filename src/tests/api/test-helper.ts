@@ -8,7 +8,7 @@ import {
 	afterAll,
 	afterEach,
 } from 'vitest'
-import { setupServer, type SetupServerApi } from 'msw/node'
+import { setupServer, type SetupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import { createApi } from '../../api/index'
 import { randomBytes } from 'node:crypto'
@@ -84,7 +84,7 @@ function mockConsoleLog() {
 	return spy
 }
 
-export function useMockServer(...handlers: RequestHandler[]): SetupServerApi {
+export function useMockServer(...handlers: RequestHandler[]): SetupServer {
 	const server = setupServer(...handlers)
 	beforeAll(() => server.listen())
 	afterAll(() => server.close())
