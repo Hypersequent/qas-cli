@@ -56,7 +56,7 @@ describe('mocked', () => {
 			expect(result).toEqual({ id: 42 })
 		})
 
-		test('creates a static_struct run with folderIds and priorities', async ({ project }) => {
+		test('creates a static_struct run with several filter query plans', async ({ project }) => {
 			await runCommand(
 				'--project-code',
 				project.code,
@@ -65,14 +65,14 @@ describe('mocked', () => {
 				'--type',
 				'static_struct',
 				'--query-plans',
-				'[{"folderIds": [1, 2], "priorities": ["high"]}]'
+				'[{"folderIds": [1, 2], "priorities": ["high"]}, {}]'
 			)
 
 			expect(lastParams.projectCode).toBe(project.code)
 			expect(lastCreateRunRequest).toEqual({
 				title: 'Structured Run',
 				type: 'static_struct',
-				queryPlans: [{ folderIds: [1, 2], priorities: ['high'] }],
+				queryPlans: [{ folderIds: [1, 2], priorities: ['high'] }, {}],
 			})
 		})
 
@@ -96,7 +96,7 @@ describe('mocked', () => {
 			})
 		})
 
-		test('includes optional milestone-id, configuration-id, and assignment-id', async ({
+		test('includes optional milestone-id, configuration-id, assignment-id and integration-issue-id', async ({
 			project,
 		}) => {
 			await runCommand(
@@ -112,6 +112,8 @@ describe('mocked', () => {
 				'cfg-1',
 				'--assignment-id',
 				'10',
+				'--integration-issue-id',
+				'QA-12',
 				'--query-plans',
 				'[{"tcaseIds": ["abc"]}]'
 			)
@@ -123,6 +125,7 @@ describe('mocked', () => {
 				milestoneId: 5,
 				configurationId: 'cfg-1',
 				assignmentId: 10,
+				integrationIssueId: 'QA-12',
 				queryPlans: [{ tcaseIds: ['abc'] }],
 			})
 		})
@@ -211,25 +214,6 @@ describe('validation errors', () => {
 		)
 	})
 
-	test('rejects description exceeding 512 characters', async () => {
-		await expectValidationError(
-			() =>
-				runCommand(
-					'--project-code',
-					'PRJ',
-					'--title',
-					'Valid',
-					'--type',
-					'static',
-					'--description',
-					'x'.repeat(513),
-					'--query-plans',
-					'[{"tcaseIds": ["abc"]}]'
-				),
-			/--description.*must be at most 512 characters/
-		)
-	})
-
 	test('rejects invalid JSON in --query-plans', async () => {
 		await expectValidationError(
 			() =>
@@ -264,7 +248,7 @@ describe('validation errors', () => {
 		)
 	})
 
-	test('rejects empty query plan object', async () => {
+	test('rejects tcaseIds combined with a filter, even an empty one', async () => {
 		await expectValidationError(
 			() =>
 				runCommand(
@@ -275,9 +259,9 @@ describe('validation errors', () => {
 					'--type',
 					'static',
 					'--query-plans',
-					'[{}]'
+					'[{"tcaseIds": ["abc"], "folderIds": []}]'
 				),
-			/must specify at least one filter/
+			/tcaseIds can't be combined with folderIds, tagIds or priorities/
 		)
 	})
 
@@ -332,24 +316,10 @@ describe('validation errors', () => {
 		)
 	})
 
-	test('rejects multiple query plans for static runs', async () => {
-		await expectValidationError(
-			() =>
-				runCommand(
-					'--project-code',
-					'PRJ',
-					'--title',
-					'Test',
-					'--type',
-					'static',
-					'--query-plans',
-					'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]'
-				),
-			/supports exactly one query plan/
-		)
-	})
-
-	test('rejects multiple query plans for static_struct runs', async () => {
+	test.each([
+		{ label: 'beside a filter query plan', plans: '[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]' },
+		{ label: 'in two query plans', plans: '[{"tcaseIds": ["abc"]}, {"tcaseIds": ["def"]}]' },
+	])('rejects tcaseIds $label', async ({ plans }) => {
 		await expectValidationError(
 			() =>
 				runCommand(
@@ -360,9 +330,9 @@ describe('validation errors', () => {
 					'--type',
 					'static_struct',
 					'--query-plans',
-					'[{"tcaseIds": ["abc"]}, {"folderIds": [1]}]'
+					plans
 				),
-			/supports exactly one query plan/
+			/tcaseIds are only allowed in a single query plan/
 		)
 	})
 

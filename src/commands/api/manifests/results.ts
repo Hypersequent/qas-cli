@@ -3,10 +3,18 @@ import {
 	CreateResultsRequestSchema,
 	resultLinksSchema,
 	type CreateResultRequest,
+	type UpdateResultRequest,
 } from '../../../api/results'
 import { resourceIdSchema } from '../../../api/schemas'
-import { printJson, apiDocsEpilog } from '../utils'
-import { commonHelp, projectCodeParam } from './utils'
+import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
+import {
+	commonHelp,
+	intIdParam,
+	intListSchema,
+	projectCodeParam,
+	requireAnyFieldOrBody,
+	splitIntList,
+} from './utils'
 import type { ApiEndpointSpec } from '../types'
 
 /**
@@ -21,23 +29,48 @@ const batchCreateResultsInputSchema = z
 const help = {
 	...commonHelp,
 	'run-id': 'Test run ID.',
-	'tcase-id': 'Test case ID within the run.',
+	'tcase-id': 'Test case ID, sequence number or legacy ID.',
 	status: 'Result status: passed, failed, blocked, skipped, open, custom1-4.',
 	comment: 'Result comment (supports HTML).',
 	'time-taken': 'Time taken in milliseconds.',
-	links: `JSON array of result links. Each link has "text" and "url" fields.\nExample: '[{"text": "Log", "url": "https://ci.example.com/123"}]'`,
-	items: `JSON array of result items for batch creation.\nEach item has: tcaseId (string), status (string), comment? (string, supports HTML), timeTaken? (number|null), links? (array).\nExample: '[{"tcaseId": "abc", "status": "passed"}]'`,
+	links: `JSON array of at most 5 issues to link to the result, each with the "integrationId" (see integrations list), the issue's "url" and "text" (its title), and for a Jira, GitHub or Linear issue "meta": {"id": ...} with its ID (for GitHub, its number). The issue must be in the project's linked Jira project, GitHub repository or Linear team, and gets a reference back to the result.\nExample: '[{"integrationId": "1CSWAh3ys_YniqfXepnwT8F", "url": "https://acme.atlassian.net/browse/QA-12", "text": "Login fails", "meta": {"id": "10394"}}]'`,
+	'create-links': `JSON array of issues to link to the result, as --links on results create; the result then holds at most 5 links.`,
+	'delete-link-ids': "Comma-separated IDs of the result's links to remove (see results get).",
+	'result-id': 'Result ID.',
+	items: `JSON array of at most 1000 result items for batch creation, with at most 100 links across them.\nEach item has: tcaseId (test case ID, sequence number or legacy ID), status (string), comment? (string, supports HTML), timeTaken? (number|null), links? (array, as --links on results create).\nExample: '[{"tcaseId": "4", "status": "passed"}]'`,
+	get: {
+		describe: 'Get a result of a run, with its links.',
+		epilog: apiDocsEpilog('result', 'get-result'),
+		examples: [
+			{
+				usage: '$0 api results get --project-code PRJ --run-id 1 --result-id 10',
+				description: 'Get a result',
+			},
+		],
+	},
+	update: {
+		describe:
+			"Change a result's comment or time taken, or add or remove its links. Fields left out keep their values. Only the result's author can update it, and its status can't change: add a new result instead.",
+		epilog: apiDocsEpilog('result', 'update-result'),
+		examples: [
+			{
+				usage:
+					'$0 api results update --project-code PRJ --run-id 1 --result-id 10 --comment "Retried: flaky network"',
+				description: "Change a result's comment",
+			},
+		],
+	},
 	create: {
 		describe: 'Create a result for a test case in a run.',
 		epilog: apiDocsEpilog('result', 'add-result'),
 		examples: [
 			{
-				usage: '$0 api results create --project-code PRJ --run-id 1 --tcase-id abc --status passed',
+				usage: '$0 api results create --project-code PRJ --run-id 1 --tcase-id 4 --status passed',
 				description: 'Create a passed result',
 			},
 			{
 				usage:
-					'$0 api results create --project-code PRJ --run-id 1 --tcase-id abc --body \'{"status": "passed", "comment": "All checks passed"}\'',
+					'$0 api results create --project-code PRJ --run-id 1 --tcase-id 4 --body \'{"status": "passed", "comment": "All checks passed"}\'',
 				description: 'Create a result using --body',
 			},
 		],
@@ -48,12 +81,40 @@ const help = {
 		examples: [
 			{
 				usage:
-					'$0 api results batch-create --project-code PRJ --run-id 1 --body \'{"items": [{"tcaseId": "abc", "status": "passed"}, {"tcaseId": "def", "status": "failed"}]}\'',
+					'$0 api results batch-create --project-code PRJ --run-id 1 --body \'{"items": [{"tcaseId": "4", "status": "passed"}, {"tcaseId": "5", "status": "failed"}]}\'',
 				description: 'Batch create results using --body',
 			},
 		],
 	},
 } as const
+
+const runIdParam = {
+	name: 'run-id',
+	type: 'number' as const,
+	describe: help['run-id'],
+	schema: z.number().int().positive('must be a positive integer'),
+}
+
+const resultIdParam = intIdParam('result-id', help['result-id'])
+
+const get: ApiEndpointSpec = {
+	id: 'results.get',
+	commandPath: ['results', 'get'],
+	describe: help.get.describe,
+	bodyMode: 'none',
+	pathParams: [projectCodeParam, runIdParam, resultIdParam],
+	epilog: help.get.epilog,
+	examples: help.get.examples,
+	execute: async (api, { pathParams }) => {
+		printJson(
+			await api.results.get(
+				pathParams['project-code'],
+				pathParams['run-id'],
+				pathParams['result-id']
+			)
+		)
+	},
+}
 
 const create: ApiEndpointSpec = {
 	id: 'results.create',
@@ -168,4 +229,51 @@ const batchCreate: ApiEndpointSpec = {
 	},
 }
 
-export const resultSpecs: ApiEndpointSpec[] = [create, batchCreate]
+const update: ApiEndpointSpec = {
+	id: 'results.update',
+	commandPath: ['results', 'update'],
+	describe: help.update.describe,
+	bodyMode: 'json',
+	pathParams: [projectCodeParam, runIdParam, resultIdParam],
+	fieldOptions: [
+		{ name: 'comment', type: 'string', describe: help.comment },
+		{
+			name: 'time-taken',
+			type: 'number',
+			describe: help['time-taken'],
+			schema: z.number().int().nonnegative(),
+		},
+		{
+			name: 'create-links',
+			type: 'string',
+			describe: help['create-links'],
+			schema: resultLinksSchema,
+			jsonParse: true,
+		},
+		{
+			name: 'delete-link-ids',
+			type: 'string',
+			describe: help['delete-link-ids'],
+			schema: intListSchema,
+		},
+	],
+	transformFields: (fields) => ({
+		...kebabToCamelCaseKeys(fields),
+		deleteLinkIds: splitIntList(fields['delete-link-ids']),
+	}),
+	check: requireAnyFieldOrBody('comment', 'time-taken', 'create-links', 'delete-link-ids'),
+	epilog: help.update.epilog,
+	examples: help.update.examples,
+	execute: async (api, { pathParams, body }) => {
+		printJson(
+			await api.results.update(
+				pathParams['project-code'],
+				pathParams['run-id'],
+				pathParams['result-id'],
+				body as UpdateResultRequest
+			)
+		)
+	},
+}
+
+export const resultSpecs: ApiEndpointSpec[] = [get, create, batchCreate, update]

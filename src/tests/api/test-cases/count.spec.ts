@@ -38,12 +38,27 @@ describe('mocked', () => {
 		expect(result).toEqual({ count: 42 })
 	})
 
-	test('passes recursive param as query parameter', async ({ project }) => {
-		await runCommand('--project-code', project.code, '--folders', '1,2', '--recursive')
+	test('passes filter params as query parameters', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--folders',
+			'1,2',
+			'--recursive',
+			'--tcase-ids',
+			'4,TC-9',
+			'--author-ids',
+			'2,5',
+			'--cf-automation',
+			'Automated'
+		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastUrl).not.toBeNull()
 		expect(lastUrl!.searchParams.get('recursive')).toEqual('true')
 		expect(lastUrl!.searchParams.getAll('folders')).toEqual(['1', '2'])
+		expect(lastUrl!.searchParams.getAll('tcaseIds')).toEqual(['4', 'TC-9'])
+		expect(lastUrl!.searchParams.getAll('authorIds')).toEqual(['2', '5'])
+		expect(lastUrl!.searchParams.getAll('cf_automation')).toEqual(['Automated'])
 	})
 })
 

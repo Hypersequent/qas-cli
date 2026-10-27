@@ -4,6 +4,7 @@ import { createConfigurationApi } from './configurations'
 import { createCustomFieldApi } from './custom-fields'
 import { createFileApi } from './file'
 import { createFolderApi } from './folders'
+import { createIntegrationApi } from './integrations'
 import { createMilestoneApi } from './milestones'
 import { createProjectApi } from './projects'
 import { createRequirementApi } from './requirements'
@@ -35,6 +36,7 @@ const getApi = (fetcher: typeof fetch) => {
 		customFields: createCustomFieldApi(fetcher),
 		files: createFileApi(fetcher),
 		folders: createFolderApi(fetcher),
+		integrations: createIntegrationApi(fetcher),
 		milestones: createMilestoneApi(fetcher),
 		projects: createProjectApi(fetcher),
 		requirements: createRequirementApi(fetcher),

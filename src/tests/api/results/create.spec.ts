@@ -11,6 +11,7 @@ import {
 	createFolder,
 	createTCase,
 	createRun,
+	expectValidationError,
 	testRejectsInvalidIdentifier,
 	testBodyInput,
 } from '../test-helper'
@@ -57,7 +58,7 @@ describe('mocked', () => {
 		expect(result).toEqual({ id: 1 })
 	})
 
-	test('creates a result with links using text field', async () => {
+	test('creates a result with issue links', async () => {
 		await runCommand(
 			'--project-code',
 			'PRJ',
@@ -68,14 +69,21 @@ describe('mocked', () => {
 			'--status',
 			'passed',
 			'--links',
-			'[{"text": "CI Log", "url": "https://ci.example.com/123"}]'
+			'[{"integrationId": "i1", "url": "https://acme.atlassian.net/browse/QA-1", "text": "Login fails", "meta": {"id": "10001"}}]'
 		)
 		expect(lastParams.projectCode).toBe('PRJ')
 		expect(lastParams.runId).toBe('1')
 		expect(lastParams.tcaseId).toBe('tc1')
 		expect(lastRequest).toEqual({
 			status: 'passed',
-			links: [{ text: 'CI Log', url: 'https://ci.example.com/123' }],
+			links: [
+				{
+					integrationId: 'i1',
+					url: 'https://acme.atlassian.net/browse/QA-1',
+					text: 'Login fails',
+					meta: { id: '10001' },
+				},
+			],
 		})
 	})
 
@@ -117,6 +125,12 @@ describe('mocked', () => {
 			})
 			h.testInvalidJson(requiredArgs)
 			h.testInvalidBody({ status: 'invalid-status' }, /Invalid option/, requiredArgs)
+			const link = { integrationId: 'i1', url: 'https://ci.example.com/1', text: 'CI Log' }
+			h.testInvalidBody(
+				{ status: 'failed', links: Array(6).fill(link) },
+				/Must contain at most 5 links/,
+				requiredArgs
+			)
 		}
 	)
 })
@@ -138,6 +152,25 @@ describe('validation errors', () => {
 		'--status',
 		'passed',
 	])
+
+	test('rejects a link without an integration', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--run-id',
+					'1',
+					'--tcase-id',
+					'tc1',
+					'--status',
+					'failed',
+					'--links',
+					'[{"text": "CI Log", "url": "https://ci.example.com/123"}]'
+				),
+			/--links.*integrationId/
+		)
+	})
 })
 
 test('creates a result on live server', { tags: ['live'] }, async ({ project }) => {
