@@ -38,7 +38,7 @@ describe('mocked', () => {
 		expect(result).toEqual({ count: 42 })
 	})
 
-	test('passes filters as query parameters', async ({ project }) => {
+	test('passes filter params as query parameters', async ({ project }) => {
 		await runCommand(
 			'--project-code',
 			project.code,
@@ -48,7 +48,13 @@ describe('mocked', () => {
 			'--search',
 			'login',
 			'--types',
-			'standalone,template'
+			'standalone,template',
+			'--tcase-ids',
+			'4,TC-9',
+			'--author-ids',
+			'2,5',
+			'--cf-automation',
+			'Automated'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastUrl).not.toBeNull()
@@ -56,6 +62,9 @@ describe('mocked', () => {
 		expect(lastUrl!.searchParams.getAll('folders')).toEqual(['1', '2'])
 		expect(lastUrl!.searchParams.get('search')).toEqual('login')
 		expect(lastUrl!.searchParams.getAll('types')).toEqual(['standalone', 'template'])
+		expect(lastUrl!.searchParams.getAll('tcaseIds')).toEqual(['4', 'TC-9'])
+		expect(lastUrl!.searchParams.getAll('authorIds')).toEqual(['2', '5'])
+		expect(lastUrl!.searchParams.getAll('cf_automation')).toEqual(['Automated'])
 	})
 })
 

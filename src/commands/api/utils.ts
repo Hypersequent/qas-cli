@@ -92,6 +92,29 @@ export function kebabToCamelCaseKeys(obj: Record<string, unknown>): Record<strin
 	return Object.fromEntries(Object.entries(obj).map(([k, v]) => [kebabToCamel(k), v]))
 }
 
+const customFieldOptionPrefix = 'cf-'
+
+/** Whether an argument is a --cf-<system name> custom field filter. */
+export function isCustomFieldOption(key: string): boolean {
+	return key.startsWith(customFieldOptionPrefix)
+}
+
+/**
+ * Collects --cf-<system name> options by system name. Repeating an option gives several values,
+ * which the API matches with OR.
+ */
+export function collectCustomFieldFilters(
+	args: Record<string, unknown>
+): Record<string, string[]> | undefined {
+	const filters: Record<string, string[]> = {}
+	for (const [key, value] of Object.entries(args)) {
+		if (key.startsWith(customFieldOptionPrefix)) {
+			filters[key.slice(customFieldOptionPrefix.length)] = [value].flat().map(String)
+		}
+	}
+	return Object.keys(filters).length > 0 ? filters : undefined
+}
+
 /**
  * Parses a JSON string field value.
  * Returns the parsed value, or throws with a descriptive error.

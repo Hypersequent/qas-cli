@@ -4,8 +4,10 @@ import { createConfigurationApi } from './configurations'
 import { createCustomFieldApi } from './custom-fields'
 import { createFileApi } from './file'
 import { createFolderApi } from './folders'
+import { createIntegrationApi } from './integrations'
 import { createMilestoneApi } from './milestones'
 import { createProjectApi } from './projects'
+import { createReportApi } from './reports'
 import { createRequirementApi } from './requirements'
 import { createResultApi } from './results'
 import { createRunApi } from './runs'
@@ -35,8 +37,10 @@ const getApi = (fetcher: typeof fetch) => {
 		customFields: createCustomFieldApi(fetcher),
 		files: createFileApi(fetcher),
 		folders: createFolderApi(fetcher),
+		integrations: createIntegrationApi(fetcher),
 		milestones: createMilestoneApi(fetcher),
 		projects: createProjectApi(fetcher),
+		reports: createReportApi(fetcher),
 		requirements: createRequirementApi(fetcher),
 		results: createResultApi(fetcher),
 		runs: createRunApi(fetcher),
