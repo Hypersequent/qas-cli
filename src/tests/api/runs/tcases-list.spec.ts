@@ -1,4 +1,5 @@
 import type { RunTCase } from '../../../api/runs'
+import type { PaginatedResponse } from '../../../api/schemas'
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
 import {
@@ -18,14 +19,14 @@ const runCommand = <T = unknown>(...args: string[]) =>
 
 describe('mocked', () => {
 	const mockTCases = [{ id: 'tc1', title: 'Test', seq: 1 }]
-	const mockResponse = { tcases: mockTCases }
+	const mockResponse = { total: 1, offset: 0, limit: 100, data: mockTCases }
 
 	let lastUrl: URL | null = null
 	let lastParams: PathParams = {}
 
 	useMockServer(
 		http.get(
-			`${baseURL}/api/public/v0/project/:projectCode/run/:runId/tcase`,
+			`${baseURL}/api/public/v0/project/:projectCode/run/:runId/tcase/paginated`,
 			({ request, params }) => {
 				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 				lastParams = params
@@ -44,15 +45,30 @@ describe('mocked', () => {
 		const result = await runCommand('--project-code', project.code, '--run-id', '42')
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastParams.runId).toBe('42')
-		expect(result).toEqual(mockTCases)
+		expect(result).toEqual({ total: 1, offset: 0, limit: 100, data: mockTCases })
 	})
 
-	test('passes include param as query parameter', async ({ project }) => {
-		await runCommand('--project-code', project.code, '--run-id', '42', '--include', 'folder')
+	test('passes include and pagination params as query parameters', async ({ project }) => {
+		const result = await runCommand(
+			'--project-code',
+			project.code,
+			'--run-id',
+			'42',
+			'--include',
+			'folder, steps',
+			'--offset',
+			'10',
+			'--sort-field',
+			'status'
+		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastParams.runId).toBe('42')
 		expect(lastUrl).not.toBeNull()
-		expect(lastUrl!.searchParams.get('include')).toEqual('folder')
+		expect(lastUrl!.searchParams.getAll('include')).toEqual(['folder', 'steps'])
+		expect(lastUrl!.searchParams.get('offset')).toEqual('10')
+		expect(lastUrl!.searchParams.has('limit')).toBe(false)
+		expect(lastUrl!.searchParams.get('sortField')).toEqual('status')
+		expect(result).toEqual(mockResponse)
 	})
 })
 
@@ -66,7 +82,7 @@ describe('live', { tags: ['live'] }, () => {
 		const folderId = folder.ids[0][0]
 		const tcase = await createTCase(project.code, folderId)
 		const run = await createRun(project.code, [tcase.id])
-		const result = await runCli<RunTCase[]>(
+		const result = await runCli<PaginatedResponse<RunTCase>>(
 			'api',
 			'runs',
 			'test-cases',
@@ -76,8 +92,8 @@ describe('live', { tags: ['live'] }, () => {
 			'--run-id',
 			String(run.id)
 		)
-		expect(Array.isArray(result)).toBe(true)
-		expect(result.length).toBe(1)
+		expect(result.total).toBe(1)
+		expect(result.data.length).toBe(1)
 	})
 
 	test('lists test cases in a run with include', async ({ project }) => {
@@ -85,7 +101,7 @@ describe('live', { tags: ['live'] }, () => {
 		const folderId = folder.ids[0][0]
 		const tcase = await createTCase(project.code, folderId)
 		const run = await createRun(project.code, [tcase.id])
-		const result = await runCli<RunTCase[]>(
+		const result = await runCli<PaginatedResponse<RunTCase>>(
 			'api',
 			'runs',
 			'test-cases',
@@ -97,9 +113,8 @@ describe('live', { tags: ['live'] }, () => {
 			'--include',
 			'folder'
 		)
-		expect(Array.isArray(result)).toBe(true)
-		expect(result.length).toBe(1)
-		const rtcase = result[0]
+		expect(result.data.length).toBe(1)
+		const rtcase = result.data[0]
 		expect(rtcase).toHaveProperty('folder')
 		expect(rtcase.folder).toHaveProperty('id')
 		expect(rtcase.folder).toHaveProperty('title')

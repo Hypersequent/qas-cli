@@ -1,6 +1,6 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { unlinkSync, readdirSync } from 'node:fs'
+import { unlinkSync, readdirSync, readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach, vi } from 'vitest'
 import { run } from '../commands/main'
 import { PaginatedResponse } from '../api/schemas'
@@ -24,6 +24,7 @@ process.env['QAS_URL'] = baseURL
 let lastCreatedRunTitle = '' // Stores title in the request, for the last create run API call
 let createRunTitleConflict = false // If true, the create run API returns a title conflict error
 let createTCasesResponse: CreateTCasesResponse | null = null // Stores mock response for the create tcases API call
+let createdTCaseTitles: string[] = [] // Titles sent in the create tcases API calls
 // Mocks intentionally include only the fields the SUT touches, so the response
 // types are loosened to Partial<> rather than the full API shape.
 let overriddenGetPaginatedTCasesResponse: PaginatedResponse<Partial<TCase>> | null = null
@@ -34,35 +35,40 @@ const server = setupServer(
 		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		return HttpResponse.json({ exists: true })
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/folders`, ({ request }) => {
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/folder/paginated`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		const searchParams = new URL(request.url).searchParams
 		expect(searchParams.get('offset')).not.toBeNull()
-		expect(searchParams.get('page')).toBeNull()
+		expect(searchParams.get('limit')).toEqual('1000')
 		return HttpResponse.json(
-			overriddenGetFoldersResponse || { data: [], total: 0, offset: 0, limit: 50 }
+			overriddenGetFoldersResponse || { data: [], total: 0, offset: 0, limit: 1000 }
 		)
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/paginated`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 		const searchParams = new URL(request.url).searchParams
 		expect(searchParams.get('offset')).not.toBeNull()
-		expect(searchParams.get('page')).toBeNull()
+		expect(searchParams.get('limit')).toEqual('1000')
 		return HttpResponse.json(
-			overriddenGetPaginatedTCasesResponse || { data: [], total: 0, offset: 0, limit: 50 }
+			overriddenGetPaginatedTCasesResponse || { data: [], total: 0, offset: 0, limit: 1000 }
 		)
 	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, async ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
-		const body = (await request.json()) as { offset?: number; page?: number }
-		expect(body.offset).toBeTypeOf('number')
-		expect(body.page).toBeUndefined()
-		return HttpResponse.json({
-			data: runTestCases,
-			total: runTestCases.length,
-		})
-	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/bulk`, async ({ request }) => {
+	http.post(
+		`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq/paginated`,
+		async ({ request }) => {
+			expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
+			const body = (await request.json()) as { offset?: number; limit?: number }
+			expect(body.offset).toBeTypeOf('number')
+			expect(body.limit).toEqual(1000)
+			return HttpResponse.json({
+				data: runTestCases,
+				total: runTestCases.length,
+				offset: 0,
+				limit: 1000,
+			})
+		}
+	),
+	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/batch`, async ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
 
 		if (!createTCasesResponse) {
@@ -77,6 +83,7 @@ const server = setupServer(
 		}
 
 		const body = (await request.json()) as CreateTCasesRequest
+		createdTCaseTitles.push(...body.tcases.map((t) => t.title))
 		if (body.tcases.length !== createTCasesResponse.tcases.length) {
 			return HttpResponse.json(
 				{
@@ -109,12 +116,21 @@ const server = setupServer(
 			id: parseInt(runId),
 		})
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
-		return HttpResponse.json({
-			tcases: runTestCases,
-		})
-	}),
+	http.get(
+		`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase/paginated`,
+		({ request }) => {
+			expect(request.headers.get('Authorization')).toEqual('Bearer QAS_TOKEN')
+			const searchParams = new URL(request.url).searchParams
+			expect(searchParams.get('offset')).toEqual('0')
+			expect(searchParams.get('limit')).toEqual('1000')
+			return HttpResponse.json({
+				data: runTestCases,
+				total: runTestCases.length,
+				offset: 0,
+				limit: 1000,
+			})
+		}
+	),
 	http.post(
 		new RegExp(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/result/batch`),
 		({ request }) => {
@@ -160,7 +176,7 @@ const countFileUploadApiCalls = () =>
 const countResultUploadApiCalls = () =>
 	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/result/batch'))
 const countCreateTCasesApiCalls = () =>
-	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/bulk'))
+	countMockedApiCalls(server, (req) => new URL(req.url).pathname.endsWith('/tcase/batch'))
 const countCreateRunApiCalls = () =>
 	countMockedApiCalls(server, (req) =>
 		new URL(req.url).pathname.endsWith(`/project/${projectCode}/run`)
@@ -191,6 +207,12 @@ const getMappingFiles = () =>
 	new Set(
 		readdirSync('.').filter((f) => f.startsWith('qasphere-automapping-') && f.endsWith('.txt'))
 	)
+
+const readNewMappingLines = (existingMappingFiles?: Set<string>) => {
+	const newFiles = [...getMappingFiles()].filter((f) => !existingMappingFiles?.has(f))
+	expect(newFiles).toHaveLength(1)
+	return readFileSync(newFiles[0], 'utf8').split('\n')
+}
 
 const cleanupGeneratedMappingFiles = (existingMappingFiles?: Set<string>) => {
 	const currentFiles = getMappingFiles()
@@ -574,6 +596,7 @@ fileTypesWithAllure.forEach((fileType) => {
 				cleanupGeneratedMappingFiles(existingMappingFiles)
 				existingMappingFiles = undefined
 				createTCasesResponse = null
+				createdTCaseTitles = []
 				overriddenGetPaginatedTCasesResponse = null
 				overriddenGetFoldersResponse = null
 			})
@@ -595,6 +618,11 @@ fileTypesWithAllure.forEach((fileType) => {
 				)
 				expect(numCreateTCasesCalls()).toBe(1)
 				expect(numResultUploadCalls()).toBe(3) // 3 results total
+				expect(createdTCaseTitles).toHaveLength(2)
+				expect(readNewMappingLines(existingMappingFiles)).toEqual([
+					`TEST-006: ${createdTCaseTitles[0]}`,
+					`TEST-007: ${createdTCaseTitles[1]}`,
+				])
 			})
 
 			test('Should not create new test case if one with same title already exists', async () => {
@@ -631,6 +659,10 @@ fileTypesWithAllure.forEach((fileType) => {
 				)
 				expect(numCreateTCasesCalls()).toBe(1)
 				expect(numResultUploadCalls()).toBe(3) // 3 results total
+				expect(createdTCaseTitles).toHaveLength(1)
+				expect(readNewMappingLines(existingMappingFiles)).toEqual([
+					`TEST-007: ${createdTCaseTitles[0]}`,
+				])
 			})
 
 			test('Should not create new test cases if all results have valid markers', async () => {

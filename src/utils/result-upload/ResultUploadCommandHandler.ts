@@ -6,7 +6,9 @@ import { parseRunUrl, printErrorThenExit, processTemplate } from '../misc'
 import { MarkerParser } from './MarkerParser'
 import { Api, createApi } from '../../api'
 import type { AuthConfig } from '../credentials'
-import { TCase } from '../../api/tcases'
+import { MAX_BULK_ITEMS, MAX_PAGE_SIZE } from '../../api/schemas'
+import { fetchAllPages } from '../../api/utils'
+import { CreateTCasesResponse, TCase } from '../../api/tcases'
 import { ParseResult, TestCaseMarker, TestCaseResult } from './types'
 import { DuplicateTCaseMapping, TCaseTarget, mapResolvedResultsToTCases } from './mapping'
 import { ResultUploader } from './ResultUploader'
@@ -65,8 +67,6 @@ interface TestCaseResultWithSeqAndFile {
 
 type PendingTCaseCreations = Record<string, TestCaseResult[]>
 
-// Must not exceed the server-side pagination cap of 5000
-const DEFAULT_PAGE_SIZE = 5000
 export const DEFAULT_FOLDER_TITLE = 'cli-import'
 const DEFAULT_TCASE_TAGS = ['cli-import']
 const DEFAULT_MAPPING_FILENAME_TEMPLATE = 'qasphere-automapping-{YYYY}{MM}{DD}-{HH}{mm}{ss}.txt'
@@ -235,23 +235,14 @@ export class ResultUploadCommandHandler {
 				this.markerParser.formatMarker(projectCode, v)
 			)
 
-			for (let offset = 0; ; offset += DEFAULT_PAGE_SIZE) {
-				const response = await this.api.testCases.getBySeq(projectCode, {
-					seqIds: tcaseMarkers,
-					offset,
-					limit: DEFAULT_PAGE_SIZE,
-				})
-
-				for (const tcase of response.data) {
-					apiTCasesMap[tcase.seq] = {
-						id: tcase.id,
-						seq: tcase.seq,
-						title: tcase.title,
-					}
-				}
-
-				if (response.data.length < DEFAULT_PAGE_SIZE) {
-					break
+			const { data } = await fetchAllPages((page) =>
+				this.api.testCases.getBySeq(projectCode, { seqIds: tcaseMarkers, ...page })
+			)
+			for (const tcase of data) {
+				apiTCasesMap[tcase.seq] = {
+					id: tcase.id,
+					seq: tcase.seq,
+					title: tcase.title,
 				}
 			}
 		}
@@ -381,11 +372,11 @@ export class ResultUploadCommandHandler {
 		// First fetch the default folder ID where we are creating new test cases.
 		// Ideally, there shouldn't be the need to fetch more than one page.
 		let defaultFolderId = null
-		for (let offset = 0; ; offset += DEFAULT_PAGE_SIZE) {
-			const response = await this.api.folders.getPaginated(projectCode, {
+		for (let offset = 0; ; offset += MAX_PAGE_SIZE) {
+			const response = await this.api.folders.list(projectCode, {
 				search: DEFAULT_FOLDER_TITLE,
 				offset,
-				limit: DEFAULT_PAGE_SIZE,
+				limit: MAX_PAGE_SIZE,
 			})
 
 			for (const folder of response.data) {
@@ -395,7 +386,7 @@ export class ResultUploadCommandHandler {
 				}
 			}
 
-			if (defaultFolderId || response.data.length < DEFAULT_PAGE_SIZE) {
+			if (defaultFolderId || response.data.length < MAX_PAGE_SIZE) {
 				break
 			}
 		}
@@ -406,11 +397,11 @@ export class ResultUploadCommandHandler {
 		}
 
 		const pendingTitles = new Set(tcasesToCreate)
-		for (let offset = 0; pendingTitles.size > 0; offset += DEFAULT_PAGE_SIZE) {
-			const response = await this.api.testCases.getPaginated(projectCode, {
+		for (let offset = 0; pendingTitles.size > 0; offset += MAX_PAGE_SIZE) {
+			const response = await this.api.testCases.list(projectCode, {
 				folders: [defaultFolderId],
 				offset,
-				limit: DEFAULT_PAGE_SIZE,
+				limit: MAX_PAGE_SIZE,
 			})
 
 			for (const tcase of response.data) {
@@ -421,7 +412,7 @@ export class ResultUploadCommandHandler {
 				pendingTitles.delete(tcase.title)
 			}
 
-			if (response.data.length < DEFAULT_PAGE_SIZE) {
+			if (response.data.length < MAX_PAGE_SIZE) {
 				break
 			}
 		}
@@ -429,64 +420,29 @@ export class ResultUploadCommandHandler {
 		return reusableTCases
 	}
 
-	private async createNewTCases(projectCode: string, tcasesToCreate: string[]) {
+	/** Creates test cases with the given titles, returned in the same order. */
+	private async createNewTCases(projectCode: string, titles: string[]) {
 		console.log(chalk.blue(`Creating test cases for results with no test case markers`))
 
-		const apiTCasesMap = await this.getReusableTCasesInDefaultFolder(projectCode, tcasesToCreate)
-
-		// Reuse existing test cases with the same title from the default folder
-		const ret: { id: string; seq: number }[] = []
-		const idxToFill: number[] = []
-		const finalTCasesToCreate: string[] = []
-		for (let i = 0; i < tcasesToCreate.length; i++) {
-			const existingTcase = apiTCasesMap[tcasesToCreate[i]]
-			if (existingTcase) {
-				// TCase with this title already exists, reuse it
-				ret.push({ id: existingTcase.id, seq: existingTcase.seq })
-				continue
-			}
-
-			// Add a placeholder for the new test case. Will be updated later
-			ret.push({ id: '', seq: 0 })
-			finalTCasesToCreate.push(tcasesToCreate[i])
-			idxToFill.push(i)
+		const tcases: CreateTCasesResponse['tcases'] = []
+		for (let i = 0; i < titles.length; i += MAX_BULK_ITEMS) {
+			const response = await this.api.testCases.createBatch(projectCode, {
+				folderPath: [DEFAULT_FOLDER_TITLE],
+				tcases: titles
+					.slice(i, i + MAX_BULK_ITEMS)
+					.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
+			})
+			tcases.push(...response.tcases)
 		}
-
-		if (!finalTCasesToCreate.length) {
-			console.log(
-				chalk.blue(
-					`Reusing ${ret.length} test cases with same title from "${DEFAULT_FOLDER_TITLE}" folder, no new test cases created`
-				)
-			)
-			return ret
-		}
-
-		// Create new test cases and update the placeholders with the actual test case IDs
-		const { tcases } = await this.api.testCases.createBatch(projectCode, {
-			folderPath: [DEFAULT_FOLDER_TITLE],
-			tcases: finalTCasesToCreate.map((title) => ({ title, tags: DEFAULT_TCASE_TAGS })),
-		})
 
 		console.log(
-			chalk.green(
-				`Created ${tcases.length} new test cases in folder "${DEFAULT_FOLDER_TITLE}"${
-					ret.length > tcases.length
-						? ` and reused ${ret.length - tcases.length} test cases with same title`
-						: ''
-				}`
-			)
+			chalk.green(`Created ${tcases.length} new test cases in folder "${DEFAULT_FOLDER_TITLE}"`)
 		)
-
-		for (let i = 0; i < idxToFill.length; i++) {
-			ret[idxToFill[i]] = tcases[i]
-		}
 
 		try {
 			const mappingFilename = processTemplate(DEFAULT_MAPPING_FILENAME_TEMPLATE)
 			const mappingLines = tcases
-				.map(
-					(t, i) => `${this.markerParser.formatMarker(projectCode, t.seq)}: ${tcasesToCreate[i]}`
-				)
+				.map((t, i) => `${this.markerParser.formatMarker(projectCode, t.seq)}: ${titles[i]}`)
 				.join('\n')
 
 			writeFileSync(mappingFilename, mappingLines)
@@ -505,7 +461,7 @@ export class ResultUploadCommandHandler {
 			)
 		}
 
-		return ret
+		return tcases
 	}
 
 	private async createNewRun(projectCode: string, tcaseIds: string[]) {

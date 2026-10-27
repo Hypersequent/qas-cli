@@ -154,25 +154,53 @@ describe('mocked', () => {
 		})
 	})
 
-	test('creates a test case with requirements and links', async ({ project }) => {
-		const body = JSON.stringify({
+	test('creates a test case with requirements, links and files', async ({ project }) => {
+		const requirements = [{ text: 'REQ-1', url: 'https://example.com/req/1' }, { text: 'REQ-2' }]
+		const links = [{ text: 'Docs', url: 'https://example.com/docs' }]
+		const files = [
+			{
+				id: 'f1',
+				url: 'https://example.com/f1',
+				fileName: 'log.txt',
+				mimeType: 'text/plain',
+				size: 3,
+			},
+		]
+		const expected = {
 			title: 'With links',
 			type: 'standalone',
 			folderId: 1,
 			priority: 'low',
-			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
-			links: [{ text: 'Docs', url: 'https://example.com/docs' }],
-		})
-		await runCommand('--project-code', project.code, '--body', body)
+			pos: 0,
+			requirements,
+			links,
+			files,
+		}
+		await runCommand('--project-code', project.code, '--body', JSON.stringify(expected))
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({
-			title: 'With links',
-			type: 'standalone',
-			folderId: 1,
-			priority: 'low',
-			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
-			links: [{ text: 'Docs', url: 'https://example.com/docs' }],
-		})
+		expect(lastRequest).toEqual(expected)
+
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--title',
+			'With links',
+			'--type',
+			'standalone',
+			'--folder-id',
+			'1',
+			'--priority',
+			'low',
+			'--pos',
+			'0',
+			'--requirements',
+			JSON.stringify(requirements),
+			'--links',
+			JSON.stringify(links),
+			'--files',
+			JSON.stringify(files)
+		)
+		expect(lastRequest).toEqual(expected)
 	})
 
 	test('creates a test case using individual fields', async ({ project }) => {
@@ -337,7 +365,9 @@ describe('mocked', () => {
 			'--priority',
 			'high',
 			'--parameter-values',
-			JSON.stringify(parameterValues)
+			JSON.stringify(parameterValues),
+			'--title-suffix-params',
+			'browser, device'
 		)
 		expect(lastRequest).toEqual({
 			title: 'Login ${browser}',
@@ -345,6 +375,7 @@ describe('mocked', () => {
 			folderId: 1,
 			priority: 'high',
 			parameterValues,
+			filledTCaseTitleSuffixParams: ['browser', 'device'],
 		})
 	})
 
@@ -521,6 +552,27 @@ describe('validation errors', () => {
 					'42'
 				),
 			/precondition-text and precondition-id are mutually exclusive/
+		)
+	})
+
+	test('rejects a link that is not an http or https URL', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'standalone',
+					'--folder-id',
+					'1',
+					'--priority',
+					'high',
+					'--links',
+					'[{"text": "FTP", "url": "ftp://example.com/spec"}]'
+				),
+			/--links.*must be an http or https URL/
 		)
 	})
 

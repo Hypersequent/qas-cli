@@ -50,7 +50,10 @@ function buildOptions(specs: (ApiQueryOptionSpec | ApiFieldSpec)[]): Record<stri
 	for (const spec of specs) {
 		options[spec.name] = {
 			type: spec.type,
-			describe: spec.describe,
+			// Same format as the [choices: ...] yargs prints
+			describe: spec.helpChoices
+				? `${spec.describe} [choices: ${spec.helpChoices.map((c) => JSON.stringify(c)).join(', ')}]`
+				: spec.describe,
 			choices: spec.choices,
 			...spec.yargsOption,
 		}

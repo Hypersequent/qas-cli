@@ -24,12 +24,15 @@ describe('mocked', () => {
 	let lastSearchParams: URLSearchParams | null = null
 
 	useMockServer(
-		http.get(`${baseURL}/api/public/v0/project/:projectCode/tcase`, ({ request, params }) => {
-			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
-			lastParams = params
-			lastSearchParams = new URL(request.url).searchParams
-			return HttpResponse.json(mockResponse)
-		})
+		http.get(
+			`${baseURL}/api/public/v0/project/:projectCode/tcase/paginated`,
+			({ request, params }) => {
+				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
+				lastParams = params
+				lastSearchParams = new URL(request.url).searchParams
+				return HttpResponse.json(mockResponse)
+			}
+		)
 	)
 
 	afterEach(() => {
@@ -44,11 +47,19 @@ describe('mocked', () => {
 	})
 
 	test('passes offset and limit as query parameters', async ({ project }) => {
-		await runCommand('--project-code', project.code, '--offset', '20', '--limit', '10')
+		const result = await runCommand(
+			'--project-code',
+			project.code,
+			'--offset',
+			'20',
+			'--limit',
+			'10'
+		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastSearchParams).not.toBeNull()
 		expect(lastSearchParams!.get('offset')).toBe('20')
 		expect(lastSearchParams!.get('limit')).toBe('10')
+		expect(result).toEqual(mockResponse)
 	})
 
 	test('passes filter params', async ({ project }) => {
@@ -73,17 +84,17 @@ describe('mocked', () => {
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 
-	test('rejects --page 0', async () => {
+	test('rejects the removed --page option', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--page', '0'),
-			/--page.*expected number to be >0/i
+			() => runCommand('--project-code', 'PRJ', '--page', '1'),
+			/Unknown argument: page/
 		)
 	})
 
-	test('rejects --page -1', async () => {
+	test('rejects --limit above 1000', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--page', '-1'),
-			/--page.*expected number to be >0/i
+			() => runCommand('--project-code', 'PRJ', '--limit', '1001'),
+			/--limit.*must be at most 1000/
 		)
 	})
 

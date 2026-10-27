@@ -129,7 +129,17 @@ describe('mocked', () => {
 		})
 	})
 
-	test('updates with --tags, --is-draft, --steps', async ({ project }) => {
+	test('updates with --tags, --is-draft, --steps, --requirements, --links, --files', async ({
+		project,
+	}) => {
+		const steps = [
+			{
+				description: 'Click',
+				expected: 'Opens',
+				data: [{ type: 'text', label: 'User', data: { value: 'admin' } }],
+			},
+		]
+		const files = [{ id: 'f1', fileName: 'log.txt', mimeType: 'text/plain', size: 3 }]
 		await runCommand(
 			'--project-code',
 			project.code,
@@ -141,13 +151,25 @@ describe('mocked', () => {
 			'smoke,e2e',
 			'--is-draft',
 			'--steps',
-			'[{"description": "Click", "expected": "Opens"}]'
+			JSON.stringify(steps),
+			'--requirements',
+			'[{"text": "REQ-1", "url": "https://example.com/req/1"}]',
+			'--links',
+			'[{"text": "Spec", "url": "https://example.com/spec"}]',
+			'--files',
+			JSON.stringify(files),
+			'--title-suffix-params',
+			'browser'
 		)
 		expect(lastRequest).toEqual({
 			title: 'With extras',
 			tags: ['smoke', 'e2e'],
 			isDraft: true,
-			steps: [{ description: 'Click', expected: 'Opens' }],
+			steps,
+			requirements: [{ text: 'REQ-1', url: 'https://example.com/req/1' }],
+			links: [{ text: 'Spec', url: 'https://example.com/spec' }],
+			files,
+			filledTCaseTitleSuffixParams: ['browser'],
 		})
 	})
 

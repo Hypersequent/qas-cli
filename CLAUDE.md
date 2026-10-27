@@ -73,7 +73,7 @@ The `api` command provides direct programmatic access to the QA Sphere public AP
 **Key files**:
 
 - `types.ts` — Defines `ApiEndpointSpec` as a discriminated union on `bodyMode` (`'none'` | `'json'` | `'file'`), plus supporting types (`ApiPathParamSpec`, `ApiFieldSpec`, `ApiQueryOptionSpec`, `ExecuteFn`)
-- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`)
+- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`) and `paginationOptions()` for list options
 - `builder.ts` — `buildCommandsFromSpecs()` builds a yargs command tree from the flat specs array, handling nested command paths automatically. Creates yargs options from path params, query options, field options, and body mode
 - `executor.ts` — `executeCommand()` orchestrates execution: collects and validates path params → processes body (based on `bodyMode` discriminant) → collects and validates query options → connects to API (lazy env loading) → executes with error mapping
 - `main.ts` — Registers the `api` command, delegates to `buildCommandsFromSpecs()`
@@ -91,9 +91,9 @@ Important note: Online documentation is available at https://docs.qasphere.com. 
 
 Composable fetch wrappers using higher-order functions:
 
-- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson`, `withUserAgent`, `withHttpRetry` decorators that wrap `fetch` via middleware pattern; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings
+- `utils.ts` — `withBaseUrl`, `withAuth`, `withJson`, `withUserAgent`, `withHttpRetry` decorators that wrap `fetch` via middleware pattern; `jsonResponse<T>()` for parsing responses; `appendSearchParams()` for building query strings; `fetchAllPages()` for reading every page of a paginated list
 - `index.ts` — `createApi(baseUrl, token)` assembles the API client from all sub-modules using `withFetchMiddlewares`. All requests authenticate with `Authorization: Bearer <token>` (works for both API keys and OAuth access tokens)
-- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `PaginatedRequest`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, and common Zod field definitions (`sortFieldParam`, `sortOrderParam`, `offsetParam`, `limitParam` etc.).
+- `schemas.ts` — Shared types (`ResourceId`, `ResultStatus`, `PaginatedResponse<T>`, `MessageResponse`), `RequestValidationError` class, `validateRequest()` helper, the API limits (`MAX_PAGE_SIZE`, `MAX_BULK_ITEMS`) and common Zod field definitions (`paginationParams`, `sortFieldParam`, `sortOrderParam`, `offsetParam`, `limitParam` etc.). List endpoints use the `/paginated` routes; the older unpaginated routes are deprecated.
 - One sub-module per resource (e.g., `projects.ts`, `runs.ts`, `tcases.ts`, `folders.ts`), each exporting a `create<Resource>Api(fetcher)` factory function. Each module defines Zod schemas for its request types (PascalCase, e.g., `CreateRunRequestSchema`), derives TypeScript types via `z.infer`, and validates inputs with `validateRequest()` inside API functions
 
 ### Configuration (src/utils/)
