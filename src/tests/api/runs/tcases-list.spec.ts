@@ -70,6 +70,30 @@ describe('mocked', () => {
 		expect(lastUrl!.searchParams.get('sortField')).toEqual('status')
 		expect(result).toEqual(mockResponse)
 	})
+
+	test('passes status and automation result filters', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--run-id',
+			'42',
+			'--status',
+			'failed,blocked',
+			'--automation-results',
+			'automated_failing',
+			'--automation-results-filter-op',
+			'not',
+			'--tags',
+			'1,2',
+			'--tags-filter-op',
+			'and'
+		)
+		expect(lastUrl!.searchParams.getAll('status')).toEqual(['failed', 'blocked'])
+		expect(lastUrl!.searchParams.getAll('automationResults')).toEqual(['automated_failing'])
+		expect(lastUrl!.searchParams.get('automationResultsFilterOp')).toEqual('not')
+		expect(lastUrl!.searchParams.getAll('tags')).toEqual(['1', '2'])
+		expect(lastUrl!.searchParams.get('tagsFilterOp')).toEqual('and')
+	})
 })
 
 describe('validation errors', () => {

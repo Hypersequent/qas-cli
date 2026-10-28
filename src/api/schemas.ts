@@ -75,6 +75,25 @@ export const linkSchema = z.object({
 	url: httpUrlSchema,
 })
 export const priorityEnum = z.enum(['low', 'medium', 'high'])
+export const resultStatusEnum = z.enum([
+	'passed',
+	'failed',
+	'blocked',
+	'skipped',
+	'open',
+	'custom1',
+	'custom2',
+	'custom3',
+	'custom4',
+])
+// How several values of one filter combine.
+export const filterOpEnum = z.enum(['or', 'and', 'not'])
+export const automationResultEnum = z.enum([
+	'automated_passing',
+	'automated_failing',
+	'has_automated',
+	'has_manual',
+])
 export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
 export const resourceIdSchema = z
 	.string()

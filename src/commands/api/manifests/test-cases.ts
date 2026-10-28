@@ -18,25 +18,31 @@ import {
 	type UpdateTCasesRequirementsRequest,
 	type UpdateTCasesTagsRequest,
 } from '../../../api/tcases'
-import { resourceIdSchema } from '../../../api/schemas'
+import { filterOpEnum, resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import {
 	commonHelp,
 	idListSchema,
 	intIdParam,
+	intListSchema,
 	paginationOptions,
 	projectCodeParam,
+	requireFieldsOrBody,
+	splitIntList,
 	splitList,
 } from './utils'
-import type { ApiEndpointSpec, ApiFieldSpec, ApiPathParamSpec } from '../types'
+import type { ApiEndpointSpec, ApiFieldSpec, ApiPathParamSpec, ApiQueryOptionSpec } from '../types'
 
 // CreateTCaseRequestSchema stays a ZodObject despite its .superRefine() refinement,
 // so its field definitions are available directly via .shape.
 const CreateTCaseShape = CreateTCaseRequestSchema.shape
 
+const customFieldFilterHelp =
+	'Filter by a custom field with --cf-<system name> <value> (see custom-fields list); repeat it for several values.'
+
 const help = {
 	...commonHelp,
-	'tcase-id': 'Test case ID.',
+	'tcase-id': 'Test case ID, sequence number or legacy ID.',
 	title: 'Test case title, 1-511 characters.',
 	priority: 'Priority level, low/medium/high.',
 	'precondition-text':
@@ -65,13 +71,31 @@ const help = {
 	priorities: 'Comma-separated priorities to filter by (e.g., "low,high").',
 	'tcase-ids':
 		'Comma-separated test case references: IDs, sequence numbers or legacy IDs (e.g., "12,13").',
+	'tcase-ids-filter':
+		'Comma-separated test cases to filter by: IDs, sequence numbers or legacy IDs (e.g., "12,13"). One that matches no test case matches nothing.',
+	'template-tcase-ids':
+		'Comma-separated template test cases whose filled test cases to return: IDs, sequence numbers or legacy IDs.',
+	'requirement-ids': 'Comma-separated requirement IDs to filter by (see requirements list).',
+	recursive: 'With --folders, also match the test cases in their subfolders.',
+	'tags-filter-op':
+		'How several --tags combine: any of them (or, the default), all of them (and) or none of them (not).',
+	'precondition-ids':
+		'Comma-separated shared precondition IDs: test cases that use one of them (see shared-preconditions list).',
+	'step-ids':
+		'Comma-separated shared step IDs: test cases that use one of them (see shared-steps list).',
+	'author-ids':
+		'Comma-separated IDs of the users who created the test cases to filter by (see users list).',
+	'tcase-created-after':
+		'Test cases created at or after this time (RFC 3339, e.g., "2026-01-01T00:00:00Z").',
+	'tcase-created-before':
+		'Test cases created at or before this time (RFC 3339, e.g., "2026-02-01T00:00:00Z").',
 	'tcase-version': 'Test case version number.',
 	'target-folder-id': 'ID of the folder to copy the test cases into.',
 	'source-project-id':
 		'Code or ID of the project the test cases are copied from. Defaults to --project-code.',
 	'new-parent-id': 'ID of the folder to move the test cases into.',
 	items:
-		'JSON array of the test cases to move, each with its final 0-based position in the folder (a negative pos counts from the end).\nExample: \'[{"id": "12", "pos": 0}, {"id": "13", "pos": -1}]\'',
+		'JSON array of the test cases to move, each with its "id" (ID, sequence number or legacy ID) and its final 0-based "pos" in the folder (a negative pos counts from the end).\nExample: \'[{"id": "12", "pos": 0}, {"id": "13", "pos": -1}]\'',
 	'add-tags': 'Comma-separated tag titles to add (missing tags are created).',
 	'remove-tags': 'Comma-separated tag titles to remove. A title also in --add is kept.',
 	'add-requirements':
@@ -83,12 +107,17 @@ const help = {
 	'exclude-status': 'Comma-separated result statuses to leave out (e.g., "open,skipped").',
 	internal: 'Set to false to leave out system results, such as the reset to open after an edit.',
 	list: {
-		describe: 'List test cases in a project.',
+		describe: `List test cases in a project. ${customFieldFilterHelp}`,
 		epilog: apiDocsEpilog('tcases', 'list-test-cases'),
 		examples: [
 			{
 				usage: '$0 api test-cases list --project-code PRJ',
 				description: 'List test cases in a project',
+			},
+			{
+				usage:
+					'$0 api test-cases list --project-code PRJ --cf-automation Automated --cf-automation Partial',
+				description: 'List test cases whose "automation" custom field is Automated or Partial',
 			},
 		],
 	},
@@ -103,7 +132,7 @@ const help = {
 		],
 	},
 	count: {
-		describe: 'Count test cases matching filters.',
+		describe: `Count test cases matching filters. ${customFieldFilterHelp}`,
 		epilog: apiDocsEpilog('tcases', 'get-test-case-count'),
 		examples: [
 			{
@@ -266,128 +295,6 @@ const tcaseIdsField: ApiFieldSpec = {
 	schema: idListSchema,
 }
 
-/** Allows a JSON-body command to run when its required fields are set, or --body/--body-file is. */
-const requireFieldsOrBody =
-	(...fields: string[]) =>
-	(argv: Record<string, unknown>): true | string =>
-		argv.body !== undefined ||
-		argv['body-file'] !== undefined ||
-		fields.every((f) => argv[f] !== undefined)
-			? true
-			: `Either --body, --body-file, or ${fields.map((f) => `--${f}`).join(' and ')} is required`
-
-const list: ApiEndpointSpec = {
-	id: 'test-cases.list',
-	commandPath: ['test-cases', 'list'],
-	describe: help.list.describe,
-	bodyMode: 'none',
-	pathParams: [projectCodeParam],
-	queryOptions: [
-		...paginationOptions([
-			'id',
-			'seq',
-			'folder_id',
-			'author_id',
-			'pos',
-			'title',
-			'priority',
-			'created_at',
-			'updated_at',
-			'legacy_id',
-		]),
-		{ name: 'folders', type: 'string', describe: help.folders },
-		{ name: 'tags', type: 'string', describe: help.tagsFilter },
-		{ name: 'priorities', type: 'string', describe: help.priorities },
-		{ name: 'search', type: 'string', describe: 'Search text to filter test cases.' },
-		{
-			name: 'types',
-			type: 'string',
-			describe: 'Comma-separated test case types to filter by (e.g., "standalone,template").',
-		},
-		{ name: 'draft', type: 'boolean', describe: help.draft },
-		{
-			name: 'include',
-			type: 'string',
-			describe: 'Comma-separated additional fields to include.',
-			helpChoices: [
-				'precondition',
-				'steps',
-				'tags',
-				'requirements',
-				'customFields',
-				'filterableCustomFields',
-				'parameterValues',
-				'folder',
-				'path',
-				'project',
-			],
-		},
-	],
-	transformQuery: (query) => ({
-		...kebabToCamelCaseKeys(query),
-		folders:
-			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
-		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
-		priorities:
-			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
-		types: typeof query.types === 'string' ? query.types.split(',') : query.types,
-		include: typeof query.include === 'string' ? query.include.split(',') : query.include,
-	}),
-	epilog: help.list.epilog,
-	examples: help.list.examples,
-	execute: async (api, { pathParams, query }) => {
-		printJson(await api.testCases.list(pathParams['project-code'], query as ListTCasesRequest))
-	},
-}
-
-const get: ApiEndpointSpec = {
-	id: 'test-cases.get',
-	commandPath: ['test-cases', 'get'],
-	describe: help.get.describe,
-	bodyMode: 'none',
-	pathParams: [
-		projectCodeParam,
-		{ name: 'tcase-id', type: 'string', describe: help['tcase-id'], schema: resourceIdSchema },
-	],
-	epilog: help.get.epilog,
-	examples: help.get.examples,
-	execute: async (api, { pathParams }) => {
-		printJson(await api.testCases.get(pathParams['project-code'], pathParams['tcase-id']))
-	},
-}
-
-const count: ApiEndpointSpec = {
-	id: 'test-cases.count',
-	commandPath: ['test-cases', 'count'],
-	describe: help.count.describe,
-	bodyMode: 'none',
-	pathParams: [projectCodeParam],
-	queryOptions: [
-		{ name: 'folders', type: 'string', describe: help.folders },
-		{
-			name: 'recursive',
-			type: 'boolean',
-			describe: 'If true, include test cases in subfolders when filtering by folders.',
-		},
-		{ name: 'tags', type: 'string', describe: help.tagsFilter },
-		{ name: 'priorities', type: 'string', describe: help.priorities },
-		{ name: 'draft', type: 'boolean', describe: help.draft },
-	],
-	transformQuery: (query) => ({
-		...kebabToCamelCaseKeys(query),
-		folders:
-			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
-		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
-		priorities:
-			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
-	}),
-	epilog: help.count.epilog,
-	examples: help.count.examples,
-	execute: async (api, { pathParams, query }) => {
-		printJson(await api.testCases.count(pathParams['project-code'], query as CountTCasesRequest))
-	},
-}
-
 function transformTCaseFields(fields: Record<string, unknown>): Record<string, unknown> {
 	const result = kebabToCamelCaseKeys(fields)
 
@@ -414,6 +321,168 @@ function transformTCaseFields(fields: Record<string, unknown>): Record<string, u
 	delete result.titleSuffixParams
 
 	return result
+}
+
+/** Like requireFieldsOrBody('tcase-ids'), but also needs at least one of --add and --remove. */
+const requireTCaseIdsAndChange = (argv: Record<string, unknown>): true | string => {
+	if (argv.body !== undefined || argv['body-file'] !== undefined) return true
+	if (argv['tcase-ids'] === undefined)
+		return 'Either --body, --body-file, or --tcase-ids is required'
+	if (argv.add === undefined && argv.remove === undefined)
+		return 'Either --add or --remove is required'
+	return true
+}
+
+const tcaseFilterOptions: ApiQueryOptionSpec[] = [
+	{ name: 'search', type: 'string', describe: 'Search text to filter test cases.' },
+	{
+		name: 'types',
+		type: 'string',
+		describe: 'Comma-separated test case types to filter by (e.g., "standalone,template").',
+	},
+	{ name: 'folders', type: 'string', describe: help.folders, schema: intListSchema },
+	{ name: 'recursive', type: 'boolean', describe: help.recursive },
+	{ name: 'tags', type: 'string', describe: help.tagsFilter, schema: intListSchema },
+	{
+		name: 'tags-filter-op',
+		type: 'string',
+		describe: help['tags-filter-op'],
+		choices: filterOpEnum.options,
+	},
+	{ name: 'priorities', type: 'string', describe: help.priorities },
+	{ name: 'draft', type: 'boolean', describe: help.draft },
+	{ name: 'tcase-ids', type: 'string', describe: help['tcase-ids-filter'] },
+	{ name: 'template-tcase-ids', type: 'string', describe: help['template-tcase-ids'] },
+	{ name: 'requirement-ids', type: 'string', describe: help['requirement-ids'] },
+	{
+		name: 'precondition-ids',
+		type: 'string',
+		describe: help['precondition-ids'],
+		schema: intListSchema,
+	},
+	{ name: 'step-ids', type: 'string', describe: help['step-ids'], schema: intListSchema },
+	{ name: 'author-ids', type: 'string', describe: help['author-ids'], schema: intListSchema },
+	{ name: 'created-after', type: 'string', describe: help['tcase-created-after'] },
+	{ name: 'created-before', type: 'string', describe: help['tcase-created-before'] },
+]
+
+// kebab-to-camel would give templateTcaseIds.
+const transformTCaseFilters = ({
+	'template-tcase-ids': templateTCaseIds,
+	...query
+}: Record<string, unknown>) => ({
+	...kebabToCamelCaseKeys(query),
+	types: splitList(query.types),
+	folders: splitIntList(query.folders),
+	tags: splitIntList(query.tags),
+	priorities: splitList(query.priorities),
+	tcaseIds: splitList(query['tcase-ids']),
+	templateTCaseIds: splitList(templateTCaseIds),
+	requirementIds: splitList(query['requirement-ids']),
+	preconditionIds: splitIntList(query['precondition-ids']),
+	stepIds: splitIntList(query['step-ids']),
+	authorIds: splitIntList(query['author-ids']),
+})
+
+const list: ApiEndpointSpec = {
+	id: 'test-cases.list',
+	commandPath: ['test-cases', 'list'],
+	describe: help.list.describe,
+	bodyMode: 'none',
+	pathParams: [projectCodeParam],
+	queryOptions: [
+		...paginationOptions([
+			'id',
+			'seq',
+			'folder_id',
+			'author_id',
+			'pos',
+			'title',
+			'priority',
+			'created_at',
+			'updated_at',
+			'legacy_id',
+		]),
+		...tcaseFilterOptions,
+		{
+			name: 'include',
+			type: 'string',
+			describe: 'Comma-separated additional fields to include.',
+			helpChoices: [
+				'precondition',
+				'steps',
+				'tags',
+				'requirements',
+				'customFields',
+				'filterableCustomFields',
+				'parameterValues',
+				'folder',
+				'path',
+				'project',
+			],
+		},
+	],
+	transformQuery: (query) => ({
+		...transformTCaseFilters(query),
+		include: splitList(query.include),
+	}),
+	customFieldFilters: true,
+	epilog: help.list.epilog,
+	examples: help.list.examples,
+	execute: async (api, { pathParams, query }) => {
+		printJson(await api.testCases.list(pathParams['project-code'], query as ListTCasesRequest))
+	},
+}
+
+const count: ApiEndpointSpec = {
+	id: 'test-cases.count',
+	commandPath: ['test-cases', 'count'],
+	describe: help.count.describe,
+	bodyMode: 'none',
+	pathParams: [projectCodeParam],
+	queryOptions: tcaseFilterOptions,
+	transformQuery: transformTCaseFilters,
+	customFieldFilters: true,
+	epilog: help.count.epilog,
+	examples: help.count.examples,
+	execute: async (api, { pathParams, query }) => {
+		printJson(await api.testCases.count(pathParams['project-code'], query as CountTCasesRequest))
+	},
+}
+
+const get: ApiEndpointSpec = {
+	id: 'test-cases.get',
+	commandPath: ['test-cases', 'get'],
+	describe: help.get.describe,
+	bodyMode: 'none',
+	pathParams: [
+		projectCodeParam,
+		{ name: 'tcase-id', type: 'string', describe: help['tcase-id'], schema: resourceIdSchema },
+	],
+	epilog: help.get.epilog,
+	examples: help.get.examples,
+	execute: async (api, { pathParams }) => {
+		printJson(await api.testCases.get(pathParams['project-code'], pathParams['tcase-id']))
+	},
+}
+
+const tcaseGetVersion: ApiEndpointSpec = {
+	id: 'test-cases.get-version',
+	commandPath: ['test-cases', 'get-version'],
+	describe: help.getVersion.describe,
+	bodyMode: 'none',
+	pathParams: [projectCodeParam, tcaseIdParam, tcaseVersionParam],
+	epilog: help.getVersion.epilog,
+	examples: help.getVersion.examples,
+	execute: async (api, { pathParams }) => {
+		printJson(
+			await api.testCases.getVersion(
+				pathParams['project-code'],
+				pathParams['tcase-id'],
+				pathParams['tcase-version'] as number
+			)
+		)
+	},
 }
 
 const tcaseCreate: ApiEndpointSpec = {
@@ -521,6 +590,39 @@ const tcaseCreate: ApiEndpointSpec = {
 	},
 }
 
+const tcaseCopy: ApiEndpointSpec = {
+	id: 'test-cases.copy',
+	commandPath: ['test-cases', 'copy'],
+	describe: help.copy.describe,
+	bodyMode: 'json',
+	pathParams: [projectCodeParam],
+	fieldOptions: [
+		tcaseIdsField,
+		{
+			name: 'target-folder-id',
+			type: 'number',
+			describe: help['target-folder-id'],
+			schema: z.number().int().positive('must be a positive integer'),
+		},
+		{
+			name: 'source-project-id',
+			type: 'string',
+			describe: help['source-project-id'],
+			schema: resourceIdSchema,
+		},
+	],
+	transformFields: (fields) => ({
+		...kebabToCamelCaseKeys(fields),
+		tcaseIds: splitList(fields['tcase-ids']),
+	}),
+	check: requireFieldsOrBody('tcase-ids', 'target-folder-id'),
+	epilog: help.copy.epilog,
+	examples: help.copy.examples,
+	execute: async (api, { pathParams, body }) => {
+		printJson(await api.testCases.copy(pathParams['project-code'], body as CopyTCasesRequest))
+	},
+}
+
 const tcaseUpdate: ApiEndpointSpec = {
 	id: 'test-cases.update',
 	commandPath: ['test-cases', 'update'],
@@ -577,7 +679,7 @@ const tcaseUpdate: ApiEndpointSpec = {
 			name: 'parameter-values',
 			type: 'string',
 			describe:
-				'JSON array of parameter value sets. Include tcaseId to modify existing filled cases.',
+				'JSON array of parameter value sets. Include a filled test case\'s "tcaseId" (ID, sequence number or legacy ID) to change it.',
 			schema: z.array(parameterValueWithIdSchema),
 			jsonParse: true,
 		},
@@ -641,52 +743,22 @@ const tcaseUpdate: ApiEndpointSpec = {
 	},
 }
 
-const tcaseDelete: ApiEndpointSpec = {
-	id: 'test-cases.delete',
-	commandPath: ['test-cases', 'delete'],
-	describe: help.delete.describe,
-	bodyMode: 'json',
-	pathParams: [projectCodeParam],
-	fieldOptions: [tcaseIdsField],
-	transformFields: (fields) => ({ tcaseIds: splitList(fields['tcase-ids']) }),
-	check: requireFieldsOrBody('tcase-ids'),
-	epilog: help.delete.epilog,
-	examples: help.delete.examples,
-	execute: async (api, { pathParams, body }) => {
-		printJson(await api.testCases.delete(pathParams['project-code'], body as DeleteTCasesRequest))
-	},
-}
-
-const tcaseCopy: ApiEndpointSpec = {
-	id: 'test-cases.copy',
-	commandPath: ['test-cases', 'copy'],
-	describe: help.copy.describe,
-	bodyMode: 'json',
-	pathParams: [projectCodeParam],
-	fieldOptions: [
-		tcaseIdsField,
-		{
-			name: 'target-folder-id',
-			type: 'number',
-			describe: help['target-folder-id'],
-			schema: z.number().int().positive('must be a positive integer'),
-		},
-		{
-			name: 'source-project-id',
-			type: 'string',
-			describe: help['source-project-id'],
-			schema: resourceIdSchema,
-		},
-	],
-	transformFields: (fields) => ({
-		...kebabToCamelCaseKeys(fields),
-		tcaseIds: splitList(fields['tcase-ids']),
-	}),
-	check: requireFieldsOrBody('tcase-ids', 'target-folder-id'),
-	epilog: help.copy.epilog,
-	examples: help.copy.examples,
-	execute: async (api, { pathParams, body }) => {
-		printJson(await api.testCases.copy(pathParams['project-code'], body as CopyTCasesRequest))
+const tcaseRollback: ApiEndpointSpec = {
+	id: 'test-cases.rollback',
+	commandPath: ['test-cases', 'rollback'],
+	describe: help.rollback.describe,
+	bodyMode: 'none',
+	pathParams: [projectCodeParam, tcaseIdParam, tcaseVersionParam],
+	epilog: help.rollback.epilog,
+	examples: help.rollback.examples,
+	execute: async (api, { pathParams }) => {
+		printJson(
+			await api.testCases.rollback(
+				pathParams['project-code'],
+				pathParams['tcase-id'],
+				pathParams['tcase-version'] as number
+			)
+		)
 	},
 }
 
@@ -749,16 +821,6 @@ const tcaseUpdatePriority: ApiEndpointSpec = {
 			)
 		)
 	},
-}
-
-/** Like requireFieldsOrBody('tcase-ids'), but also needs at least one of --add and --remove. */
-const requireTCaseIdsAndChange = (argv: Record<string, unknown>): true | string => {
-	if (argv.body !== undefined || argv['body-file'] !== undefined) return true
-	if (argv['tcase-ids'] === undefined)
-		return 'Either --body, --body-file, or --tcase-ids is required'
-	if (argv.add === undefined && argv.remove === undefined)
-		return 'Either --add or --remove is required'
-	return true
 }
 
 const tcaseUpdateTags: ApiEndpointSpec = {
@@ -828,41 +890,19 @@ const tcaseUpdateRequirements: ApiEndpointSpec = {
 	},
 }
 
-const tcaseGetVersion: ApiEndpointSpec = {
-	id: 'test-cases.get-version',
-	commandPath: ['test-cases', 'get-version'],
-	describe: help.getVersion.describe,
-	bodyMode: 'none',
-	pathParams: [projectCodeParam, tcaseIdParam, tcaseVersionParam],
-	epilog: help.getVersion.epilog,
-	examples: help.getVersion.examples,
-	execute: async (api, { pathParams }) => {
-		printJson(
-			await api.testCases.getVersion(
-				pathParams['project-code'],
-				pathParams['tcase-id'],
-				pathParams['tcase-version'] as number
-			)
-		)
-	},
-}
-
-const tcaseRollback: ApiEndpointSpec = {
-	id: 'test-cases.rollback',
-	commandPath: ['test-cases', 'rollback'],
-	describe: help.rollback.describe,
-	bodyMode: 'none',
-	pathParams: [projectCodeParam, tcaseIdParam, tcaseVersionParam],
-	epilog: help.rollback.epilog,
-	examples: help.rollback.examples,
-	execute: async (api, { pathParams }) => {
-		printJson(
-			await api.testCases.rollback(
-				pathParams['project-code'],
-				pathParams['tcase-id'],
-				pathParams['tcase-version'] as number
-			)
-		)
+const tcaseDelete: ApiEndpointSpec = {
+	id: 'test-cases.delete',
+	commandPath: ['test-cases', 'delete'],
+	describe: help.delete.describe,
+	bodyMode: 'json',
+	pathParams: [projectCodeParam],
+	fieldOptions: [tcaseIdsField],
+	transformFields: (fields) => ({ tcaseIds: splitList(fields['tcase-ids']) }),
+	check: requireFieldsOrBody('tcase-ids'),
+	epilog: help.delete.epilog,
+	examples: help.delete.examples,
+	execute: async (api, { pathParams, body }) => {
+		printJson(await api.testCases.delete(pathParams['project-code'], body as DeleteTCasesRequest))
 	},
 }
 
@@ -904,17 +944,17 @@ const tcaseResultsList: ApiEndpointSpec = {
 
 export const testCaseSpecs: ApiEndpointSpec[] = [
 	list,
-	get,
 	count,
+	get,
+	tcaseGetVersion,
 	tcaseCreate,
-	tcaseUpdate,
-	tcaseDelete,
 	tcaseCopy,
+	tcaseUpdate,
+	tcaseRollback,
 	tcaseMove,
 	tcaseUpdatePriority,
 	tcaseUpdateTags,
 	tcaseUpdateRequirements,
-	tcaseGetVersion,
-	tcaseRollback,
+	tcaseDelete,
 	tcaseResultsList,
 ]

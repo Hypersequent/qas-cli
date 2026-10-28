@@ -5,6 +5,7 @@ import {
 	ResourceId,
 	httpUrlSchema,
 	linkSchema,
+	filterOpEnum,
 	paginationParams,
 	priorityEnum,
 	tcaseTypeEnum,
@@ -143,28 +144,53 @@ export const GetTCasesBySeqRequestSchema = z.object({
 
 export type GetTCasesBySeqRequest = z.infer<typeof GetTCasesBySeqRequestSchema>
 
-export const ListTCasesRequestSchema = z.object({
-	...paginationParams,
-	folders: z.array(z.number().int().positive()).optional(),
-	tags: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(priorityEnum).optional(),
-	search: z.string().optional(),
+const idsSchema = z.array(z.number().int().positive()).optional()
+
+// The filters test-cases list and count share.
+const TCaseFiltersSchema = z.object({
+	search: z.string().max(255, 'search must be at most 255 characters').optional(),
 	types: z.array(tcaseTypeEnum).optional(),
+	folders: idsSchema,
+	recursive: z.boolean().optional(),
+	tags: idsSchema,
+	tagsFilterOp: filterOpEnum.optional(),
+	priorities: z.array(priorityEnum).optional(),
 	draft: z.boolean().optional(),
+	tcaseIds: z.array(z.string()).optional(),
+	templateTCaseIds: z.array(z.string()).optional(),
+	requirementIds: z.array(z.string()).optional(),
+	preconditionIds: idsSchema,
+	stepIds: idsSchema,
+	authorIds: idsSchema,
+	createdAfter: z.string().optional(),
+	createdBefore: z.string().optional(),
+	/** Values by custom field system name. */
+	customFields: z.record(z.string(), z.array(z.string())).optional(),
+})
+
+export const ListTCasesRequestSchema = TCaseFiltersSchema.extend({
+	...paginationParams,
 	include: z.array(z.string()).optional(),
 })
 
 export type ListTCasesRequest = z.infer<typeof ListTCasesRequestSchema>
 
-export const CountTCasesRequestSchema = z.object({
-	folders: z.array(z.number().int().positive()).optional(),
-	recursive: z.boolean().optional(),
-	tags: z.array(z.number().int().positive()).optional(),
-	priorities: z.array(priorityEnum).optional(),
-	draft: z.boolean().optional(),
-})
+export const CountTCasesRequestSchema = TCaseFiltersSchema
 
 export type CountTCasesRequest = z.infer<typeof CountTCasesRequestSchema>
+
+// The API takes each custom field filter as a cf_<system name> parameter.
+const withCustomFieldParams = ({
+	customFields,
+	...params
+}: {
+	customFields?: Record<string, string[]>
+}) => ({
+	...params,
+	...Object.fromEntries(
+		Object.entries(customFields ?? {}).map(([name, values]) => [`cf_${name}`, values])
+	),
+})
 
 const preconditionSchema = z.union([
 	z.object({ text: z.string() }),
@@ -410,7 +436,10 @@ export const createTCaseApi = (fetcher: typeof fetch) => {
 		list: async (projectCode: ResourceId, params?: ListTCasesRequest) => {
 			const validated = params ? validateRequest(params, ListTCasesRequestSchema) : {}
 			return fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/tcase/paginated`, validated)
+				appendSearchParams(
+					`/api/public/v0/project/${projectCode}/tcase/paginated`,
+					withCustomFieldParams(validated)
+				)
 			).then((r) => jsonResponse<PaginatedResponse<TCase>>(r))
 		},
 
@@ -422,7 +451,10 @@ export const createTCaseApi = (fetcher: typeof fetch) => {
 		count: async (projectCode: ResourceId, params?: CountTCasesRequest) => {
 			const validated = params ? validateRequest(params, CountTCasesRequestSchema) : {}
 			return fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/tcase/count`, validated)
+				appendSearchParams(
+					`/api/public/v0/project/${projectCode}/tcase/count`,
+					withCustomFieldParams(validated)
+				)
 			).then((r) => jsonResponse<{ count: number }>(r))
 		},
 

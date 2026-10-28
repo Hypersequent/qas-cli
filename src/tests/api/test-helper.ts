@@ -155,10 +155,41 @@ export async function createRun(projectCode: string, tcaseIds: string[]): Promis
 	)
 }
 
+export async function createMilestone(projectCode: string): Promise<{ id: number }> {
+	const uid = randomBytes(4).toString('hex')
+	return runCli<{ id: number }>(
+		'api',
+		'milestones',
+		'create',
+		'--project-code',
+		projectCode,
+		'--title',
+		`CLI Milestone ${uid}`
+	)
+}
+
+export async function createTestPlan(
+	projectCode: string,
+	tcaseIds: string[]
+): Promise<{ id: number }> {
+	const uid = randomBytes(4).toString('hex')
+	return runCli<{ id: number }>(
+		'api',
+		'test-plans',
+		'create',
+		'--project-code',
+		projectCode,
+		'--title',
+		`CLI Plan ${uid}`,
+		'--runs',
+		JSON.stringify([{ title: `CLI Plan Run ${uid}`, queryPlans: [{ tcaseIds }] }])
+	)
+}
+
 type ParamType = 'code' | 'int' | 'resource'
 
 const paramTypePatterns: Record<ParamType, RegExp> = {
-	code: /must contain only latin letters and digits/,
+	code: /must contain only latin letters, digits and underscores/,
 	int: /must be a positive integer/,
 	resource: /must contain only alphanumeric characters, dashes, and underscores/,
 }

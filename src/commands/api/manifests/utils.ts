@@ -17,13 +17,16 @@ export const commonHelp = {
  * Pagination and sorting options of a list command. `sortFields` are the fields its endpoint
  * sorts by.
  */
-export const paginationOptions = (sortFields: readonly string[]): ApiQueryOptionSpec[] => [
+export const paginationOptions = (
+	sortFields: readonly string[],
+	sortFieldDescribe: string = commonHelp['sort-field']
+): ApiQueryOptionSpec[] => [
 	{ name: 'offset', type: 'number', describe: commonHelp.offset, schema: offsetParam },
 	{ name: 'limit', type: 'number', describe: commonHelp.limit, schema: limitParam },
 	{
 		name: 'sort-field',
 		type: 'string',
-		describe: commonHelp['sort-field'],
+		describe: sortFieldDescribe,
 		schema: sortFieldParam,
 		helpChoices: sortFields,
 	},
@@ -37,13 +40,16 @@ export const paginationOptions = (sortFields: readonly string[]): ApiQueryOption
 ]
 
 /**
- * Reusable project-code path parameter with validation.
+ * Reusable project-code path parameter with validation. The API also takes the project's ID,
+ * whose underscore a code can't have.
  */
 export const projectCodeParam: ApiPathParamSpec = {
 	name: 'project-code',
 	type: 'string',
-	describe: 'Project code identifying the QA Sphere project.',
-	schema: z.string().regex(/^[a-zA-Z0-9]+$/, 'must contain only latin letters and digits'),
+	describe: 'Code or ID of the QA Sphere project.',
+	schema: z
+		.string()
+		.regex(/^[a-zA-Z0-9_]+$/, 'must contain only latin letters, digits and underscores'),
 }
 
 /**
@@ -70,6 +76,26 @@ export const idListSchema = z
 		/^\s*[a-zA-Z0-9_-]+\s*(,\s*[a-zA-Z0-9_-]+\s*)*$/,
 		'must be comma-separated IDs (letters, digits, dashes and underscores)'
 	)
+
+/** Requires --body, --body-file, or every one of the fields. */
+export const requireFieldsOrBody =
+	(...fields: string[]) =>
+	(argv: Record<string, unknown>): true | string =>
+		argv.body !== undefined ||
+		argv['body-file'] !== undefined ||
+		fields.every((f) => argv[f] !== undefined)
+			? true
+			: `Either --body, --body-file, or ${fields.map((f) => `--${f}`).join(' and ')} is required`
+
+/** Requires --body, --body-file, or at least one of the fields, as update commands do. */
+export const requireAnyFieldOrBody =
+	(...fields: string[]) =>
+	(argv: Record<string, unknown>): true | string =>
+		argv.body !== undefined ||
+		argv['body-file'] !== undefined ||
+		fields.some((f) => argv[f] !== undefined)
+			? true
+			: `At least one field to update is required (--body, --body-file, ${fields.map((f) => `--${f}`).join(', ')})`
 
 export const splitList = (value: unknown): unknown =>
 	typeof value === 'string'

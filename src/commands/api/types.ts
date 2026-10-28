@@ -49,6 +49,8 @@ interface ApiEndpointBase {
 	pathParams: ApiPathParamSpec[]
 	queryOptions?: ApiQueryOptionSpec[]
 	transformQuery?: (query: Record<string, unknown>) => Record<string, unknown>
+	/** Takes --cf-<system name> options, sent in the query as `customFields` by system name. */
+	customFieldFilters?: boolean
 	check?: (argv: Record<string, unknown>) => true | string
 	execute: ExecuteFn
 }

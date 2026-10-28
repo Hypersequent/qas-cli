@@ -46,7 +46,7 @@ describe('mocked', () => {
 			'--run-id',
 			'1',
 			'--items',
-			'[{"tcaseId": "tc1", "status": "passed", "links": [{"text": "Log", "url": "https://ci.example.com/1"}]}]'
+			'[{"tcaseId": "tc1", "status": "passed", "links": [{"integrationId": "i1", "url": "https://acme.atlassian.net/browse/QA-1", "text": "Login fails", "meta": {"id": "10001"}}]}]'
 		)
 		expect(lastParams.projectCode).toBe('PRJ')
 		expect(lastParams.runId).toBe('1')
@@ -55,7 +55,14 @@ describe('mocked', () => {
 				{
 					tcaseId: 'tc1',
 					status: 'passed',
-					links: [{ text: 'Log', url: 'https://ci.example.com/1' }],
+					links: [
+						{
+							integrationId: 'i1',
+							url: 'https://acme.atlassian.net/browse/QA-1',
+							text: 'Login fails',
+							meta: { id: '10001' },
+						},
+					],
 				},
 			],
 		})
@@ -91,6 +98,18 @@ describe('mocked', () => {
 			h.testBodyFile(validBody, validBody, requiredArgs)
 			h.testInvalidJson(requiredArgs)
 			h.testInvalidBody({ items: [] }, /Must contain at least one result item/, requiredArgs)
+			const item = { tcaseId: 'tc1', status: 'passed' }
+			h.testInvalidBody(
+				{ items: Array(1001).fill(item) },
+				/Must contain at most 1000 result items/,
+				requiredArgs
+			)
+			const link = { integrationId: 'i1', url: 'https://ci.example.com/1', text: 'CI Log' }
+			h.testInvalidBody(
+				{ items: Array(21).fill({ ...item, links: Array(5).fill(link) }) },
+				/Must contain at most 100 links across the result items/,
+				requiredArgs
+			)
 		}
 	)
 })
