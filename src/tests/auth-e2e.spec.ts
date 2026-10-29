@@ -72,11 +72,19 @@ const mockState = vi.hoisted(() => ({
 	keyringMode: 'unavailable' as 'unavailable' | 'available',
 	keyringStore: new Map<string, string>(),
 	testHomeDir: '',
+	interactive: false,
+	confirmQuestions: [] as string[],
+	confirmAnswer: true,
 }))
 
 vi.mock('../utils/prompt', () => ({
 	ensureInteractive: () => {},
+	isInteractive: () => mockState.interactive,
 	prompt: async () => mockState.teamName,
+	confirm: async (question: string) => {
+		mockState.confirmQuestions.push(question)
+		return mockState.confirmAnswer
+	},
 }))
 
 vi.mock('../utils/browser', () => ({
@@ -176,6 +184,13 @@ beforeEach(() => {
 	mockState.keyringMode = 'unavailable'
 	mockState.keyringStore.clear()
 	mockState.teamName = 'acme'
+	mockState.interactive = false
+	mockState.confirmQuestions = []
+	mockState.confirmAnswer = true
+	vi.stubEnv('CLAUDE_CONFIG_DIR', '')
+	vi.stubEnv('CODEX_HOME', '')
+	vi.stubEnv('XDG_CONFIG_HOME', '')
+	vi.stubEnv('VIBE_HOME', '')
 
 	// Clear credential env vars so resolveCredentialSource() doesn't short-circuit
 	// to the env_var source, allowing tests to use test-isolated keyring/file/dotenv paths.
@@ -202,6 +217,7 @@ afterEach(() => {
 		rmSync(testHomeDir, { recursive: true })
 	}
 
+	vi.unstubAllEnvs()
 	vi.restoreAllMocks()
 })
 
@@ -216,6 +232,35 @@ describe('auth login (device flow)', () => {
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('settings/oauth/device?code='))
 		expect(log).toHaveBeenCalledWith(expect.stringContaining(`Logged in to ${tenantUrl}`))
 		expect(log).toHaveBeenCalledWith(expect.stringContaining('credentials.json'))
+	})
+
+	test('device flow offers the agent skill to detected agents', async () => {
+		server.use(deviceCodeHandler(), tokenSuccessHandler())
+		const claudeSkill = join(testHomeDir, '.claude', 'skills', 'qas-cli', 'SKILL.md')
+
+		// No prompt in a non-interactive shell
+		mkdirSync(join(testHomeDir, '.claude'))
+		await runCommand('auth login')
+		expect(mockState.confirmQuestions).toEqual([])
+
+		// Declined
+		mockState.interactive = true
+		mockState.confirmAnswer = false
+		await runCommand('auth login')
+		expect(mockState.confirmQuestions).toEqual([
+			'Install the QA Sphere agent skill for Claude Code? [Y/n] ',
+		])
+		expect(existsSync(claudeSkill)).toBe(false)
+
+		// Accepted
+		mockState.confirmAnswer = true
+		await runCommand('auth login')
+		expect(existsSync(claudeSkill)).toBe(true)
+
+		// Nothing to offer once installed
+		mockState.confirmQuestions = []
+		await runCommand('auth login')
+		expect(mockState.confirmQuestions).toEqual([])
 	})
 
 	test('device flow leaves no SIGINT listener on success', async () => {
