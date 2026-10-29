@@ -151,6 +151,8 @@ qasphere auth login
 
 This opens your browser to complete authentication and securely stores your credentials in the system keyring. If a keyring is not available, credentials are stored in `~/.config/qasphere/credentials.json` with restricted file permissions.
 
+If it finds AI coding agents on your machine (Claude Code, Codex, Cursor, etc.) without the current [agent skill](#ai-agent-skill), login then offers to install it.
+
 OAuth sessions are valid for 90 days. The 90-day window resets every time the CLI is used — as long as you keep running `qasphere` commands, you won't need to re-authenticate. `qasphere auth status` shows the current remaining time.
 
 Other auth commands:
@@ -164,7 +166,7 @@ qasphere auth logout    # Clear stored credentials
 
 Instead of using `auth login`, you can manually set the required variables:
 
-- `QAS_TOKEN` - QA Sphere API token (see [docs](https://docs.qasphere.com/api/authentication) if you need help generating one)
+- `QAS_TOKEN` - QA Sphere API token (see [docs](https://qasphere.com/docs/api/authentication/) if you need help generating one)
 - `QAS_URL` - Base URL of your QA Sphere instance (e.g., `https://qas.eu2.qasphere.com`)
 
 These variables can be defined as environment variables, in a `.env` file, or in a `.qaspherecli` configuration file:
@@ -578,13 +580,22 @@ Run-level logs can also be created manually via [`qasphere api runs logs create`
 
 ## AI Agent Skill
 
-qas-cli includes a [SKILL.md](./skills/qas-cli/SKILL.md) file that enables AI coding agents (e.g., Claude Code, Cursor) to use the CLI effectively. To add this skill to your agent:
+qas-cli bundles a [SKILL.md](./skills/qas-cli/SKILL.md) that gives AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot and others) full documentation of the CLI commands, options, and conventions, so they can drive QA Sphere on your behalf.
+
+`qasphere auth login` offers to install the skill for the agents it detects. To install, check, or remove it yourself:
 
 ```bash
-npx skills add Hypersequent/qas-cli
+qasphere skill install                       # Install or update for every detected agent
+qasphere skill install --agent claude-code   # Only the given agents; repeat --agent for several
+qasphere skill status                        # Installed skill version per agent
+qasphere skill uninstall                     # Remove from every agent
 ```
 
-The skill provides the agent with full documentation of the CLI commands, options, and conventions. See [skills](https://github.com/vercel-labs/skills) for more details.
+Run `qasphere skill install -h` for the list of supported agents. If it finds none of them, it still installs the skill to `~/.agents/skills/qas-cli/`. For agents that read neither, see [Other agents](https://qasphere.com/docs/cli/agent-skill/#other-agents).
+
+The skill is written once to `~/.agents/skills/qas-cli/`, and symlinked into the skills directory of every other agent (e.g. `~/.claude/skills/qas-cli`). Where symlinks are unavailable, the agent gets a copy instead. Codex, Cline, Zed, and other agents that read `~/.agents/skills` load it from there, so they get it with any install. This is the same layout `npx skills add -g` uses, so either tool can update the other's install.
+
+The skill version always matches the CLI version. When the CLI finds an older installed copy, it updates it on the next `qasphere` command. If it can't, for example inside an agent's sandbox, it warns at most once a day; run `qasphere skill install` from your terminal to update it.
 
 ## Development (for those who want to contribute to the tool)
 

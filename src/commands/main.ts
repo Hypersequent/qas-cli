@@ -2,6 +2,7 @@ import yargs from 'yargs'
 import { ResultUploadCommandModule } from './resultUpload'
 import { authCommand } from './auth'
 import { apiCommand } from './api/main'
+import { skillCommand } from './skill'
 import { qasEnvs, qasEnvFile } from '../utils/credentials'
 import { CLI_VERSION } from '../utils/version'
 
@@ -19,6 +20,7 @@ Or set variables: ${qasEnvs.join(', ')}
 		.command(new ResultUploadCommandModule('playwright-json-upload'))
 		.command(new ResultUploadCommandModule('allure-upload'))
 		.command(apiCommand)
+		.command(skillCommand)
 		.demandCommand(1, '')
 		.help('h')
 		.alias('h', 'help')

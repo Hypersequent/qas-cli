@@ -2,6 +2,7 @@
 
 import { hideBin } from 'yargs/helpers'
 import { run } from '../commands/main'
+import { refreshAgentSkill } from '../commands/skill'
 import { validateNodeVersion } from '../utils/misc'
 import { REQUIRED_NODE_VERSION } from '../utils/config'
 import chalk from 'chalk'
@@ -14,4 +15,12 @@ if (!validateNodeVersion()) {
 	)
 }
 
-run(hideBin(process.argv))
+const args = hideBin(process.argv)
+
+// Here rather than in run() so tests driving run() never touch the real home directory. Tab
+// completion runs the CLI too, and a notice there would land in the middle of the shell prompt.
+if (args[0] !== 'skill' && args[0] !== '--get-yargs-completions') {
+	refreshAgentSkill()
+}
+
+run(args)

@@ -3,7 +3,7 @@ name: qas-cli
 description: CLI tool for uploading JUnit XML, Playwright JSON, and Allure test results to QA Sphere, and accessing the full QA Sphere public API (projects, runs, test cases, results, folders, milestones, tags, and more).
 metadata:
   author: Hypersequent
-  version: '0.5.0'
+  version: '0.11.0'
 ---
 
 # qas-cli
@@ -35,7 +35,7 @@ qasphere auth status     # Show current authentication status and token validity
 qasphere auth logout     # Clear stored credentials
 ```
 
-`auth login` prompts for a team name, opens a browser for authorization, and stores OAuth tokens persistently. Requires an interactive terminal (TTY). Tokens are auto-refreshed when they expire (within 5 minutes of expiry).
+`auth login` prompts for a team name, opens a browser for authorization, and stores OAuth tokens persistently. Requires an interactive terminal (TTY). Tokens are auto-refreshed when they expire (within 5 minutes of expiry). Afterwards it offers to install this skill for detected coding agents.
 
 Credentials are stored in the system keyring (`qasphere-cli` service) when available, with fallback to `~/.config/qasphere/credentials.json` (mode `0600`).
 
@@ -60,6 +60,16 @@ QAS_URL=https://qas.eu1.qasphere.com
 ```
 
 If credentials are missing, the CLI prints a setup guide to stderr and exits with code 1.
+
+## Skill Commands
+
+```bash
+qasphere skill install     # Install or update this skill for every detected coding agent
+qasphere skill status      # Show the installed skill version for each agent
+qasphere skill uninstall   # Remove this skill from every agent
+```
+
+`install` takes `--agent <id>` (repeatable) to target specific agents. This skill's `metadata.version` matches the CLI version; the CLI updates an older installed copy on its next run and reports it on stderr. If the update fails (e.g. in a sandbox), it warns at most once a day: ask the user to run `qasphere skill install` outside the sandbox.
 
 ## Upload Commands
 
@@ -298,7 +308,7 @@ Commands with JSON body mode (e.g., `runs create`, `test-cases create`, `results
 Field options are merged with `--body`/`--body-file` (field options take precedence). The body must always be valid JSON.
 
 Each subcommand accepts `-h` to show its full signature, all options, examples, and a link to API documentation.
-When fetching the online documentation, the link URL can be appended with `.md` to view it in markdown. Use the markdown version first before falling back to the original URL if the endpoint returned a >= 400 status.
+When fetching the online documentation, view it in markdown by dropping the trailing slash and any `#` fragment from the link and appending `.md` (e.g. `https://qasphere.com/docs/api/run/#list-runs` → `https://qasphere.com/docs/api/run.md`). Use the markdown version first before falling back to the original URL if the endpoint returned a >= 400 status.
 
 ## Common Workflows
 
