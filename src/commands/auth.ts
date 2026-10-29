@@ -13,6 +13,7 @@ import {
 	type CredentialSource,
 } from '../utils/credentials'
 import { createApi } from '../api'
+import { offerSkillInstall } from './skill'
 import {
 	checkTenant,
 	requestDeviceCode,
@@ -247,6 +248,7 @@ export const authCommand: CommandModule = {
 				handler: async () => {
 					ensureInteractive()
 					await handleDeviceLogin()
+					await offerSkillInstall()
 				},
 			})
 			.command({
