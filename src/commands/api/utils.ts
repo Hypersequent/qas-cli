@@ -18,7 +18,7 @@ export function printJson(data: unknown): void {
 }
 
 export const apiDocsEpilog = (resource: string, hash?: string) =>
-	`API documentation: https://docs.qasphere.com/api/${resource}${hash ? `#${hash}` : ''}`
+	`API documentation: https://qasphere.com/docs/api/${resource}/${hash ? `#${hash}` : ''}`
 
 export interface ArgumentValidationIssue {
 	argument: string

@@ -10,6 +10,15 @@ export function ensureInteractive(): void {
 	}
 }
 
+export function isInteractive(): boolean {
+	return Boolean(process.stdin.isTTY && process.stdout.isTTY) && !process.env.CI
+}
+
+/** Asks a yes/no question; an empty answer means yes. */
+export async function confirm(question: string): Promise<boolean> {
+	return ['', 'y', 'yes'].includes((await prompt(question)).toLowerCase())
+}
+
 export function prompt(question: string): Promise<string> {
 	const rl = createInterface({
 		input: process.stdin,

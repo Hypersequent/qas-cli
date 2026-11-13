@@ -19,7 +19,7 @@ function tryReadPackageJson(path: string): string | null {
 	return null
 }
 
-function getVersion(): string {
+function findPackage(): { root: string; version: string } | null {
 	try {
 		const __filename = fileURLToPath(import.meta.url)
 		let currentDir = dirname(__filename)
@@ -27,7 +27,7 @@ function getVersion(): string {
 		for (let i = 0; i < 5; i++) {
 			const packagePath = join(currentDir, 'package.json')
 			const version = tryReadPackageJson(packagePath)
-			if (version) return version
+			if (version) return { root: currentDir, version }
 
 			const parentDir = dirname(currentDir)
 			if (parentDir === currentDir) break // Reached root
@@ -37,7 +37,12 @@ function getVersion(): string {
 		// fileURLToPath might fail in some environments
 	}
 
-	return FALLBACK_VERSION
+	return null
 }
 
-export const CLI_VERSION = getVersion()
+const pkg = findPackage()
+
+export const CLI_VERSION = pkg?.version ?? FALLBACK_VERSION
+
+// Also holds the bundled skills/ directory
+export const PACKAGE_ROOT = pkg?.root ?? null
