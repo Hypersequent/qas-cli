@@ -1,6 +1,7 @@
 import type { Argv, CommandModule, Options } from 'yargs'
+import { Parser } from 'yargs/helpers'
 import { executeCommand } from './executor'
-import { formatApiError } from './utils'
+import { formatApiError, isCustomFieldOption } from './utils'
 import type { ApiEndpointSpec, ApiFieldSpec, ApiPathParamSpec, ApiQueryOptionSpec } from './types'
 
 interface CommandNode {
@@ -61,6 +62,37 @@ function buildOptions(specs: (ApiQueryOptionSpec | ApiFieldSpec)[]): Record<stri
 	return options
 }
 
+interface YargsOptions {
+	key: Record<string, unknown>
+	alias: Record<string, string[]>
+}
+
+/**
+ * Lets a command take --cf-<system name> options. Strict mode would reject them as unknown, so the
+ * command turns it off and rejects other unknown arguments itself, with strict mode's message.
+ */
+function allowCustomFieldOptions(yargs: Argv, spec: ApiEndpointSpec): void {
+	// Custom field values are text: "007" must not become 7. Number options still parse.
+	yargs.strict(false).parserConfiguration({ 'parse-numbers': false })
+	yargs.check((argv) => {
+		// Missing from yargs' types; it lists every option the command takes, global ones included.
+		const { key, alias } = (yargs as unknown as { getOptions(): YargsOptions }).getOptions()
+		const custom = Object.keys(argv).filter(isCustomFieldOption)
+		// yargs adds a camelCase copy of each option given. A camelCase spelling of a --cf-* option
+		// (--cfAutomation) has no --cf-* original, so it is rejected rather than silently dropped.
+		const known = new Set(['_', '$0'])
+		for (const name of [...Object.keys(key), ...Object.values(alias).flat(), ...custom]) {
+			known.add(name).add(Parser.camelCase(name))
+		}
+		const unknown = [
+			...argv._.slice(spec.commandPath.length + 1).map(String),
+			...Object.keys(argv).filter((name) => !known.has(name)),
+		]
+		if (unknown.length === 0) return true
+		return `Unknown argument${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`
+	})
+}
+
 /**
  * Creates a yargs CommandModule for a leaf node (actual endpoint).
  */
@@ -99,6 +131,10 @@ function createEndpointCommand(spec: ApiEndpointSpec): CommandModule {
 						describe: 'Path to file to upload',
 					},
 				})
+			}
+
+			if (spec.customFieldFilters) {
+				allowCustomFieldOptions(yargs, spec)
 			}
 
 			if (spec.check) {

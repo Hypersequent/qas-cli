@@ -4,6 +4,7 @@ import { createApi } from '../../api/index'
 import {
 	ArgumentValidationError,
 	type ArgumentValidationIssue,
+	collectCustomFieldFilters,
 	collectFieldValues,
 	collectPathParamValues,
 	collectQueryValues,
@@ -93,6 +94,9 @@ export async function executeCommand(
 	}
 	const transformQuery = spec.transformQuery ?? kebabToCamelCaseKeys
 	const query = transformQuery(rawQuery)
+	if (spec.customFieldFilters) {
+		query.customFields = collectCustomFieldFilters(args)
+	}
 
 	// 4. Connect to API (lazy auth resolution)
 	const auth = await resolveAuth()
