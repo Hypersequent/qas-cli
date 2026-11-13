@@ -1,14 +1,17 @@
 import { z } from 'zod'
-import { ResourceId, validateRequest } from './schemas'
+import { PaginatedResponse, ResourceId, paginationParams, validateRequest } from './schemas'
 import { appendSearchParams, jsonResponse, withJson } from './utils'
 
 export interface Milestone {
 	id: number
 	title: string
-	archived: boolean
+	createdAt: string
+	updatedAt: string
+	archivedAt: string | null
 }
 
 export const ListMilestonesRequestSchema = z.object({
+	...paginationParams,
 	archived: z.boolean().optional(),
 })
 
@@ -29,10 +32,8 @@ export const createMilestoneApi = (fetcher: typeof fetch) => {
 		list: async (projectCode: ResourceId, params?: ListMilestonesRequest) => {
 			const validated = params ? validateRequest(params, ListMilestonesRequestSchema) : {}
 			return fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/milestone`, validated)
-			)
-				.then((r) => jsonResponse<{ milestones: Milestone[] }>(r))
-				.then((r) => r.milestones)
+				appendSearchParams(`/api/public/v0/project/${projectCode}/milestone/paginated`, validated)
+			).then((r) => jsonResponse<PaginatedResponse<Milestone>>(r))
 		},
 
 		create: async (projectCode: ResourceId, req: CreateMilestoneRequest) => {

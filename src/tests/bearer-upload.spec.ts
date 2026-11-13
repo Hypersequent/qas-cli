@@ -44,26 +44,42 @@ const server = setupServer(
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
 		return HttpResponse.json({ exists: true })
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/folders`, ({ request }) => {
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/folder/paginated`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 50 })
+		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 1000 })
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase`, ({ request }) => {
+	http.get(`${baseURL}/api/public/v0/project/${projectCode}/tcase/paginated`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 50 })
+		return HttpResponse.json({ data: [], total: 0, offset: 0, limit: 1000 })
 	}),
-	http.post(`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ data: runTestCases, total: runTestCases.length })
-	}),
+	http.post(
+		`${baseURL}/api/public/v0/project/${projectCode}/tcase/seq/paginated`,
+		({ request }) => {
+			expect(request.headers.get('Authorization')).toEqual(expectedAuth)
+			return HttpResponse.json({
+				data: runTestCases,
+				total: runTestCases.length,
+				offset: 0,
+				limit: 1000,
+			})
+		}
+	),
 	http.post(`${baseURL}/api/public/v0/project/${projectCode}/run`, ({ request }) => {
 		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
 		return HttpResponse.json({ id: parseInt(runId) })
 	}),
-	http.get(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase`, ({ request }) => {
-		expect(request.headers.get('Authorization')).toEqual(expectedAuth)
-		return HttpResponse.json({ tcases: runTestCases })
-	}),
+	http.get(
+		`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/tcase/paginated`,
+		({ request }) => {
+			expect(request.headers.get('Authorization')).toEqual(expectedAuth)
+			return HttpResponse.json({
+				data: runTestCases,
+				total: runTestCases.length,
+				offset: 0,
+				limit: 1000,
+			})
+		}
+	),
 	http.post(
 		new RegExp(`${baseURL}/api/public/v0/project/${projectCode}/run/${runId}/result/batch`),
 		({ request }) => {

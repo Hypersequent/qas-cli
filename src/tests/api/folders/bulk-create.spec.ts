@@ -19,7 +19,7 @@ describe('mocked', () => {
 	let lastParams: PathParams = {}
 	useMockServer(
 		http.post(
-			`${baseURL}/api/public/v0/project/:projectCode/tcase/folder/bulk`,
+			`${baseURL}/api/public/v0/project/:projectCode/folder/upsert`,
 			async ({ request, params }) => {
 				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 				lastParams = params
@@ -57,6 +57,16 @@ describe('mocked', () => {
 			h.testBodyFile(validBody, validBody, requiredArgs)
 			h.testInvalidJson(requiredArgs)
 			h.testInvalidBody({ folders: [] }, /Must contain at least one folder/, requiredArgs)
+			h.testInvalidBody(
+				{ folders: Array.from({ length: 1001 }, (_, i) => ({ path: [`Folder ${i}`] })) },
+				/Must contain at most 1000 folders/,
+				requiredArgs
+			)
+			h.testInvalidBody(
+				{ folders: [{ path: ['Suite', 'x'.repeat(256)] }] },
+				/folder names must be at most 255 characters/,
+				requiredArgs
+			)
 		}
 	)
 })

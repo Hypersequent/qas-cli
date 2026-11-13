@@ -38,12 +38,24 @@ describe('mocked', () => {
 		expect(result).toEqual({ count: 42 })
 	})
 
-	test('passes recursive param as query parameter', async ({ project }) => {
-		await runCommand('--project-code', project.code, '--folders', '1,2', '--recursive')
+	test('passes filters as query parameters', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--folders',
+			'1,2',
+			'--recursive',
+			'--search',
+			'login',
+			'--types',
+			'standalone,template'
+		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastUrl).not.toBeNull()
 		expect(lastUrl!.searchParams.get('recursive')).toEqual('true')
 		expect(lastUrl!.searchParams.getAll('folders')).toEqual(['1', '2'])
+		expect(lastUrl!.searchParams.get('search')).toEqual('login')
+		expect(lastUrl!.searchParams.getAll('types')).toEqual(['standalone', 'template'])
 	})
 })
 

@@ -62,7 +62,7 @@ describe('mocked', () => {
 
 	test('creates a test plan with individual fields', async ({ project }) => {
 		const runs = JSON.stringify([
-			{ title: 'Run 1', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] },
+			{ title: 'Run 1', type: 'static', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] },
 		])
 		const result = await runCommand(
 			'--project-code',
@@ -81,7 +81,9 @@ describe('mocked', () => {
 			title: 'My Plan',
 			description: 'A test plan',
 			milestoneId: 5,
-			runs: [{ title: 'Run 1', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] }],
+			runs: [
+				{ title: 'Run 1', type: 'static', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] },
+			],
 		})
 		expect(result).toEqual({ id: 1 })
 	})
