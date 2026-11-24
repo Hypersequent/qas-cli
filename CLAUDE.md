@@ -30,8 +30,10 @@ Node.js compatibility tests: `cd mnode-test && ./docker-test.sh` (requires Docke
 
 ### Entry Point & CLI Framework
 
-- `src/bin/qasphere.ts` — Entry point (`#!/usr/bin/env node`). Validates Node version, delegates to `run()`.
-- `src/commands/main.ts` — Yargs setup. Registers three upload commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of `ResultUploadCommandModule`, plus the `api` command.
+- `src/bin/qasphere.ts` — Entry point (`#!/usr/bin/env node`). Validates Node version, updates an outdated installed agent skill (except for `skill` commands and tab completion), delegates to `run()`.
+- `src/commands/main.ts` — Yargs setup. Registers three upload commands (`junit-upload`, `playwright-json-upload`, `allure-upload`) as instances of `ResultUploadCommandModule`, plus the `auth`, `api` and `skill` commands.
+- `src/commands/skill.ts` — `skill install|status|uninstall` and the skill offer at the end of `auth login`. The file operations live in `src/utils/skill.ts`: the agent table (mirroring the global paths of [vercel-labs/skills](https://github.com/vercel-labs/skills)), one real copy in `~/.agents/skills/qas-cli/` symlinked into other agents' skill directories (copy fallback), and the version check against `CLI_VERSION`.
+- `skills/qas-cli/SKILL.md` — The bundled agent skill, shipped in the npm package. Its `metadata.version` must equal the `package.json` version; `src/tests/skill.spec.ts` fails otherwise, so bump both together.
 - `src/commands/resultUpload.ts` — `ResultUploadCommandModule` defines CLI options shared by both commands. Loads env vars, then delegates to `ResultUploadCommandHandler`.
 
 ### Core Upload Pipeline (src/utils/result-upload/)
@@ -79,7 +81,7 @@ The `api` command provides direct programmatic access to the QA Sphere public AP
 - `main.ts` — Registers the `api` command, delegates to `buildCommandsFromSpecs()`
 - `utils.ts` — Shared helpers: `printJson()`, `apiDocsEpilog()`, `formatApiError()`, `ArgumentValidationError`, `kebabToCamelCase()`, body parsing (`parseBodyInput`, `mergeBodyWithFields`), validation (`validateFieldValues`, `validateOptionValues`), collection helpers (`collectFieldValues`, `collectPathParamValues`, `collectQueryValues`), and `handleApiValidationError()` for reformatting API errors into CLI argument names
 
-Important note: Online documentation is available at https://docs.qasphere.com. Most leaf pages have a markdown version available by appending `.md` in the URL. Use the markdown version before falling back to the original URL if the markdown version returns >= 400 status.
+Important note: Online documentation is available at https://qasphere.com/docs. Most leaf pages have a markdown version: drop the trailing slash and any `#` fragment from the URL and append `.md` (e.g. `https://qasphere.com/docs/api/run/#list-runs` → `https://qasphere.com/docs/api/run.md`). Use the markdown version before falling back to the original URL if the markdown version returns >= 400 status.
 
 **Key design patterns**:
 
