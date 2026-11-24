@@ -6,13 +6,12 @@ import {
 	sortFieldParam,
 	sortOrderParam,
 	offsetParam,
-	pageParam,
 	limitParam,
 	type SortOrder,
 } from '../../api/schemas'
 import type { ApiFieldSpec, ApiPathParamSpec } from './types'
 
-export { sortFieldParam, sortOrderParam, offsetParam, pageParam, limitParam, type SortOrder }
+export { sortFieldParam, sortOrderParam, offsetParam, limitParam, type SortOrder }
 
 export function printJson(data: unknown): void {
 	console.log(JSON.stringify(data, null, 2))

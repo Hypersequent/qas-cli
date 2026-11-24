@@ -1,11 +1,10 @@
 import { z } from 'zod'
 import {
 	MessageResponse,
+	PaginatedResponse,
 	ResourceId,
-	limitParam,
+	paginationParams,
 	priorityEnum,
-	sortFieldParam,
-	sortOrderParam,
 	validateRequest,
 } from './schemas'
 import type { Folder } from './folders'
@@ -20,7 +19,7 @@ export interface RunTCase {
 	title: string
 	priority: string
 	status: string
-	folder: Folder
+	folder?: Folder
 }
 
 export const QueryPlanSchema = z
@@ -78,6 +77,7 @@ export const CreateRunRequestSchema = z
 		milestoneId: z.number().int().positive().optional(),
 		configurationId: z.string().optional(),
 		assignmentId: z.number().int().positive().optional(),
+		isAutomated: z.boolean().optional(),
 		queryPlans: QueryPlansSchema,
 	})
 	.superRefine(validateQueryPlans)
@@ -89,9 +89,10 @@ export interface CreateRunResponse {
 }
 
 export const ListRunsRequestSchema = z.object({
+	...paginationParams,
 	closed: z.boolean().optional(),
-	milestoneIds: z.array(z.number().int().positive()).optional(),
-	limit: limitParam,
+	milestoneIds: z.array(z.number().int().nonnegative()).optional(),
+	include: z.array(z.string()).optional(),
 })
 
 export type ListRunsRequest = z.infer<typeof ListRunsRequestSchema>
@@ -101,7 +102,8 @@ export interface Run {
 	title: string
 	description?: string
 	type: string
-	closed: boolean
+	closedAt: string | null
+	statusCounts?: Record<string, number>
 }
 
 export const CreateRunLogRequestSchema = z.object({
@@ -119,6 +121,7 @@ export const CloneRunRequestSchema = z.object({
 	description: z.string().max(512, 'description must be at most 512 characters').optional(),
 	milestoneId: z.number().int().positive().optional(),
 	assignmentId: z.number().int().positive().optional(),
+	isAutomated: z.boolean().optional(),
 })
 
 export type CloneRunRequest = z.infer<typeof CloneRunRequestSchema>
@@ -128,12 +131,11 @@ export interface CloneRunResponse {
 }
 
 export const ListRunTCasesRequestSchema = z.object({
+	...paginationParams,
 	search: z.string().optional(),
 	tags: z.array(z.number().int().positive()).optional(),
 	priorities: z.array(priorityEnum).optional(),
-	include: z.string().optional(),
-	sortField: sortFieldParam,
-	sortOrder: sortOrderParam,
+	include: z.array(z.string()).optional(),
 })
 
 export type ListRunTCasesRequest = z.infer<typeof ListRunTCasesRequestSchema>
@@ -145,18 +147,15 @@ export const RunSchema = z
 		type: z.enum(['static', 'static_struct', 'live']),
 		configurationId: z.string().optional(),
 		assignmentId: z.number().int().positive().optional(),
+		isAutomated: z.boolean().optional(),
 		queryPlans: z.array(QueryPlanSchema).min(1),
 	})
 	.superRefine(validateQueryPlans)
 
 export const createRunApi = (fetcher: typeof fetch) => {
 	fetcher = withJson(fetcher)
-	return {
-		getTCases: (projectCode: ResourceId, runId: ResourceId) =>
-			fetcher(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`)
-				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-				.then((r) => r.tcases),
 
+	return {
 		create: async (projectCode: ResourceId, req: CreateRunRequest) => {
 			const validated = validateRequest(req, CreateRunRequestSchema)
 			return fetcher(`/api/public/v0/project/${projectCode}/run`, {
@@ -167,9 +166,9 @@ export const createRunApi = (fetcher: typeof fetch) => {
 
 		list: async (projectCode: ResourceId, params?: ListRunsRequest) => {
 			const validated = params ? validateRequest(params, ListRunsRequestSchema) : {}
-			return fetcher(appendSearchParams(`/api/public/v0/project/${projectCode}/run`, validated))
-				.then((r) => jsonResponse<{ runs: Run[] }>(r))
-				.then((r) => r.runs)
+			return fetcher(
+				appendSearchParams(`/api/public/v0/project/${projectCode}/run/paginated`, validated)
+			).then((r) => jsonResponse<PaginatedResponse<Run>>(r))
 		},
 
 		clone: async (projectCode: ResourceId, req: CloneRunRequest) => {
@@ -200,10 +199,11 @@ export const createRunApi = (fetcher: typeof fetch) => {
 		) => {
 			const validated = params ? validateRequest(params, ListRunTCasesRequestSchema) : {}
 			return fetcher(
-				appendSearchParams(`/api/public/v0/project/${projectCode}/run/${runId}/tcase`, validated)
-			)
-				.then((r) => jsonResponse<{ tcases: RunTCase[] }>(r))
-				.then((r) => r.tcases)
+				appendSearchParams(
+					`/api/public/v0/project/${projectCode}/run/${runId}/tcase/paginated`,
+					validated
+				)
+			).then((r) => jsonResponse<PaginatedResponse<RunTCase>>(r))
 		},
 
 		getTCase: (projectCode: ResourceId, runId: ResourceId, tcaseId: ResourceId) =>

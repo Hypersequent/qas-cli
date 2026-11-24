@@ -14,17 +14,26 @@ const runCommand = <T = unknown>(...args: string[]) => runCli<T>('api', 'project
 describe('mocked', () => {
 	const mockProject = { id: 'p1', code: 'PRJ', title: 'Project 1' }
 
+	let lastSearchParams: URLSearchParams | null = null
+
 	useMockServer(
 		http.get(`${baseURL}/api/public/v0/project/:codeOrId`, ({ params, request }) => {
 			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
 			expect(params['codeOrId']).toEqual('PRJ')
+			lastSearchParams = new URL(request.url).searchParams
 			return HttpResponse.json(mockProject)
 		})
 	)
 
 	test('gets a project by code', async () => {
 		const result = await runCommand('--project-code', 'PRJ')
+		expect(lastSearchParams?.toString()).toBe('')
 		expect(result).toEqual(mockProject)
+	})
+
+	test('passes include as a query parameter', async () => {
+		await runCommand('--project-code', 'PRJ', '--include', 'stats')
+		expect(lastSearchParams?.getAll('include')).toEqual(['stats'])
 	})
 })
 

@@ -15,7 +15,13 @@ interface ApiOptionBase {
 	type: ApiValueType
 	describe: string
 	schema?: ZodType
+	/** Allowed values, enforced by yargs: any other value is rejected before the request. */
 	choices?: readonly string[]
+	/**
+	 * Allowed values, only listed in the help like `choices`. Not enforced, so the API decides
+	 * what it accepts and newly supported values work without a CLI update.
+	 */
+	helpChoices?: readonly string[]
 	yargsOption?: Record<string, unknown>
 }
 

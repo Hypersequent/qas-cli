@@ -96,7 +96,7 @@ describe('mocked', () => {
 			})
 		})
 
-		test('includes optional milestone-id, configuration-id, and assignment-id', async ({
+		test('includes optional milestone-id, configuration-id, assignment-id and is-automated', async ({
 			project,
 		}) => {
 			await runCommand(
@@ -112,6 +112,8 @@ describe('mocked', () => {
 				'cfg-1',
 				'--assignment-id',
 				'10',
+				'--is-automated',
+				'false',
 				'--query-plans',
 				'[{"tcaseIds": ["abc"]}]'
 			)
@@ -123,6 +125,7 @@ describe('mocked', () => {
 				milestoneId: 5,
 				configurationId: 'cfg-1',
 				assignmentId: 10,
+				isAutomated: false,
 				queryPlans: [{ tcaseIds: ['abc'] }],
 			})
 		})

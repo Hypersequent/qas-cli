@@ -1,5 +1,6 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { afterEach, describe, expect } from 'vitest'
+import type { PaginatedResponse } from '../../../api/schemas'
 import type { SharedStep } from '../../../api/shared-steps'
 import {
 	test,
@@ -19,11 +20,14 @@ describe('mocked', () => {
 	let lastParams: PathParams = {}
 
 	useMockServer(
-		http.get(`${baseURL}/api/public/v0/project/:projectCode/shared-step`, ({ request, params }) => {
-			expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
-			lastParams = params
-			return HttpResponse.json({ sharedSteps: mockData })
-		})
+		http.get(
+			`${baseURL}/api/public/v0/project/:projectCode/shared-step/paginated`,
+			({ request, params }) => {
+				expect(request.headers.get('Authorization')).toEqual(`Bearer ${token}`)
+				lastParams = params
+				return HttpResponse.json({ total: 1, offset: 0, limit: 100, data: mockData })
+			}
+		)
 	)
 
 	afterEach(() => {
@@ -33,7 +37,7 @@ describe('mocked', () => {
 	test('lists shared steps', async ({ project }) => {
 		const result = await runCommand('--project-code', project.code)
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(result).toEqual(mockData)
+		expect(result).toEqual({ total: 1, offset: 0, limit: 100, data: mockData })
 	})
 })
 
@@ -43,18 +47,18 @@ describe('validation errors', () => {
 
 describe('live', { tags: ['live'] }, () => {
 	test('lists shared steps', async ({ project }) => {
-		const result = await runCli<SharedStep[]>(
+		const result = await runCli<PaginatedResponse<SharedStep>>(
 			'api',
 			'shared-steps',
 			'list',
 			'--project-code',
 			project.code
 		)
-		expect(Array.isArray(result)).toBe(true)
+		expect(Array.isArray(result.data)).toBe(true)
 	})
 
 	test('lists shared steps with include', async ({ project }) => {
-		const result = await runCli<SharedStep[]>(
+		const result = await runCli<PaginatedResponse<SharedStep>>(
 			'api',
 			'shared-steps',
 			'list',
@@ -63,8 +67,8 @@ describe('live', { tags: ['live'] }, () => {
 			'--include',
 			'tcaseCount'
 		)
-		expect(Array.isArray(result)).toBe(true)
-		for (const step of result) {
+		expect(Array.isArray(result.data)).toBe(true)
+		for (const step of result.data) {
 			expect(step).toHaveProperty('tcaseCount')
 			expect(typeof step.tcaseCount).toBe('number')
 		}

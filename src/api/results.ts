@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { ResourceId, validateRequest } from './schemas'
 import { jsonResponse, withJson } from './utils'
 
-const resultStatusEnum = z.enum([
+export const resultStatusEnum = z.enum([
 	'passed',
 	'failed',
 	'blocked',
@@ -27,6 +27,7 @@ export const CreateResultsRequestItemSchema = z.object({
 	comment: z.string().optional(),
 	timeTaken: z.number().int().nonnegative().nullable().optional(),
 	links: resultLinksSchema.optional(),
+	isAutomated: z.boolean().optional(),
 })
 
 export type CreateResultsRequestItem = z.infer<typeof CreateResultsRequestItemSchema>
@@ -42,6 +43,7 @@ export const CreateResultRequestSchema = z.object({
 	comment: z.string().optional(),
 	timeTaken: z.number().int().nonnegative().nullable().optional(),
 	links: resultLinksSchema.optional(),
+	isAutomated: z.boolean().optional(),
 })
 
 export type CreateResultRequest = z.infer<typeof CreateResultRequestSchema>

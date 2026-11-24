@@ -44,10 +44,12 @@ describe('mocked', () => {
 			'--run-id',
 			'42',
 			'--title',
-			'Cloned Run'
+			'Cloned Run',
+			'--is-automated',
+			'false'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({ runId: 42, title: 'Cloned Run' })
+		expect(lastRequest).toEqual({ runId: 42, title: 'Cloned Run', isAutomated: false })
 		expect(result).toEqual({ id: 99 })
 	})
 

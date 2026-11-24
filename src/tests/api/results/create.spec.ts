@@ -2,6 +2,7 @@ import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
 import type { CreateResultResponse } from '../../../api/results'
 import type { RunTCase } from '../../../api/runs'
+import type { PaginatedResponse } from '../../../api/schemas'
 import {
 	test,
 	baseURL,
@@ -92,12 +93,19 @@ describe('mocked', () => {
 			'--comment',
 			'Bug found',
 			'--time-taken',
-			'5000'
+			'5000',
+			'--is-automated',
+			'false'
 		)
 		expect(lastParams.projectCode).toBe('PRJ')
 		expect(lastParams.runId).toBe('1')
 		expect(lastParams.tcaseId).toBe('tc1')
-		expect(lastRequest).toEqual({ status: 'failed', comment: 'Bug found', timeTaken: 5000 })
+		expect(lastRequest).toEqual({
+			status: 'failed',
+			comment: 'Bug found',
+			timeTaken: 5000,
+			isAutomated: false,
+		})
 	})
 
 	const requiredArgs = ['--project-code', 'PRJ', '--run-id', '1', '--tcase-id', 'tc1']
@@ -145,7 +153,7 @@ test('creates a result on live server', { tags: ['live'] }, async ({ project }) 
 	const folderId = folder.ids[0][0]
 	const tcase = await createTCase(project.code, folderId)
 	const runObj = await createRun(project.code, [tcase.id])
-	const tcases = await runCli<RunTCase[]>(
+	const tcases = await runCli<PaginatedResponse<RunTCase>>(
 		'api',
 		'runs',
 		'test-cases',
@@ -155,7 +163,7 @@ test('creates a result on live server', { tags: ['live'] }, async ({ project }) 
 		'--run-id',
 		String(runObj.id)
 	)
-	const tcaseId = tcases[0].id
+	const tcaseId = tcases.data[0].id
 	const result = await runCli<CreateResultResponse>(
 		'api',
 		'results',

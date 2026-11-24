@@ -12,7 +12,7 @@ const help = {
 	title: 'Test plan title, 1-255 characters.',
 	description: 'Optional description for the test plan.',
 	'milestone-id': 'ID of the milestone to associate with this test plan.',
-	runs: `JSON array of run objects.\nEach run needs "title", "type", and "queryPlans".\nExample: '[{"title": "Run 1", "type": "static", "queryPlans": [{"tcaseIds": ["abc"]}]}]'`,
+	runs: `JSON array of run objects.\nEach run needs "title", "type", and "queryPlans". Set "isAutomated": false for a run people execute manually.\nExample: '[{"title": "Run 1", "type": "static", "queryPlans": [{"tcaseIds": ["abc"]}]}]'`,
 	create: {
 		describe: 'Create a new test plan.',
 		epilog: apiDocsEpilog('plan', 'create-new-test-plan'),

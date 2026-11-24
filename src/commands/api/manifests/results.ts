@@ -25,8 +25,10 @@ const help = {
 	status: 'Result status: passed, failed, blocked, skipped, open, custom1-4.',
 	comment: 'Result comment (supports HTML).',
 	'time-taken': 'Time taken in milliseconds.',
+	'is-automated':
+		'Whether an automated test produced the result (defaults to true). Pass false for a result a person reported.',
 	links: `JSON array of result links. Each link has "text" and "url" fields.\nExample: '[{"text": "Log", "url": "https://ci.example.com/123"}]'`,
-	items: `JSON array of result items for batch creation.\nEach item has: tcaseId (string), status (string), comment? (string, supports HTML), timeTaken? (number|null), links? (array).\nExample: '[{"tcaseId": "abc", "status": "passed"}]'`,
+	items: `JSON array of result items for batch creation.\nEach item has: tcaseId (string), status (string), comment? (string, supports HTML), timeTaken? (number|null), links? (array), isAutomated? (boolean, false for a result a person reported).\nExample: '[{"tcaseId": "abc", "status": "passed"}]'`,
 	create: {
 		describe: 'Create a result for a test case in a run.',
 		epilog: apiDocsEpilog('result', 'add-result'),
@@ -34,6 +36,11 @@ const help = {
 			{
 				usage: '$0 api results create --project-code PRJ --run-id 1 --tcase-id abc --status passed',
 				description: 'Create a passed result',
+			},
+			{
+				usage:
+					'$0 api results create --project-code PRJ --run-id 1 --tcase-id abc --status failed --is-automated false',
+				description: 'Record a failure a person found while testing',
 			},
 			{
 				usage:
@@ -94,6 +101,7 @@ const create: ApiEndpointSpec = {
 			describe: help['time-taken'],
 			schema: z.number().int().nonnegative(),
 		},
+		{ name: 'is-automated', type: 'boolean', describe: help['is-automated'] },
 		{
 			name: 'links',
 			type: 'string',
