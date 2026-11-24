@@ -74,8 +74,8 @@ describe('mocked', () => {
 				requiredArgs
 			)
 			h.testInvalidBody(
-				{ title: 'Log in', subSteps: [{ description: ' ' }, {}] },
-				/at least one sub-step must have a description, expected result or data/,
+				{ title: 'Log in', subSteps: [{ description: 'Open' }, { description: ' ' }] },
+				/subSteps\.1: a sub-step must have a description, expected result or data/,
 				requiredArgs
 			)
 		}

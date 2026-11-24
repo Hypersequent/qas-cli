@@ -195,16 +195,32 @@ export const appendSearchParams = <T extends object>(pathname: string, obj: T): 
 	return pathname
 }
 
-/** Reads every page of a paginated list, at the largest page size the API allows. */
-export const fetchAllPages = async <T>(
-	fetchPage: (page: { offset: number; limit: number }) => Promise<PaginatedResponse<T>>
-): Promise<{ total: number; data: T[] }> => {
-	const data: T[] = []
-	for (let offset = 0; ; offset += MAX_PAGE_SIZE) {
+type FetchPage<T> = (page: { offset: number; limit: number }) => Promise<PaginatedResponse<T>>
+
+/**
+ * Yields a paginated list page by page. The next offset is the number of rows read so far,
+ * not a multiple of the requested limit, so a server that returns shorter pages loses nothing.
+ */
+export async function* iteratePages<T>(fetchPage: FetchPage<T>): AsyncGenerator<T[], void> {
+	let offset = 0
+	while (true) {
 		const page = await fetchPage({ offset, limit: MAX_PAGE_SIZE })
-		data.push(...page.data)
-		if (page.data.length < MAX_PAGE_SIZE || data.length >= page.total) {
-			return { total: page.total, data }
+		if (page.data.length === 0) {
+			return
+		}
+		yield page.data
+		offset += page.data.length
+		if (offset >= page.total) {
+			return
 		}
 	}
+}
+
+/** Reads every page of a paginated list into one array. */
+export const fetchAllPages = async <T>(fetchPage: FetchPage<T>): Promise<T[]> => {
+	const data: T[] = []
+	for await (const page of iteratePages(fetchPage)) {
+		data.push(...page)
+	}
+	return data
 }

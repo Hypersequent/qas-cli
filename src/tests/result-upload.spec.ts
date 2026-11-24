@@ -1,6 +1,8 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { unlinkSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterAll, beforeAll, beforeEach, expect, test, describe, afterEach, vi } from 'vitest'
 import { run } from '../commands/main'
 import { PaginatedResponse } from '../api/schemas'
@@ -677,6 +679,111 @@ fileTypesWithAllure.forEach((fileType) => {
 				expect(numResultUploadCalls()).toBe(5) // 5 results total
 			})
 		})
+	})
+})
+
+describe('Test case creation that cannot complete', () => {
+	let existingMappingFiles: Set<string> | undefined = undefined
+	let reportDir = ''
+
+	// A JUnit report with one passing test for each name
+	const writeReport = (names: string[]) => {
+		const attrs = `tests="${names.length}" failures="0" skipped="0" errors="0" time="1"`
+		const testcases = names
+			.map((name) => `<testcase name="${name}" classname="generated" time="1"></testcase>`)
+			.join('\n')
+		const file = join(reportDir, 'report.xml')
+		writeFileSync(
+			file,
+			`<testsuites name="" ${attrs}><testsuite name="generated" ${attrs}>${testcases}</testsuite></testsuites>`
+		)
+		return file
+	}
+
+	const captureErrorOutput = () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+		return () => spy.mock.calls.map((c) => c.join(' ')).join('\n')
+	}
+
+	beforeEach(() => {
+		existingMappingFiles = getMappingFiles()
+		reportDir = mkdtempSync(join(tmpdir(), 'qas-upload-test-'))
+	})
+
+	afterEach(() => {
+		cleanupGeneratedMappingFiles(existingMappingFiles)
+		rmSync(reportDir, { recursive: true })
+		createTCasesResponse = null
+		createdTCaseTitles = []
+		vi.restoreAllMocks()
+	})
+
+	test('Should write the mapping file of the batches created before a failed one', async () => {
+		let numBatches = 0
+		server.use(
+			http.post(
+				`${baseURL}/api/public/v0/project/${projectCode}/tcase/batch`,
+				async ({ request }) => {
+					if (++numBatches > 1) {
+						return HttpResponse.json({ message: 'Could not create' }, { status: 400 })
+					}
+					const body = (await request.json()) as CreateTCasesRequest
+					return HttpResponse.json({
+						tcases: body.tcases.map((_, i) => ({ id: `new-${i}`, seq: 100 + i })),
+					})
+				}
+			)
+		)
+		const numCreateRunCalls = countCreateRunApiCalls()
+		// One more than a batch holds
+		const names = Array.from({ length: 1001 }, (_, i) => `Generated case ${i + 1}`)
+
+		await expect(
+			run(`junit-upload --project-code ${projectCode} --create-tcases ${writeReport(names)}`)
+		).rejects.toThrowError('Could not create')
+
+		expect(numBatches).toBe(2)
+		expect(numCreateRunCalls()).toBe(0)
+		const mappingLines = readNewMappingLines(existingMappingFiles)
+		expect(mappingLines).toHaveLength(1000)
+		expect(mappingLines[0]).toBe('TEST-100: Generated case 1')
+		expect(mappingLines[999]).toBe('TEST-1099: Generated case 1000')
+	})
+
+	const longName = `Long name ${'x'.repeat(600)}`
+
+	test('Should name a result whose name is too long for a test case title', async () => {
+		const numCreateTCasesCalls = countCreateTCasesApiCalls()
+		const errorOutput = captureErrorOutput()
+
+		await expect(
+			run(
+				`junit-upload --project-code ${projectCode} --create-tcases ${writeReport([longName, 'Short name'])}`
+			)
+		).rejects.toThrowError()
+
+		expect(numCreateTCasesCalls()).toBe(0)
+		expect(errorOutput()).toContain(
+			`Cannot create a test case for "${longName.slice(0, 80)}…" in ${join(reportDir, 'report.xml')}: title must be at most 511 characters (the name has 610)`
+		)
+		expect(errorOutput()).toContain('use --force to skip it')
+	})
+
+	test('Should skip a result whose name is too long with --force', async () => {
+		const numResultUploadCalls = countResultUploadApiCalls()
+		const errorOutput = captureErrorOutput()
+		createTCasesResponse = { tcases: [{ id: '6', seq: 6 }] }
+
+		await run(
+			`junit-upload --project-code ${projectCode} --create-tcases --force ${writeReport([longName, 'Short name'])}`
+		)
+
+		expect(createdTCaseTitles).toEqual(['Short name'])
+		expect(numResultUploadCalls()).toBe(1)
+		expect(errorOutput()).toContain('title must be at most 511 characters')
+		expect(errorOutput()).toContain('Skipping its result')
+		// Reported once, not again as a result that matches no test case
+		expect(errorOutput()).not.toContain('does not match any test cases')
 	})
 })
 

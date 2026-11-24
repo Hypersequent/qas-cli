@@ -64,11 +64,20 @@ export const intListSchema = z
 	.string()
 	.regex(/^\s*[1-9]\d*\s*(,\s*[1-9]\d*\s*)*$/, 'must be comma-separated positive integers')
 
-export const idListSchema = z
+/** Like `intListSchema`, for lists where 0 has a meaning. */
+export const nonNegativeIntListSchema = z
 	.string()
-	.regex(
-		/^\s*[a-zA-Z0-9_-]+\s*(,\s*[a-zA-Z0-9_-]+\s*)*$/,
-		'must be comma-separated IDs (letters, digits, dashes and underscores)'
+	.regex(/^\s*\d+\s*(,\s*\d+\s*)*$/, 'must be comma-separated non-negative integers')
+
+/**
+ * Test case references: IDs, sequence numbers or legacy IDs. A legacy ID comes from another
+ * tool, so any character is allowed in it. One that holds a comma needs --body.
+ */
+export const tcaseRefListSchema = z
+	.string()
+	.refine(
+		(value) => value.split(',').every((item) => item.trim() !== ''),
+		'must be comma-separated test case IDs, sequence numbers or legacy IDs, none of them empty'
 	)
 
 export const splitList = (value: unknown): unknown =>
@@ -83,3 +92,13 @@ export const splitIntList = (value: unknown): unknown => {
 	const items = splitList(value)
 	return Array.isArray(items) ? items.map(Number) : items
 }
+
+/** Allows a JSON-body command to run when its required fields are set, or --body/--body-file is. */
+export const requireFieldsOrBody =
+	(...fields: string[]) =>
+	(argv: Record<string, unknown>): true | string =>
+		argv.body !== undefined ||
+		argv['body-file'] !== undefined ||
+		fields.every((f) => argv[f] !== undefined)
+			? true
+			: `Either --body, --body-file, or ${fields.map((f) => `--${f}`).join(' and ')} is required`

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { trashResourceTypes, type ListTrashRequest } from '../../../api/trash'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
-import { commonHelp, idListSchema, paginationOptions, projectCodeParam, splitList } from './utils'
+import { commonHelp, paginationOptions, projectCodeParam, splitList } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
 const help = {
@@ -40,6 +40,14 @@ const resourceTypesSchema = z.string().refine(
 	`must be comma-separated values of ${trashResourceTypes.join(', ')}`
 )
 
+// Checked here, before the request is built, so a bad ID is reported against --ids.
+const trashIdListSchema = z
+	.string()
+	.regex(
+		/^\s*[a-zA-Z0-9_-]{23}\s*(,\s*[a-zA-Z0-9_-]{23}\s*)*$/,
+		'must be comma-separated trash entry IDs, each 23 letters, digits, dashes or underscores'
+	)
+
 const list: ApiEndpointSpec = {
 	id: 'trash.list',
 	commandPath: ['trash', 'list'],
@@ -72,7 +80,15 @@ const restore: ApiEndpointSpec = {
 	describe: help.restore.describe,
 	bodyMode: 'json',
 	pathParams: [projectCodeParam],
-	fieldOptions: [{ name: 'ids', type: 'string', describe: help.ids, schema: idListSchema }],
+	fieldOptions: [
+		{
+			name: 'ids',
+			type: 'string',
+			describe: help.ids,
+			schema: trashIdListSchema,
+			bodyKey: 'deleteLogIds',
+		},
+	],
 	transformFields: (fields) => ({ deleteLogIds: splitList(fields.ids) }),
 	check: (argv) =>
 		argv.body !== undefined || argv['body-file'] !== undefined || argv.ids !== undefined

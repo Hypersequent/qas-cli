@@ -46,20 +46,25 @@ const subStepFields = {
 	data: z.array(z.unknown()).max(20, 'data must have at most 20 items').optional(),
 }
 
-const hasContent = (subSteps: { description?: string; expected?: string; data?: unknown[] }[]) =>
-	subSteps.some((s) => !!s.description?.trim() || !!s.expected?.trim() || (s.data?.length ?? 0) > 0)
+const hasContent = (s: { description?: string; expected?: string; data?: unknown[] }) =>
+	!!s.description?.trim() || !!s.expected?.trim() || (s.data?.length ?? 0) > 0
 
-const noContentMessage = 'at least one sub-step must have a description, expected result or data'
+const noContentMessage = 'a sub-step must have a description, expected result or data'
 
+// The API drops a sub-step without content, so each one must have some: dropped silently, an
+// update's `{ id }` entry would remove the sub-step it means to keep.
 export const CreateSubStepsSchema = z
-	.array(z.object(subStepFields))
+	.array(z.object(subStepFields).refine(hasContent, noContentMessage))
 	.min(1, 'subSteps must have at least one sub-step')
-	.refine(hasContent, noContentMessage)
 
-// The API drops sub-steps without content, those kept by id included.
+// A sub-step kept by id gets the content sent with it: fields left out are cleared.
 export const UpdateSubStepsSchema = z
-	.array(z.object({ id: z.number().int().positive().optional(), ...subStepFields }))
-	.refine(hasContent, noContentMessage)
+	.array(
+		z
+			.object({ id: z.number().int().positive().optional(), ...subStepFields })
+			.refine(hasContent, noContentMessage)
+	)
+	.min(1, 'subSteps must have at least one sub-step')
 
 export const CreateSharedStepRequestSchema = z.object({
 	title: sharedStepTitleSchema,

@@ -77,7 +77,7 @@ export const paginationParams = {
 export const httpUrlSchema = z
 	.url({ protocol: /^https?$/, error: 'must be an http or https URL' })
 	.max(255, 'must be at most 255 characters')
-export const linkSchema = z.object({
+export const linkSchema = z.strictObject({
 	text: z.string().min(1, 'text must not be empty').max(255, 'text must be at most 255 characters'),
 	url: httpUrlSchema,
 })

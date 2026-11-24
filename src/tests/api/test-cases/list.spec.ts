@@ -79,6 +79,28 @@ describe('mocked', () => {
 		expect(lastSearchParams!.get('search')).toBe('login')
 		expect(lastSearchParams!.getAll('folders')).toEqual(['1', '2'])
 	})
+
+	test('trims the items of comma-separated filters', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--folders',
+			'1, 2',
+			'--tags',
+			'3, 4',
+			'--priorities',
+			'low, high',
+			'--types',
+			'standalone, template',
+			'--include',
+			'steps, tags'
+		)
+		expect(lastSearchParams!.getAll('folders')).toEqual(['1', '2'])
+		expect(lastSearchParams!.getAll('tags')).toEqual(['3', '4'])
+		expect(lastSearchParams!.getAll('priorities')).toEqual(['low', 'high'])
+		expect(lastSearchParams!.getAll('types')).toEqual(['standalone', 'template'])
+		expect(lastSearchParams!.getAll('include')).toEqual(['steps', 'tags'])
+	})
 })
 
 describe('validation errors', () => {
@@ -88,6 +110,13 @@ describe('validation errors', () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--page', '1'),
 			/Unknown argument: page/
+		)
+	})
+
+	test.each(['folders', 'tags'])('rejects --%s with an empty item', async (option) => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', `--${option}`, '1,'),
+			new RegExp(`--${option}.*must be comma-separated positive integers`)
 		)
 	})
 

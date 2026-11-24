@@ -79,6 +79,14 @@ describe('validation errors', () => {
 			/--limit.*must be at most 1000/
 		)
 	})
+
+	// An empty item would become 0, which means runs with no milestone
+	test.each(['1,', '1, ,2', '', 'a'])('rejects --milestone-ids "%s"', async (value) => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', `--milestone-ids=${value}`),
+			/--milestone-ids.*must be comma-separated non-negative integers/
+		)
+	})
 })
 
 test('lists runs on live server', { tags: ['live'] }, async ({ project }) => {

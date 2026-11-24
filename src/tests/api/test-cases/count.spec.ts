@@ -9,6 +9,7 @@ import {
 	createFolder,
 	createTCase,
 	testRejectsInvalidIdentifier,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -48,7 +49,9 @@ describe('mocked', () => {
 			'--search',
 			'login',
 			'--types',
-			'standalone,template'
+			'standalone, template',
+			'--priorities',
+			'low, high'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastUrl).not.toBeNull()
@@ -56,11 +59,19 @@ describe('mocked', () => {
 		expect(lastUrl!.searchParams.getAll('folders')).toEqual(['1', '2'])
 		expect(lastUrl!.searchParams.get('search')).toEqual('login')
 		expect(lastUrl!.searchParams.getAll('types')).toEqual(['standalone', 'template'])
+		expect(lastUrl!.searchParams.getAll('priorities')).toEqual(['low', 'high'])
 	})
 })
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
+
+	test.each(['folders', 'tags'])('rejects --%s with an empty item', async (option) => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', `--${option}`, '1,'),
+			new RegExp(`--${option}.*must be comma-separated positive integers`)
+		)
+	})
 })
 
 test('counts test cases on live server', { tags: ['live'] }, async ({ project }) => {

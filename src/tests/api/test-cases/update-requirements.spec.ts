@@ -94,6 +94,21 @@ describe('validation errors', () => {
 		JSON.stringify([{ text: 'REQ-1' }]),
 	])
 
+	test('rejects a requirement with an unknown key', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--tcase-ids',
+					'12',
+					'--add',
+					JSON.stringify([{ id: 'r1', text: 'REQ-1' }])
+				),
+			/--add.*Unrecognized key: "id"/
+		)
+	})
+
 	test('rejects a requirement without text', async () => {
 		await expectValidationError(
 			() =>

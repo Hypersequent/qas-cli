@@ -10,7 +10,15 @@ import {
 } from '../../../api/runs'
 import { resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
-import { commonHelp, paginationOptions, projectCodeParam, splitList } from './utils'
+import {
+	commonHelp,
+	intListSchema,
+	nonNegativeIntListSchema,
+	paginationOptions,
+	projectCodeParam,
+	splitIntList,
+	splitList,
+} from './utils'
 import type { ApiEndpointSpec } from '../types'
 
 // CreateRunRequestSchema stays a ZodObject despite its .superRefine() refinement,
@@ -213,7 +221,12 @@ const list: ApiEndpointSpec = {
 	pathParams: [projectCodeParam],
 	queryOptions: [
 		{ name: 'closed', type: 'boolean', describe: help.closed },
-		{ name: 'milestone-ids', type: 'string', describe: help['milestone-ids'] },
+		{
+			name: 'milestone-ids',
+			type: 'string',
+			describe: help['milestone-ids'],
+			schema: nonNegativeIntListSchema,
+		},
 		{
 			name: 'include',
 			type: 'string',
@@ -224,10 +237,7 @@ const list: ApiEndpointSpec = {
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
-		milestoneIds:
-			typeof query['milestone-ids'] === 'string'
-				? query['milestone-ids'].split(',').map(Number)
-				: query['milestone-ids'],
+		milestoneIds: splitIntList(query['milestone-ids']),
 		include: splitList(query.include),
 	}),
 	epilog: help.list.epilog,
@@ -318,7 +328,7 @@ const tcasesList: ApiEndpointSpec = {
 	pathParams: [projectCodeParam, runIdParam],
 	queryOptions: [
 		{ name: 'search', type: 'string', describe: help.search },
-		{ name: 'tags', type: 'string', describe: help.tags },
+		{ name: 'tags', type: 'string', describe: help.tags, schema: intListSchema },
 		{ name: 'priorities', type: 'string', describe: help.priorities },
 		{
 			name: 'include',
@@ -330,9 +340,8 @@ const tcasesList: ApiEndpointSpec = {
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
-		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
-		priorities:
-			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
+		tags: splitIntList(query.tags),
+		priorities: splitList(query.priorities),
 		include: splitList(query.include),
 	}),
 	epilog: help.tcasesList.epilog,

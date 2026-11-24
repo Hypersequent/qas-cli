@@ -12,6 +12,7 @@ import {
 	createTCase,
 	createRun,
 	testRejectsInvalidIdentifier,
+	expectValidationError,
 } from '../test-helper'
 
 const runCommand = <T = unknown>(...args: string[]) =>
@@ -70,10 +71,32 @@ describe('mocked', () => {
 		expect(lastUrl!.searchParams.get('sortField')).toEqual('status')
 		expect(result).toEqual(mockResponse)
 	})
+
+	test('trims the items of comma-separated filters', async ({ project }) => {
+		await runCommand(
+			'--project-code',
+			project.code,
+			'--run-id',
+			'42',
+			'--tags',
+			'3, 4',
+			'--priorities',
+			'low, high'
+		)
+		expect(lastUrl!.searchParams.getAll('tags')).toEqual(['3', '4'])
+		expect(lastUrl!.searchParams.getAll('priorities')).toEqual(['low', 'high'])
+	})
 })
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code', ['--run-id', '1'])
+
+	test('rejects --tags with an empty item', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--run-id', '1', '--tags', '1,'),
+			/--tags.*must be comma-separated positive integers/
+		)
+	})
 })
 
 describe('live', { tags: ['live'] }, () => {

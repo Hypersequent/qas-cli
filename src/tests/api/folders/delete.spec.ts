@@ -114,8 +114,8 @@ describe('validation errors', () => {
 
 	test('rejects malformed tcase-ids', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--folder-ids', '4', '--tcase-ids', 'a/b'),
-			/--tcase-ids.*comma-separated IDs/
+			() => runCommand('--project-code', 'PRJ', '--folder-ids', '4', '--tcase-ids', '12,,13'),
+			/--tcase-ids.*none of them empty/
 		)
 	})
 })
