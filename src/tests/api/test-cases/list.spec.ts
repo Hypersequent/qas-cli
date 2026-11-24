@@ -71,23 +71,73 @@ describe('mocked', () => {
 			'--priorities',
 			'high',
 			'--search',
-			'login'
+			'login',
+			'--tcase-ids',
+			'4,TC-9',
+			'--template-tcase-ids',
+			'3',
+			'--requirement-ids',
+			'1CSWAh3ys_YniqfXepnwT8F',
+			'--recursive',
+			'--tags',
+			'1,2',
+			'--tags-filter-op',
+			'and',
+			'--precondition-ids',
+			'3',
+			'--step-ids',
+			'7,8',
+			'--author-ids',
+			'2',
+			'--created-after',
+			'2026-01-01T00:00:00Z',
+			'--created-before',
+			'2026-02-01T00:00:00Z',
+			'--cf-automation',
+			'Automated',
+			'--cf-automation',
+			'Partial',
+			'--cf-code',
+			'007'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastSearchParams).not.toBeNull()
 		expect(lastSearchParams!.get('priorities')).toBe('high')
 		expect(lastSearchParams!.get('search')).toBe('login')
 		expect(lastSearchParams!.getAll('folders')).toEqual(['1', '2'])
+		expect(lastSearchParams!.getAll('tcaseIds')).toEqual(['4', 'TC-9'])
+		expect(lastSearchParams!.getAll('templateTCaseIds')).toEqual(['3'])
+		expect(lastSearchParams!.getAll('requirementIds')).toEqual(['1CSWAh3ys_YniqfXepnwT8F'])
+		expect(lastSearchParams!.get('recursive')).toBe('true')
+		expect(lastSearchParams!.getAll('tags')).toEqual(['1', '2'])
+		expect(lastSearchParams!.get('tagsFilterOp')).toBe('and')
+		expect(lastSearchParams!.getAll('preconditionIds')).toEqual(['3'])
+		expect(lastSearchParams!.getAll('stepIds')).toEqual(['7', '8'])
+		expect(lastSearchParams!.getAll('authorIds')).toEqual(['2'])
+		expect(lastSearchParams!.get('createdAfter')).toBe('2026-01-01T00:00:00Z')
+		expect(lastSearchParams!.get('createdBefore')).toBe('2026-02-01T00:00:00Z')
+		expect(lastSearchParams!.getAll('cf_automation')).toEqual(['Automated', 'Partial'])
+		// Custom field values stay text
+		expect(lastSearchParams!.get('cf_code')).toBe('007')
 	})
 })
 
 describe('validation errors', () => {
 	testRejectsInvalidIdentifier(runCommand, 'project-code', 'code')
 
-	test('rejects the removed --page option', async () => {
+	// The command checks unknown arguments itself, to let --cf-* options through.
+	test('rejects unknown arguments, such as the removed --page option', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--page', '1'),
 			/Unknown argument: page/
+		)
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', 'extra'),
+			/Unknown argument: extra/
+		)
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--cfAutomation', 'Automated'),
+			/Unknown argument: cfAutomation/
 		)
 	})
 

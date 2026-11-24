@@ -45,6 +45,17 @@ export function validateRequest<T>(value: unknown, schema: ZodType<T>): T {
 	}
 }
 
+export const dateOnlySchema = z
+	.string()
+	.regex(/^\d{4}-\d{2}-\d{2}$/, 'must be a UTC day as YYYY-MM-DD')
+
+export const DailyStatsRequestSchema = z.object({
+	startDate: dateOnlySchema.optional(),
+	endDate: dateOnlySchema.optional(),
+})
+
+export type DailyStatsRequest = z.infer<typeof DailyStatsRequestSchema>
+
 export const sortFieldParam = z.string().optional()
 export const sortOrderParam = z.enum(['asc', 'desc']).optional()
 export type SortOrder = z.infer<typeof sortOrderParam>
@@ -82,6 +93,25 @@ export const linkSchema = z.object({
 	url: httpUrlSchema,
 })
 export const priorityEnum = z.enum(['low', 'medium', 'high'])
+export const resultStatusEnum = z.enum([
+	'passed',
+	'failed',
+	'blocked',
+	'skipped',
+	'open',
+	'custom1',
+	'custom2',
+	'custom3',
+	'custom4',
+])
+// How several values of one filter combine.
+export const filterOpEnum = z.enum(['or', 'and', 'not'])
+export const automationResultEnum = z.enum([
+	'automated_passing',
+	'automated_failing',
+	'has_automated',
+	'has_manual',
+])
 export const tcaseTypeEnum = z.enum(['standalone', 'template', 'filled'])
 export const resourceIdSchema = z
 	.string()

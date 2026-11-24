@@ -45,11 +45,21 @@ describe('mocked', () => {
 			'42',
 			'--title',
 			'Cloned Run',
+			'--configuration-id',
+			'cfg-1',
+			'--integration-issue-id',
+			'ENG-34',
 			'--is-automated',
 			'false'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
-		expect(lastRequest).toEqual({ runId: 42, title: 'Cloned Run', isAutomated: false })
+		expect(lastRequest).toEqual({
+			runId: 42,
+			title: 'Cloned Run',
+			configurationId: 'cfg-1',
+			integrationIssueId: 'ENG-34',
+			isAutomated: false,
+		})
 		expect(result).toEqual({ id: 99 })
 	})
 

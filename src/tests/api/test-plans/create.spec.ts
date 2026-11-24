@@ -40,7 +40,6 @@ describe('mocked', () => {
 			runs: [
 				{
 					title: 'Run 1',
-					type: 'static',
 					queryPlans: [{ tcaseIds: ['abc'] }],
 				},
 			],
@@ -52,7 +51,6 @@ describe('mocked', () => {
 			runs: [
 				{
 					title: 'Run 1',
-					type: 'static',
 					queryPlans: [{ tcaseIds: ['abc'] }],
 				},
 			],
@@ -62,7 +60,7 @@ describe('mocked', () => {
 
 	test('creates a test plan with individual fields', async ({ project }) => {
 		const runs = JSON.stringify([
-			{ title: 'Run 1', type: 'static', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] },
+			{ title: 'Run 1', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] },
 		])
 		const result = await runCommand(
 			'--project-code',
@@ -74,16 +72,17 @@ describe('mocked', () => {
 			'--description',
 			'A test plan',
 			'--milestone-id',
-			'5'
+			'5',
+			'--integration-issue-id',
+			'QA-12'
 		)
 		expect(lastParams.projectCode).toBe(project.code)
 		expect(lastRequest).toEqual({
 			title: 'My Plan',
 			description: 'A test plan',
 			milestoneId: 5,
-			runs: [
-				{ title: 'Run 1', type: 'static', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] },
-			],
+			integrationIssueId: 'QA-12',
+			runs: [{ title: 'Run 1', isAutomated: false, queryPlans: [{ tcaseIds: ['abc'] }] }],
 		})
 		expect(result).toEqual({ id: 1 })
 	})
@@ -94,7 +93,7 @@ describe('mocked', () => {
 		(h) => {
 			const validBody = {
 				title: 'Plan',
-				runs: [{ title: 'Run 1', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] }],
+				runs: [{ title: 'Run 1', queryPlans: [{ tcaseIds: ['abc'] }] }],
 			}
 			const requiredArgs = ['--project-code', 'PRJ']
 			h.testInlineBody(validBody, validBody, requiredArgs)
@@ -111,6 +110,12 @@ describe('mocked', () => {
 				/must not be empty|Must contain at least one run/,
 				requiredArgs
 			)
+			// A plan's run lists its test cases; it takes no filters.
+			h.testInvalidBody(
+				{ title: 'Plan', runs: [{ title: 'Run 1', queryPlans: [{ folderIds: [1] }] }] },
+				/tcaseIds/,
+				requiredArgs
+			)
 		}
 	)
 })
@@ -120,7 +125,7 @@ describe('validation errors', () => {
 		'--body',
 		JSON.stringify({
 			title: 'Plan',
-			runs: [{ title: 'Run', type: 'static', queryPlans: [{ tcaseIds: ['abc'] }] }],
+			runs: [{ title: 'Run', queryPlans: [{ tcaseIds: ['abc'] }] }],
 		}),
 	])
 })
@@ -141,7 +146,6 @@ test('creates a test plan on live server', { tags: ['live'] }, async ({ project 
 			runs: [
 				{
 					title: 'Run 1',
-					type: 'static',
 					queryPlans: [{ tcaseIds: [tcase.id] }],
 				},
 			],

@@ -73,7 +73,7 @@ The `api` command provides direct programmatic access to the QA Sphere public AP
 **Key files**:
 
 - `types.ts` — Defines `ApiEndpointSpec` as a discriminated union on `bodyMode` (`'none'` | `'json'` | `'file'`), plus supporting types (`ApiPathParamSpec`, `ApiFieldSpec`, `ApiQueryOptionSpec`, `ExecuteFn`)
-- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`) and `paginationOptions()` for list options
+- `manifests/` — One file per resource (e.g., `runs.ts`, `test-cases.ts`), each exporting an array of `ApiEndpointSpec` objects. `manifests/index.ts` aggregates all specs into a single `allSpecs` array. `manifests/utils.ts` has shared param definitions (e.g., `projectCodeParam`) and `paginationOptions()` for list options. The array order is the order `-h` lists the commands in: list, get (and other reads), create, update, other updates, delete, then nested groups. Define the specs in the same order, and keep the README and SKILL.md command trees in it too
 - `builder.ts` — `buildCommandsFromSpecs()` builds a yargs command tree from the flat specs array, handling nested command paths automatically. Creates yargs options from path params, query options, field options, and body mode
 - `executor.ts` — `executeCommand()` orchestrates execution: collects and validates path params → processes body (based on `bodyMode` discriminant) → collects and validates query options → connects to API (lazy env loading) → executes with error mapping
 - `main.ts` — Registers the `api` command, delegates to `buildCommandsFromSpecs()`

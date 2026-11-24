@@ -185,6 +185,19 @@ export const withHttpRetry = (
 	}
 }
 
+// The API takes each custom field filter as a cf_<system name> parameter.
+export const withCustomFieldParams = ({
+	customFields,
+	...params
+}: {
+	customFields?: Record<string, string[]>
+}) => ({
+	...params,
+	...Object.fromEntries(
+		Object.entries(customFields ?? {}).map(([name, values]) => [`cf_${name}`, values])
+	),
+})
+
 export const appendSearchParams = <T extends object>(pathname: string, obj: T): string => {
 	const searchParams = new URLSearchParams()
 	updateSearchParams(searchParams, obj)

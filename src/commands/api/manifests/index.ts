@@ -5,8 +5,10 @@ import { configurationSpecs } from './configurations'
 import { customFieldSpecs } from './custom-fields'
 import { fileSpecs } from './files'
 import { folderSpecs } from './folders'
+import { integrationSpecs } from './integrations'
 import { milestoneSpecs } from './milestones'
 import { projectSpecs } from './projects'
+import { reportSpecs } from './reports'
 import { requirementSpecs } from './requirements'
 import { resultSpecs } from './results'
 import { runSpecs } from './runs'
@@ -26,8 +28,10 @@ export const allSpecs: ApiEndpointSpec[] = [
 	...customFieldSpecs,
 	...fileSpecs,
 	...folderSpecs,
+	...integrationSpecs,
 	...milestoneSpecs,
 	...projectSpecs,
+	...reportSpecs,
 	...requirementSpecs,
 	...resultSpecs,
 	...runSpecs,
