@@ -103,14 +103,14 @@ describe('validation errors', () => {
 	test('requires items or a body', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--new-parent-id', '10'),
-			/Either --body, --body-file, or --items is required/
+			/Either --body, --body-file, or --new-parent-id and --items is required/
 		)
 	})
 
 	test('requires new-parent-id', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--items', JSON.stringify([{ id: 4, pos: 0 }])),
-			/--new-parent-id/
+			/Either --body, --body-file, or --new-parent-id and --items is required/
 		)
 	})
 

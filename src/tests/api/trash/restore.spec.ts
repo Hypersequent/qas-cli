@@ -1,6 +1,7 @@
 import { HttpResponse, http, type PathParams } from 'msw'
 import { beforeEach, describe, expect } from 'vitest'
 import type { MessageResponse } from '../../../api/schemas'
+import type { TrashEntry } from '../../../api/trash'
 import {
 	test,
 	baseURL,
@@ -81,7 +82,30 @@ describe('validation errors', () => {
 	test('rejects IDs with special characters', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--ids', `${entryA},a/b`),
-			/--ids.*must be comma-separated IDs/
+			/--ids: must be comma-separated trash entry IDs/
+		)
+	})
+
+	test('reports an ID of the wrong length against --ids', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--ids', 'abc'),
+			/--ids: must be comma-separated trash entry IDs, each 23/
+		)
+	})
+
+	// The API names the field deleteLogIds; the user typed --ids
+	test('reports too many IDs against --ids', async () => {
+		const ids = Array.from({ length: 101 }, () => entryA).join(',')
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--ids', ids),
+			/--ids: Must contain at most 100 trash entry IDs/
+		)
+	})
+
+	test('reports a bad ID in --body against --body', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--body', '{"deleteLogIds": ["abc"]}'),
+			/--body: deleteLogIds\.0: trash entry IDs are 23 characters long/
 		)
 	})
 
@@ -95,12 +119,15 @@ describe('validation errors', () => {
 
 test('restores a deleted folder on live server', { tags: ['live'] }, async ({ project }) => {
 	const folderId = (await createFolder(project.code)).ids[0][0]
-	// Folder deletion is another command's job, so the live test calls the API directly.
-	const deleted = await fetch(`${baseURL}/api/public/v0/project/${project.code}/folder/delete`, {
-		method: 'POST',
-		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-		body: JSON.stringify({ folderIds: [folderId] }),
-	}).then((r) => r.json() as Promise<{ id: string }>)
+	const deleted = await runCli<TrashEntry>(
+		'api',
+		'folders',
+		'delete',
+		'--project-code',
+		project.code,
+		'--folder-ids',
+		String(folderId)
+	)
 
 	const result = await runCommand<MessageResponse>(
 		'--project-code',

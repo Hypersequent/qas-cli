@@ -108,6 +108,11 @@ export interface TCase {
 	project?: Project
 }
 
+export const tcaseTitleSchema = z
+	.string()
+	.min(1, 'title must not be empty')
+	.max(511, 'title must be at most 511 characters')
+
 export const CreateTCasesBatchRequestSchema = z.object({
 	folderPath: z
 		.array(z.string().min(1, 'folder names must not be empty'))
@@ -115,10 +120,7 @@ export const CreateTCasesBatchRequestSchema = z.object({
 	tcases: z
 		.array(
 			z.object({
-				title: z
-					.string()
-					.min(1, 'title must not be empty')
-					.max(511, 'title must be at most 511 characters'),
+				title: tcaseTitleSchema,
 				tags: z
 					.array(
 						z
@@ -191,23 +193,24 @@ const tagTitleSchema = z
 	.min(1, 'tag must not be empty')
 	.max(255, 'tag must be at most 255 characters')
 
-const customFieldValueSchema = z.object({
+// Strict, so a misspelled key is an error instead of being dropped from the request.
+const customFieldValueSchema = z.strictObject({
 	isDefault: z.boolean().optional(),
 	value: z.string().optional(),
 })
 
 export const customFieldsSchema = z.record(z.string(), customFieldValueSchema)
 
-export const parameterValueSchema = z.object({
+export const parameterValueSchema = z.strictObject({
 	values: z.record(z.string(), z.string()),
 })
 
-export const parameterValueWithIdSchema = z.object({
+export const parameterValueWithIdSchema = z.strictObject({
 	tcaseId: z.string().optional(),
 	values: z.record(z.string(), z.string()),
 })
 
-const requirementRefSchema = z.object({
+const requirementRefSchema = z.strictObject({
 	text: z.string().min(1, 'text must not be empty').max(255, 'text must be at most 255 characters'),
 	url: z.union([z.literal(''), httpUrlSchema]).optional(),
 })
@@ -224,10 +227,7 @@ const fileSchema = z.object({
 
 export const CreateTCaseRequestSchema = z
 	.object({
-		title: z
-			.string()
-			.min(1, 'title must not be empty')
-			.max(511, 'title must be at most 511 characters'),
+		title: tcaseTitleSchema,
 		type: z.enum(['standalone', 'template']),
 		folderId: z.number().int().positive('folderId must be a positive integer'),
 		priority: z.enum(['low', 'medium', 'high']),
@@ -264,11 +264,7 @@ export const CreateTCaseRequestSchema = z
 export type CreateTCaseRequest = z.infer<typeof CreateTCaseRequestSchema>
 
 export const UpdateTCaseRequestSchema = z.object({
-	title: z
-		.string()
-		.min(1, 'title must not be empty')
-		.max(511, 'title must be at most 511 characters')
-		.optional(),
+	title: tcaseTitleSchema.optional(),
 	priority: z.enum(['low', 'medium', 'high']).optional(),
 	comment: z.string().optional(),
 	tags: z.array(tagTitleSchema).optional(),
@@ -294,6 +290,17 @@ export interface TCasesResponse {
 	tcases: TCaseRef[]
 }
 
+export interface TCaseResultLink {
+	id: number
+	resultId: number
+	/** null if the integration was deleted */
+	integrationId: string | null
+	integration: { id: string; name: string; type: string; config: object } | null
+	url: string
+	text: string
+	meta: { id: string } | null
+}
+
 export interface TCaseResult {
 	id: number
 	status: string
@@ -305,9 +312,12 @@ export interface TCaseResult {
 	isAutomated: boolean
 	internal: boolean
 	createdAt: string
-	author?: { id: number; name: string; email: string; avatar: string | null; role: string }
+	/** null unless requested with `include=author` */
+	author: { id: number; name: string; email: string; avatar: string | null; role: string } | null
+	/** null unless requested with `include=links`, and when the result has no links */
+	links: TCaseResultLink[] | null
+	/** Only with `include=run` */
 	run?: { id: number; title: string }
-	links?: { id: number; url: string; text: string }[]
 }
 
 // Test case references accept an ID, sequence number or legacy ID.

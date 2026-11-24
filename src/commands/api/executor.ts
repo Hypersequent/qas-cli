@@ -101,9 +101,11 @@ export async function executeCommand(
 	// 5. Build argument map for error mapping
 	const argumentMap: Record<string, string> = {}
 	if (spec.bodyMode === 'json' && spec.fieldOptions) {
+		const hasBodyInput = args.body !== undefined || args['body-file'] !== undefined
 		for (const field of spec.fieldOptions) {
-			const camelKey = kebabToCamel(field.name)
-			argumentMap[camelKey] = `--${field.name}`
+			// With a body given, a flag that wasn't passed isn't at fault: the body set the value
+			if (hasBodyInput && args[field.name] === undefined) continue
+			argumentMap[field.bodyKey ?? kebabToCamel(field.name)] = `--${field.name}`
 		}
 	}
 	for (const opt of queryOptions) {

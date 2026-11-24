@@ -140,6 +140,19 @@ describe('validation errors', () => {
 			/--links.*must be an http or https URL/
 		)
 	})
+
+	test('rejects a link with an unknown key', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--links',
+					'[{"text": "Spec", "url": "https://a.com", "title": "x"}]'
+				),
+			/--links.*Unrecognized key: "title"/
+		)
+	})
 })
 
 // Only the overview title changes, so cleanup can still find and delete the project

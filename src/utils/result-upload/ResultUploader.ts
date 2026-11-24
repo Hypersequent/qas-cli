@@ -34,7 +34,7 @@ export class ResultUploader {
 	}
 
 	async handle(results: TestCaseResult[], runFailureLogs?: string) {
-		const { data: tcases } = await fetchAllPages((page) =>
+		const tcases = await fetchAllPages((page) =>
 			this.api.runs.listTCases(this.project, this.run, page)
 		).catch(printErrorThenExit)
 

@@ -1,14 +1,15 @@
 import { describe, test, expect, vi } from 'vitest'
-import { fetchAllPages, jsonResponse, withBaseUrl } from '../../api/utils'
+import { fetchAllPages, iteratePages, jsonResponse, withBaseUrl } from '../../api/utils'
 
 describe('fetchAllPages', () => {
-	const pagesOf = (total: number) =>
+	// `cap` is the most rows the server returns in a page, whatever limit it is asked for
+	const pagesOf = (total: number, cap = Infinity) =>
 		vi.fn(async ({ offset, limit }: { offset: number; limit: number }) => ({
 			total,
 			offset,
-			limit,
+			limit: Math.min(limit, cap),
 			data: Array.from(
-				{ length: Math.max(0, Math.min(limit, total - offset)) },
+				{ length: Math.max(0, Math.min(limit, cap, total - offset)) },
 				(_, i) => offset + i
 			),
 		}))
@@ -21,11 +22,44 @@ describe('fetchAllPages', () => {
 	])('reads $total items in $calls requests', async ({ total, calls }) => {
 		const fetchPage = pagesOf(total)
 		const result = await fetchAllPages(fetchPage)
-		expect(result).toEqual({ total, data: Array.from({ length: total }, (_, i) => i) })
+		expect(result).toEqual(Array.from({ length: total }, (_, i) => i))
 		expect(fetchPage).toHaveBeenCalledTimes(calls)
 		expect(fetchPage.mock.calls.map(([page]) => page)).toEqual(
 			Array.from({ length: calls }, (_, i) => ({ offset: i * 1000, limit: 1000 }))
 		)
+	})
+
+	test('reads every item when the server returns shorter pages than asked for', async () => {
+		const fetchPage = pagesOf(250, 100)
+		expect(await fetchAllPages(fetchPage)).toEqual(Array.from({ length: 250 }, (_, i) => i))
+		expect(fetchPage.mock.calls.map(([page]) => page.offset)).toEqual([0, 100, 200])
+	})
+
+	test('stops at an empty page, even short of the reported total', async () => {
+		const fetchPage = vi.fn(async ({ offset, limit }: { offset: number; limit: number }) => ({
+			total: 10,
+			offset,
+			limit,
+			data: offset === 0 ? [0, 1, 2] : [],
+		}))
+		expect(await fetchAllPages(fetchPage)).toEqual([0, 1, 2])
+		expect(fetchPage).toHaveBeenCalledTimes(2)
+	})
+})
+
+describe('iteratePages', () => {
+	test('fetches a page only when the previous one has been consumed', async () => {
+		const fetchPage = vi.fn(async ({ offset, limit }: { offset: number; limit: number }) => ({
+			total: 3000,
+			offset,
+			limit,
+			data: Array.from({ length: limit }, (_, i) => offset + i),
+		}))
+		for await (const page of iteratePages(fetchPage)) {
+			expect(page).toHaveLength(1000)
+			break
+		}
+		expect(fetchPage).toHaveBeenCalledTimes(1)
 	})
 })
 

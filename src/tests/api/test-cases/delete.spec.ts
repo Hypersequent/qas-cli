@@ -46,6 +46,11 @@ describe('mocked', () => {
 		expect(result).toEqual(trashEntry)
 	})
 
+	test('accepts legacy IDs, whatever characters they hold', async ({ project }) => {
+		await runCommand('--project-code', project.code, '--tcase-ids', 'suite.case.17, C/42 a')
+		expect(lastRequest).toEqual({ tcaseIds: ['suite.case.17', 'C/42 a'] })
+	})
+
 	testBodyInput(
 		runCommand,
 		() => lastRequest,
@@ -71,8 +76,8 @@ describe('validation errors', () => {
 
 	test('rejects malformed test case references', async () => {
 		await expectValidationError(
-			() => runCommand('--project-code', 'PRJ', '--tcase-ids', '12,a/b'),
-			/--tcase-ids.*must be comma-separated IDs/
+			() => runCommand('--project-code', 'PRJ', '--tcase-ids', '12,'),
+			/--tcase-ids.*none of them empty/
 		)
 	})
 

@@ -14,9 +14,9 @@ const help = {
 	include: 'Additional fields to include. tcaseCount adds the number of linked test cases.',
 	title: 'Shared step title (1-255 characters), unique in the project.',
 	'sub-steps':
-		'JSON array of sub-steps, in order. Each has optional "description" and "expected" (HTML) and "data" (test data).\nExample: \'[{"description": "Open the login page", "expected": "The form is shown"}]\'',
+		'JSON array of sub-steps, in order. Each needs at least one of "description" and "expected" (HTML) and "data" (test data).\nExample: \'[{"description": "Open the login page", "expected": "The form is shown"}]\'',
 	'update-sub-steps':
-		'JSON array that replaces the sub-steps. Include an existing sub-step\'s "id" to keep it; sub-steps left out are removed.\nExample: \'[{"id": 2, "description": "Open the login page"}, {"description": "New step"}]\'',
+		'JSON array that replaces the sub-steps. Include an existing sub-step\'s "id" to keep it, along with its content: fields left out are cleared. Sub-steps left out are removed.\nExample: \'[{"id": 2, "description": "Open the login page"}, {"description": "New step"}]\'',
 	list: {
 		describe: 'List shared steps in a project.',
 		epilog: apiDocsEpilog('shared_steps', 'list-shared-steps'),

@@ -10,13 +10,14 @@ import {
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import {
 	commonHelp,
-	idListSchema,
 	intIdParam,
 	intListSchema,
 	paginationOptions,
 	projectCodeParam,
+	requireFieldsOrBody,
 	splitIntList,
 	splitList,
+	tcaseRefListSchema,
 } from './utils'
 import type { ApiEndpointSpec } from '../types'
 
@@ -36,7 +37,8 @@ const help = {
 	'source-project-id': 'Code or ID of the project the folders are in; defaults to --project-code.',
 	'copy-move':
 		'Move the folders from --source-project-id instead: after copying, they are deleted there, into its trash as one entry. To move folders within a project, use folders move.',
-	'tcase-ids': 'Comma-separated test cases to delete too: IDs, sequence numbers or legacy IDs.',
+	'tcase-ids':
+		'Comma-separated test cases to delete too: IDs, sequence numbers or legacy IDs. Use --body for a legacy ID that contains a comma.',
 	include:
 		'Additional fields to include. tcaseCount adds the number of test cases in each folder and its subtree.',
 	'list-include':
@@ -398,11 +400,7 @@ const move: ApiEndpointSpec = {
 			jsonParse: true,
 		},
 	],
-	check: (argv) => {
-		return argv.body !== undefined || argv['body-file'] !== undefined || argv.items !== undefined
-			? true
-			: 'Either --body, --body-file, or --items is required'
-	},
+	check: requireFieldsOrBody('new-parent-id', 'items'),
 	epilog: help.move.epilog,
 	examples: help.move.examples,
 	execute: async (api, { pathParams, body }) => {
@@ -468,7 +466,7 @@ const del: ApiEndpointSpec = {
 	pathParams: [projectCodeParam],
 	fieldOptions: [
 		{ name: 'folder-ids', type: 'string', describe: help['folder-ids'], schema: intListSchema },
-		{ name: 'tcase-ids', type: 'string', describe: help['tcase-ids'], schema: idListSchema },
+		{ name: 'tcase-ids', type: 'string', describe: help['tcase-ids'], schema: tcaseRefListSchema },
 	],
 	transformFields: (fields) => ({
 		folderIds: splitIntList(fields['folder-ids']),

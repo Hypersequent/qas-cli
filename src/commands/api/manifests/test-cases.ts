@@ -22,11 +22,14 @@ import { resourceIdSchema } from '../../../api/schemas'
 import { printJson, apiDocsEpilog, kebabToCamelCaseKeys } from '../utils'
 import {
 	commonHelp,
-	idListSchema,
 	intIdParam,
+	intListSchema,
 	paginationOptions,
 	projectCodeParam,
+	requireFieldsOrBody,
+	splitIntList,
 	splitList,
+	tcaseRefListSchema,
 } from './utils'
 import type { ApiEndpointSpec, ApiFieldSpec, ApiPathParamSpec } from '../types'
 
@@ -68,7 +71,7 @@ const help = {
 	search: 'Search text to filter test cases.',
 	types: 'Comma-separated test case types to filter by (e.g., "standalone,template").',
 	'tcase-ids':
-		'Comma-separated test case references: IDs, sequence numbers or legacy IDs (e.g., "12,13").',
+		'Comma-separated test case references: IDs, sequence numbers or legacy IDs (e.g., "12,13"). Use --body for a legacy ID that contains a comma.',
 	'tcase-version': 'Test case version number.',
 	'target-folder-id': 'ID of the folder to copy the test cases into.',
 	'source-project-id':
@@ -276,18 +279,8 @@ const tcaseIdsField: ApiFieldSpec = {
 	name: 'tcase-ids',
 	type: 'string',
 	describe: help['tcase-ids'],
-	schema: idListSchema,
+	schema: tcaseRefListSchema,
 }
-
-/** Allows a JSON-body command to run when its required fields are set, or --body/--body-file is. */
-const requireFieldsOrBody =
-	(...fields: string[]) =>
-	(argv: Record<string, unknown>): true | string =>
-		argv.body !== undefined ||
-		argv['body-file'] !== undefined ||
-		fields.every((f) => argv[f] !== undefined)
-			? true
-			: `Either --body, --body-file, or ${fields.map((f) => `--${f}`).join(' and ')} is required`
 
 const list: ApiEndpointSpec = {
 	id: 'test-cases.list',
@@ -308,8 +301,8 @@ const list: ApiEndpointSpec = {
 			'updated_at',
 			'legacy_id',
 		]),
-		{ name: 'folders', type: 'string', describe: help.folders },
-		{ name: 'tags', type: 'string', describe: help.tagsFilter },
+		{ name: 'folders', type: 'string', describe: help.folders, schema: intListSchema },
+		{ name: 'tags', type: 'string', describe: help.tagsFilter, schema: intListSchema },
 		{ name: 'priorities', type: 'string', describe: help.priorities },
 		{ name: 'search', type: 'string', describe: help.search },
 		{ name: 'types', type: 'string', describe: help.types },
@@ -334,13 +327,11 @@ const list: ApiEndpointSpec = {
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
-		folders:
-			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
-		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
-		priorities:
-			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
-		types: typeof query.types === 'string' ? query.types.split(',') : query.types,
-		include: typeof query.include === 'string' ? query.include.split(',') : query.include,
+		folders: splitIntList(query.folders),
+		tags: splitIntList(query.tags),
+		priorities: splitList(query.priorities),
+		types: splitList(query.types),
+		include: splitList(query.include),
 	}),
 	epilog: help.list.epilog,
 	examples: help.list.examples,
@@ -372,13 +363,13 @@ const count: ApiEndpointSpec = {
 	bodyMode: 'none',
 	pathParams: [projectCodeParam],
 	queryOptions: [
-		{ name: 'folders', type: 'string', describe: help.folders },
+		{ name: 'folders', type: 'string', describe: help.folders, schema: intListSchema },
 		{
 			name: 'recursive',
 			type: 'boolean',
 			describe: 'If true, include test cases in subfolders when filtering by folders.',
 		},
-		{ name: 'tags', type: 'string', describe: help.tagsFilter },
+		{ name: 'tags', type: 'string', describe: help.tagsFilter, schema: intListSchema },
 		{ name: 'priorities', type: 'string', describe: help.priorities },
 		{ name: 'search', type: 'string', describe: help.search },
 		{ name: 'types', type: 'string', describe: help.types },
@@ -386,12 +377,10 @@ const count: ApiEndpointSpec = {
 	],
 	transformQuery: (query) => ({
 		...kebabToCamelCaseKeys(query),
-		folders:
-			typeof query.folders === 'string' ? query.folders.split(',').map(Number) : query.folders,
-		tags: typeof query.tags === 'string' ? query.tags.split(',').map(Number) : query.tags,
-		priorities:
-			typeof query.priorities === 'string' ? query.priorities.split(',') : query.priorities,
-		types: typeof query.types === 'string' ? query.types.split(',') : query.types,
+		folders: splitIntList(query.folders),
+		tags: splitIntList(query.tags),
+		priorities: splitList(query.priorities),
+		types: splitList(query.types),
 	}),
 	epilog: help.count.epilog,
 	examples: help.count.examples,
@@ -459,6 +448,7 @@ const tcaseCreate: ApiEndpointSpec = {
 			type: 'string',
 			describe: help['precondition-text'],
 			schema: z.string().min(1),
+			bodyKey: 'precondition',
 			yargsOption: { conflicts: 'precondition-id' },
 		},
 		{
@@ -466,6 +456,7 @@ const tcaseCreate: ApiEndpointSpec = {
 			type: 'number',
 			describe: help['precondition-id'],
 			schema: z.number().int().positive(),
+			bodyKey: 'precondition',
 			yargsOption: { conflicts: 'precondition-text' },
 		},
 		{ name: 'tags', type: 'string', describe: help.tags },
@@ -491,7 +482,12 @@ const tcaseCreate: ApiEndpointSpec = {
 			schema: z.array(parameterValueSchema),
 			jsonParse: true,
 		},
-		{ name: 'title-suffix-params', type: 'string', describe: help['title-suffix-params'] },
+		{
+			name: 'title-suffix-params',
+			type: 'string',
+			describe: help['title-suffix-params'],
+			bodyKey: 'filledTCaseTitleSuffixParams',
+		},
 		{ name: 'pos', type: 'number', describe: help.pos, schema: CreateTCaseShape.pos.unwrap() },
 		{
 			name: 'requirements',
@@ -560,6 +556,7 @@ const tcaseUpdate: ApiEndpointSpec = {
 			type: 'string',
 			describe: help['precondition-text'],
 			schema: z.string().min(1),
+			bodyKey: 'precondition',
 			yargsOption: { conflicts: 'precondition-id' },
 		},
 		{
@@ -567,6 +564,7 @@ const tcaseUpdate: ApiEndpointSpec = {
 			type: 'number',
 			describe: help['precondition-id'],
 			schema: z.number().int().positive(),
+			bodyKey: 'precondition',
 			yargsOption: { conflicts: 'precondition-text' },
 		},
 		{ name: 'tags', type: 'string', describe: help.tags },
@@ -593,7 +591,12 @@ const tcaseUpdate: ApiEndpointSpec = {
 			schema: z.array(parameterValueWithIdSchema),
 			jsonParse: true,
 		},
-		{ name: 'title-suffix-params', type: 'string', describe: help['title-suffix-params'] },
+		{
+			name: 'title-suffix-params',
+			type: 'string',
+			describe: help['title-suffix-params'],
+			bodyKey: 'filledTCaseTitleSuffixParams',
+		},
 		{
 			name: 'requirements',
 			type: 'string',

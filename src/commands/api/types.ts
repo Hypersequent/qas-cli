@@ -28,6 +28,11 @@ interface ApiOptionBase {
 export interface ApiFieldSpec extends ApiOptionBase {
 	/** If true, the string value is parsed as JSON before validation */
 	jsonParse?: boolean
+	/**
+	 * The body property this flag sets, when `transformFields` gives it another name than the
+	 * flag's own in camelCase. Lets an API validation error on that property name the flag.
+	 */
+	bodyKey?: string
 }
 
 export type ApiQueryOptionSpec = ApiOptionBase

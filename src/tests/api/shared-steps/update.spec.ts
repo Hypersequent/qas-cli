@@ -106,7 +106,30 @@ describe('validation errors', () => {
 	test('rejects sub-steps that have no content', async () => {
 		await expectValidationError(
 			() => runCommand('--project-code', 'PRJ', '--id', '1', '--sub-steps', '[{"id": 2}]'),
-			/--sub-steps.*at least one sub-step must have a description, expected result or data/
+			/--sub-steps\.0: a sub-step must have a description, expected result or data/
+		)
+	})
+
+	// The API drops a sub-step without content, so an entry that only keeps one by id removes it
+	test('rejects a sub-step without content next to one that has some', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--id',
+					'1',
+					'--sub-steps',
+					'[{"id": 2}, {"description": "New step"}]'
+				),
+			/--sub-steps\.0: a sub-step must have a description, expected result or data/
+		)
+	})
+
+	test('rejects an empty list of sub-steps', async () => {
+		await expectValidationError(
+			() => runCommand('--project-code', 'PRJ', '--id', '1', '--sub-steps', '[]'),
+			/--sub-steps.*must have at least one sub-step/
 		)
 	})
 })

@@ -533,6 +533,55 @@ describe('validation errors', () => {
 		)
 	})
 
+	// A misspelled key must not be dropped silently from the request
+	test.each([
+		['--custom-fields', '{"field1": {"value": "x", "isDefalt": true}}', 'isDefalt'],
+		['--parameter-values', '[{"values": {"a": "1"}, "tcaseSeq": 3}]', 'tcaseSeq'],
+		['--requirements', '[{"text": "REQ-1", "link": "https://a.com"}]', 'link'],
+		['--links', '[{"text": "Docs", "url": "https://a.com", "title": "x"}]', 'title'],
+	])('rejects an unknown key in %s', async (option, value, key) => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'template',
+					'--folder-id',
+					'1',
+					'--priority',
+					'high',
+					option,
+					value
+				),
+			new RegExp(`${option}.*Unrecognized key: "${key}"`)
+		)
+	})
+
+	// The body field has another name than the flag that sets it
+	test('reports a title suffix on a standalone test case against --title-suffix-params', async () => {
+		await expectValidationError(
+			() =>
+				runCommand(
+					'--project-code',
+					'PRJ',
+					'--title',
+					'Test',
+					'--type',
+					'standalone',
+					'--folder-id',
+					'1',
+					'--priority',
+					'high',
+					'--title-suffix-params',
+					'browser'
+				),
+			/--title-suffix-params: filledTCaseTitleSuffixParams is only allowed for "template" test cases/
+		)
+	})
+
 	test('rejects --precondition-text and --precondition-id together', async () => {
 		await expectValidationError(
 			() =>
